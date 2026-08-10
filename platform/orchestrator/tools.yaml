@@ -1,0 +1,221 @@
+# Cyber AI Orchestrator — Tool Registry
+# Machine-readable registry of all available security tools.
+# Populated from actual repository capabilities discovered during inventory.
+
+tools:
+  pentagi:
+    type: security_agent
+    adapter: adapters.pentagi
+    capabilities:
+      - research
+      - analysis
+      - exploitation
+      - reporting
+    api: rest_graphql
+    mcp: true
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  strix:
+    type: security_agent
+    adapter: adapters.strix
+    capabilities:
+      - assessment
+      - vulnerability_scanning
+    api: server
+    mcp: false
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  hexstrike:
+    type: tool_gateway
+    adapter: adapters.hexstrike
+    capabilities:
+      - tool_execution
+      - mcp_servers
+      - web_scraping
+    api: flask_rest
+    mcp: true
+    docker: false
+    local_llm: true
+    status: NOT_TESTED
+
+  mcpstrike:
+    type: tool_gateway
+    adapter: adapters.mcpstrike
+    capabilities:
+      - tool_execution
+      - mcp_servers
+    api: fastapi
+    mcp: true
+    docker: false
+    local_llm: true
+    status: NOT_TESTED
+
+  darkmoon:
+    type: security_agent
+    adapter: adapters.darkmoon
+    capabilities:
+      - research
+      - analysis
+      - exploitation
+    api: mcp
+    mcp: true
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  cai:
+    type: security_agent
+    adapter: adapters.cai
+    capabilities:
+      - research
+      - analysis
+      - agent_framework
+    api: library
+    mcp: true
+    docker: true
+    local_llm: false
+    status: NOT_TESTED
+
+  pentestgpt:
+    type: security_agent
+    adapter: adapters.pentestgpt
+    capabilities:
+      - research
+      - planning
+    api: cli
+    mcp: false
+    docker: true
+    local_llm: false
+    status: NOT_TESTED
+
+  pentestagent:
+    type: security_agent
+    adapter: adapters.pentestagent
+    capabilities:
+      - research
+      - analysis
+      - exploitation
+    api: cli
+    mcp: true
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  cyberstrikeai:
+    type: security_agent
+    adapter: adapters.cyberstrikeai
+    capabilities:
+      - tool_execution
+      - mcp_servers
+      - analysis
+    api: gin_rest
+    mcp: true
+    docker: false
+    local_llm: true
+    status: NOT_TESTED
+
+  autopentest:
+    type: security_agent
+    adapter: adapters.autopentest
+    capabilities:
+      - research
+      - planning
+    api: cli
+    mcp: false
+    docker: true
+    local_llm: false
+    status: NOT_TESTED
+
+  penclaw:
+    type: analysis_tool
+    adapter: adapters.penclaw
+    capabilities:
+      - static_analysis
+      - dynamic_scanning
+      - secret_detection
+    api: cli
+    mcp: false
+    docker: false
+    local_llm: true
+    status: NOT_TESTED
+
+  luan1aoagent:
+    type: security_agent
+    adapter: adapters.luan1aoagent
+    capabilities:
+      - research
+      - analysis
+      - planning
+    api: cli_web
+    mcp: false
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  aracne:
+    type: security_agent
+    adapter: adapters.aracne
+    capabilities:
+      - research
+      - exploitation
+      - ssh_driven
+    api: cli
+    mcp: false
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  guardian_cli:
+    type: security_agent
+    adapter: adapters.guardian-cli
+    capabilities:
+      - research
+      - analysis
+      - reporting
+    api: cli
+    mcp: false
+    docker: true
+    local_llm: false
+    status: NOT_TESTED
+
+  drakben:
+    type: security_agent
+    adapter: adapters.drakben
+    capabilities:
+      - research
+      - analysis
+      - exploitation
+    api: cli
+    mcp: false
+    docker: true
+    local_llm: true
+    status: NOT_TESTED
+
+  kali_pentest:
+    type: skill_definitions
+    adapter: adapters.kali-pentest
+    capabilities:
+      - tool_guidance
+      - methodology
+    api: documentation
+    mcp: false
+    docker: false
+    local_llm: false
+    status: NOT_TESTED
+
+  h4cker:
+    type: knowledge_base
+    adapter: adapters.h4cker
+    capabilities:
+      - reference
+      - training
+      - labs
+    api: documentation
+    mcp: false
+    docker: false
+    local_llm: false
+    status: NOT_TESTED

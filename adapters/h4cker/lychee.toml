@@ -1,0 +1,4 @@
+exclude = [
+  "https://readme-typing-svg.herokuapp.com",
+  "https://dominguesdefence.notion.site/*"
+]

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+# Environment files (never commit real secrets); the test fixture is force-allowed
+.env
+.env.*
+!test/fixtures/.env
+
+report.md
+report.json
+*.log

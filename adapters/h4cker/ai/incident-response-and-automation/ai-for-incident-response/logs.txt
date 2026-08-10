@@ -1,0 +1,19 @@
+2029-01-15 10:23:45 [INFO] User admin logged in from 192.168.1.100
+2029-01-15 10:24:12 [INFO] File access: /etc/passwd by user admin
+2029-01-15 10:25:33 [WARN] Failed login attempt for user root from 203.0.113.45
+2029-01-15 10:25:45 [WARN] Failed login attempt for user root from 203.0.113.45
+2029-01-15 10:25:58 [WARN] Failed login attempt for user root from 203.0.113.45
+2029-01-15 10:26:12 [WARN] Failed login attempt for user admin from 203.0.113.45
+2029-01-15 10:26:25 [WARN] Failed login attempt for user admin from 203.0.113.45
+2029-01-15 10:27:01 [ERROR] Brute force attack detected from IP 203.0.113.45
+2029-01-15 10:27:15 [INFO] IP 203.0.113.45 blocked by firewall
+2029-01-15 10:30:22 [INFO] User admin executed sudo command: /bin/cat /etc/shadow
+2029-01-15 10:31:45 [WARN] Unusual network traffic detected to suspicious-domain.evil.com
+2029-01-15 10:32:10 [INFO] DNS query for suspicious-domain.evil.com from 192.168.1.100
+2029-01-15 10:33:22 [WARN] Large data transfer detected: 500MB to 198.51.100.25
+2029-01-15 10:35:15 [ERROR] Malware signature detected in file: /tmp/malicious_payload.exe
+2029-01-15 10:35:30 [INFO] File quarantined: /tmp/malicious_payload.exe
+2029-01-15 10:36:45 [WARN] Process spawned with suspicious arguments: powershell.exe -enc <base64_encoded_command>
+2029-01-15 10:37:12 [INFO] User admin logged out
+2029-01-15 10:45:33 [INFO] System backup completed successfully
+2029-01-15 11:00:15 [INFO] Regular system maintenance started

@@ -1,0 +1,65 @@
+# Cyber AI Orchestrator — LiteLLM Gateway Configuration
+# Model aliases for the orchestrator. Do NOT put real API keys here.
+# Use environment variables or .env file.
+
+model_list:
+  # Local models via Ollama
+  - model_name: local-reasoner
+    litellm_params:
+      model: ollama/llama3.1:8b
+      api_base: http://localhost:11434
+    model_info:
+      mode: completion
+      supports_function_calling: true
+
+  - model_name: local-coder
+    litellm_params:
+      model: ollama/codellama:7b
+      api_base: http://localhost:11434
+    model_info:
+      mode: completion
+      supports_function_calling: true
+
+  - model_name: local-fast
+    litellm_params:
+      model: ollama/llama3.2:3b
+      api_base: http://localhost:11434
+    model_info:
+      mode: completion
+      supports_function_calling: true
+
+  - model_name: research-model
+    litellm_params:
+      model: ollama/qwen2.5:7b
+      api_base: http://localhost:11434
+    model_info:
+      mode: completion
+      supports_function_calling: true
+
+  # Cloud models (uncomment and configure when API keys are available)
+  # - model_name: cloud-reasoner
+  #   litellm_params:
+  #     model: openai/gpt-4o
+  #     api_key: os.environ/OPENAI_API_KEY
+  #   model_info:
+  #     mode: chat
+  #     supports_function_calling: true
+
+  # - model_name: cloud-fast
+  #   litellm_params:
+  #     model: anthropic/claude-3-5-haiku-latest
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+  #   model_info:
+  #     mode: chat
+  #     supports_function_calling: true
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  num_retries: 2
+  request_timeout: 60
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: sqlite:///./litellm.db
+  otel: false

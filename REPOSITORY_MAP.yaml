@@ -1,0 +1,134 @@
+# Cyber AI Orchestrator — Repository Map
+# Authoritative mapping between original repositories and their local platform roles.
+# Generated: 2026-08-10
+
+repositories:
+  # ============ CORE INFRASTRUCTURE ============
+
+  - original_name: litellm
+    local_name: litellm
+    role: llm_gateway
+    original_repository: preserved
+    integration_method: service
+
+  - original_name: ollama
+    local_name: ollama
+    role: local_model_service
+    original_repository: preserved
+    integration_method: service
+
+  - original_name: open-webui
+    local_name: open-webui
+    role: human_interface
+    original_repository: preserved
+    integration_method: service
+
+  - original_name: airllm
+    local_name: airllm
+    role: alternate_inference
+    original_repository: preserved
+    integration_method: library
+
+  # ============ SECURITY AGENTS ============
+
+  - original_name: pentagi
+    local_name: pentagi
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: strix
+    local_name: strix
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: Dark-Moon
+    local_name: darkmoon
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: hexstrike-ai
+    local_name: hexstrike
+    role: tool_gateway
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: mcpstrike
+    local_name: mcpstrike
+    role: tool_gateway
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: CAI
+    local_name: cai
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: pentestgpt
+    local_name: pentestgpt
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: pentestagent
+    local_name: pentestagent
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: CyberStrikeAI
+    local_name: cyberstrikeai
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: autopentest
+    local_name: autopentest
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: penclaw
+    local_name: penclaw
+    role: analysis_tool
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: LuaN1aoAgent
+    local_name: luan1aoagent
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: aracne
+    local_name: aracne
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: guardian-cli
+    local_name: guardian_cli
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter
+
+  - original_name: kali-pentest
+    local_name: kali_pentest
+    role: skill_definitions
+    original_repository: preserved
+    integration_method: documentation
+
+  - original_name: h4cker
+    local_name: h4cker
+    role: knowledge_base
+    original_repository: preserved
+    integration_method: documentation
+
+  - original_name: drakben
+    local_name: drakben
+    role: security_agent
+    original_repository: preserved
+    integration_method: adapter

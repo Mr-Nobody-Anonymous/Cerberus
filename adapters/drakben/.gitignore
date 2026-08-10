@@ -1,0 +1,122 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test cache
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Secrets & Config (IMPORTANT!)
+.env
+.env.local
+.env.production
+.secrets.json
+config/api.env
+config/*.env
+
+# Database files (generated at runtime)
+*.db
+*.db-shm
+*.db-wal
+drakben.db
+drakben_memory.db
+drakben_evolution.db
+nvd_cache.db
+llm_cache.db
+waf_evolution.db
+audit.db
+
+# SonarQube work directory
+.scannerwork/
+
+# Windows launcher (local only)
+start.bat
+
+# Logs (generated at runtime, keep .gitkeep)
+logs/*
+!logs/.gitkeep
+*.log
+
+# Session files (generated at runtime)
+sessions/*
+!sessions/.gitkeep
+
+# Cache directories
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# History files
+.drakben_history
+
+# Test reports & coverage output
+TEST_REPORT.md
+test_output.txt
+coverage_output.txt
+*_REPORT.md
+*_SUMMARY.md
+
+# Dynamic exploit modules (keep CVE files tracked)
+# modules/dynamic_exploits/
+
+# Vector database (generated at runtime)
+drakben_vectors/
+
+# Private documentation (local only)
+ÖNEMLİ.md
+
+# Session files
+session.json
+*.pid
+
+# Vulture reports (generated locally)
+vulture_*.txt
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd

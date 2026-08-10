@@ -1,0 +1,17 @@
+# Cyber AI Orchestrator — Authorized Lab Targets
+# Only targets listed here with allowed: true can be actively tested.
+# All other targets are refused by the policy engine.
+
+targets:
+  # Example target - replace with your own authorized lab targets
+  # - id: lab-web-01
+  #   environment: authorized_lab
+  #   allowed: true
+  #   host: 127.0.0.1
+  #   port: 8080
+  #   description: Local vulnerable web app (e.g., OWASP Juice Shop)
+  #   allowed_actions:
+  #     - recon
+  #     - scan
+  #     - analysis
+  #     - exploitation

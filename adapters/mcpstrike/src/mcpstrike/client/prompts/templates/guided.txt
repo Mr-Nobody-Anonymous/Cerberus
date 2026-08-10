@@ -1,0 +1,224 @@
+# AUTONOMOUS PENETRATION TEST — FULL METHODOLOGY
+
+---
+
+## CONFIGURATION
+
+| Field | Value |
+|-------|-------|
+| **TARGET** | {{TARGET}} |
+| **DOMAIN** | {{DOMAIN}} |
+| **SESSION_ID** | {{SESSION_ID}} |
+| **START_DATE** | {{DATE}} |
+
+---
+
+## CRITICAL EXECUTION RULES
+
+> - After EVERY `execute_command()` output is **auto-saved**.
+> - Use `session_id: {{SESSION_ID}}` in all `write_session_file()` calls.
+> - Continue until **ALL phases** complete.
+> - **DO NOT** wait for user confirmation.
+
+---
+
+## PHASE 0 — INITIALIZATION
+
+**Step 1:** `health_check()`
+
+**Step 2:**
+```python
+create_session("{{SESSION_ID}}", {
+    "target":     "{{TARGET}}",
+    "domain":     "{{DOMAIN}}",
+    "start_date": "{{DATE}}",
+    "test_type":  "comprehensive_penetration_test"
+})
+```
+
+**Step 3:**
+```python
+write_session_file(
+    "00_session_info.md",
+    "# Penetration Test Session\nTarget: {{TARGET}}\nDomain: {{DOMAIN}}\nDate: {{DATE}}\nSession: {{SESSION_ID}}",
+    "{{SESSION_ID}}"
+)
+```
+
+---
+
+## PHASE 1 — PORT SCANNING & SERVICE ENUMERATION
+
+**Step 4:**
+```bash
+nmap -sV -sC {{TARGET}}
+```
+
+**Step 5:**
+```bash
+nmap -sV -sC -p- {{TARGET}}
+```
+
+**Step 6:**
+```bash
+nmap --script=vuln -p [OPEN_PORTS_FOUND] {{TARGET}}
+```
+
+**Step 7:**
+```python
+write_session_file(
+    "01_ports_summary.md",
+    "# Port Scan Summary\nOpen Ports: [LIST]\nServices: [LIST]",
+    "{{SESSION_ID}}"
+)
+```
+
+---
+
+## PHASE 2 — TOOL SELECTION
+
+**Step 8:**
+```python
+select_tools(
+    "comprehensive penetration test",
+    "{{TARGET}}",
+    {
+        "open_ports": "[PORTS_FROM_NMAP]",
+        "services":   "[SERVICES_FOUND]"
+    }
+)
+```
+
+---
+
+## PHASE 3 — DNS RECONNAISSANCE
+*(only if `{{DOMAIN}}` != `"N/A"`)*
+
+**Step 9:**
+```bash
+whois {{DOMAIN}}
+```
+
+**Step 10:**
+```bash
+dig {{DOMAIN}} ANY
+```
+
+**Step 11:**
+```bash
+theharvester -d {{DOMAIN}} -b all -l 500
+```
+
+**Step 12:**
+```bash
+amass enum -active -d {{DOMAIN}}
+```
+
+**Step 13:**
+```bash
+subfinder -d {{DOMAIN}} -silent
+```
+
+---
+
+## PHASE 4 — WEB SCANNING
+*(only if port 80, 443, or 8080 is open)*
+
+**Step 14:**
+```bash
+nikto -h http://{{TARGET}} -Tuning 123456789
+```
+
+**Step 15:**
+```bash
+whatweb -a 3 -v http://{{TARGET}}
+```
+
+**Step 16:**
+```bash
+feroxbuster \
+  -u http://{{TARGET}} \
+  -w /usr/share/wordlists/dirb/common.txt \
+  -x php,html,txt,js,bak \
+  -d 3
+```
+
+**Step 17:**
+```bash
+feroxbuster \
+  -u http://{{TARGET}} \
+  -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt \
+  -x php,html,txt \
+  -d 4
+```
+
+---
+
+## PHASE 5 — VULNERABILITY ASSESSMENT
+
+**Step 18:**
+```bash
+nuclei \
+  -u http://{{TARGET}} \
+  -severity critical,high,medium \
+  -stats
+```
+
+---
+
+## PHASE 6 — SMB ENUMERATION
+*(only if port 139 or 445 is open)*
+
+**Step 19:**
+```bash
+smbclient -L //{{TARGET}} -N
+```
+
+**Step 20:**
+```bash
+enum4linux -a {{TARGET}}
+```
+
+---
+
+## PHASE 7 — WEB CRAWLING & PARAMETER DISCOVERY
+
+**Step 21:**
+```bash
+katana \
+  -u http://{{TARGET}} \
+  -d 5 \
+  -jc \
+  -jsl \
+  -kf
+```
+
+**Step 22:**
+```bash
+arjun -u http://{{TARGET}} --include-default
+```
+
+**Step 23** *(for each URL found in katana output)*:
+```bash
+arjun -u [URL] --include-default
+```
+
+---
+
+## PHASE 8 — XSS TESTING
+*(only if parameters were found)*
+
+**Step 24:**
+```bash
+dalfox url "http://{{TARGET}}/[PATH]?[PARAM]=test" -o xss_results.txt
+```
+
+---
+
+## EXECUTION COMPLETE
+
+All files saved in session: **{{SESSION_ID}}**
+
+> **IMPORTANT:** Do NOT specify `base_path` in `create_session`! The server uses the configured directory automatically.
+
+**BEGIN AUTONOMOUS EXECUTION NOW.**

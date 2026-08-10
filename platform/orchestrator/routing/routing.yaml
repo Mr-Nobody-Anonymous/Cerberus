@@ -1,0 +1,30 @@
+# Cyber AI Orchestrator — Model Routing Configuration
+# Maps task types to model aliases. Configurable at runtime.
+
+routes:
+  # Planning and reasoning tasks
+  planning: local-reasoner
+  reasoning: local-reasoner
+  verification: local-reasoner
+
+  # Code analysis and generation
+  code_analysis: local-coder
+  code_generation: local-coder
+  exploit_development: local-coder
+
+  # Fast/cheap tasks
+  classification: local-fast
+  summarization: local-fast
+  tool_selection: local-fast
+  report_generation: local-fast
+
+  # Research tasks
+  web_research: research-model
+  vulnerability_research: research-model
+  cve_analysis: research-model
+
+  # Sensitive data - always local
+  sensitive_source_code: local-coder
+
+  # Default fallback
+  default: local-fast
