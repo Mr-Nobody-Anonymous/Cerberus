@@ -80,7 +80,7 @@ def test_simulation():
         return result
 
     result = asyncio.run(_run())
-    assert "task_id" in result
+    assert "id" in result
     assert result.get("status") == "completed"
     findings = result.get("findings", [])
     assert isinstance(findings, list)

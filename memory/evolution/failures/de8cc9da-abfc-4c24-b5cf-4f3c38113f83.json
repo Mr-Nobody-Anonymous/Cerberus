@@ -1,0 +1,17 @@
+{
+  "strategy_id": "de8cc9da-abfc-4c24-b5cf-4f3c38113f83",
+  "description": "Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "generation": 4,
+  "reason": "Simulated result for strategy: Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "failure_category": "evaluation_failed",
+  "environment": "authorized_lab",
+  "tools": [
+    "pentagi",
+    "strix"
+  ],
+  "agent": "",
+  "model": "",
+  "observations": "Simulated result for strategy: Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "possible_improvement": "Adjust strategy actions or tools",
+  "timestamp": "2026-08-12T15:00:14.950675+00:00"
+}

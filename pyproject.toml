@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyberai"
+version = "2.0.0"
+description = "Self-evolving multi-agent cyber AI security research orchestrator"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Mr-Nobody-Anonymous" },
+]
+keywords = ["cybersecurity", "ai", "orchestrator", "security-research", "pentesting", "evolution"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "click>=8.1.0",
+    "PyYAML>=6.0",
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+]
+a-evolve = [
+    "a-evolve[all]",
+]
+cloud = [
+    "openai>=1.0.0",
+    "anthropic>=0.25.0",
+]
+all = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.scripts]
+cyber-ai = "cyberai.orchestrator.cli.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["cyberai*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.json", "*.md"]

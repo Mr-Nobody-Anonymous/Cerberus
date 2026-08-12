@@ -1,0 +1,24 @@
+# Cyber AI Orchestrator — Core Dependencies
+# Python 3.10+
+# Install: pip install -r requirements.txt
+
+# --- Core ---
+click>=8.1.0
+PyYAML>=6.0
+httpx>=0.24.0
+pydantic>=2.0.0
+
+# --- API Server ---
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# --- Development / Testing ---
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+
+# --- Optional: A-Evolve self-improvement framework ---
+# a-evolve[all]  # Uncomment to enable the A-Evolve integration
+
+# --- Optional: Cloud LLM providers (via LiteLLM) ---
+# openai>=1.0.0
+# anthropic>=0.25.0

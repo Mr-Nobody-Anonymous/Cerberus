@@ -520,13 +520,17 @@ CERBERUS/
 # 1. Set up Python environment
 python -m venv .venv
 .\.venv\Scripts\activate        # Windows
-pip install -e "cyberai[all]"   # or: pip install -r requirements.txt
 
-# 2. Configure environment
+# 2. Install core dependencies
+pip install -r requirements.txt
+# OR install as editable package with all extras:
+pip install -e ".[all]"
+
+# 3. Configure environment
 copy .env.example .env          # Windows
 # Edit .env with your API keys and preferences
 
-# 3. Install Ollama and pull models
+# 4. Install Ollama and pull models
 # Download from https://ollama.com
 ollama pull llama3.1:8b
 ollama pull codellama:7b
@@ -534,10 +538,10 @@ ollama pull llama3.2:3b
 ollama pull qwen2.5:7b
 ollama pull nomic-embed-text
 
-# 4. Start infrastructure services
+# 5. Start infrastructure services
 docker compose up -d
 
-# 5. Run health check
+# 6. Run health check
 python -m cyberai.orchestrator.cli doctor
 ```
 
