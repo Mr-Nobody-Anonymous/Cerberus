@@ -178,11 +178,21 @@ class CyberAIOrchestrator:
             self._session_logger_instance = SessionLogger()
         return self._session_logger_instance
 
+    @staticmethod
+    def _emit(event_callback, event_type: str, data: Dict[str, Any]) -> None:
+        """Forward an orchestrator event to an external callback (if any)."""
+        if event_callback is None:
+            return
+        try:
+            event_callback(event_type, data)
+        except Exception as e:
+            logger.debug(f"Event callback failed for {event_type}: {e}")
+
     # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
     async def run(self, objective: str, target_id: Optional[str] = None,
-                  **kwargs) -> Dict[str, Any]:
+                  event_callback=None, **kwargs) -> Dict[str, Any]:
         """
         Run the full autonomous pipeline for a given objective.
 
@@ -193,6 +203,13 @@ class CyberAIOrchestrator:
         Simulation: uses deterministic mock results.
         """
         task_id = str(uuid.uuid4())
+        self._emit(event_callback, "task_started", {
+            "task_id": task_id,
+            "objective": objective,
+            "target_id": target_id or "",
+            "simulate": self.simulate,
+            "dry_run": self.dry_run,
+        })
 
         # --- 1. Authorization check ---
         # In simulation mode we auto-authorize (target is virtual)
@@ -225,26 +242,65 @@ class CyberAIOrchestrator:
         plan_result = await self._generate_plan(task, memories)
         task.plan = plan_result["steps"]
         task.set_status(TaskStatus.PLAN_READY)
+        self._emit(event_callback, "plan_ready", {
+            "task_id": task_id,
+            "objective": objective,
+            "steps": [
+                {
+                    "step": s.get("step", i + 1),
+                    "action": s.get("action", ""),
+                    "capability": s.get("capability", ""),
+                    "tool": s.get("tool", ""),
+                    "model": s.get("model", ""),
+                    "description": s.get("description", ""),
+                }
+                for i, s in enumerate(plan_result["steps"])
+            ],
+            "strategy_count": len(plan_result.get("strategies", [])),
+        })
 
         if self.dry_run:
             return self._dry_run_report(task, plan_result)
 
         # --- 5. Execute plan ---
-        execution_result = await self._execute_pipeline(task, plan_result)
+        self._emit(event_callback, "phase", {
+            "task_id": task_id, "phase": "executing", "message": "Agents engaging"
+        })
+        execution_result = await self._execute_pipeline(task, plan_result, event_callback)
 
         # --- 6. Verification ---
         task.set_status(TaskStatus.WAITING_VERIFICATION)
+        self._emit(event_callback, "phase", {
+            "task_id": task_id, "phase": "verifying", "message": "Verifying findings"
+        })
         await self._verify_task(task)
         task.set_status(TaskStatus.VERIFIED)
 
         # --- 7. Evolution ---
         if plan_result.get("strategies"):
+            self._emit(event_callback, "phase", {
+                "task_id": task_id, "phase": "evolving", "message": "Evolving strategies"
+            })
             await self._evolve_strategies(plan_result["strategies"], task)
 
         # --- 8. Final report ---
         task.set_status(TaskStatus.COMPLETED)
+        self._emit(event_callback, "phase", {
+            "task_id": task_id, "phase": "reporting", "message": "Generating report"
+        })
         report = await self._generate_report(task)
         task.final_report = report
+
+        self._emit(event_callback, "task_completed", {
+            "task_id": task_id,
+            "objective": objective,
+            "status": "completed",
+            "findings_count": len(task.findings),
+            "evidence_count": len(task.evidence),
+            "agents_used": task.agents_used,
+            "tools_used": task.tools_used,
+            "models_used": task.models_used,
+        })
 
         return task.to_dict()
 
@@ -340,7 +396,8 @@ class CyberAIOrchestrator:
         }
         return mapping.get(action, "analysis")
 
-    async def _execute_pipeline(self, task: Task, plan_result: Dict) -> Dict[str, Any]:
+    async def _execute_pipeline(self, task: Task, plan_result: Dict,
+                                event_callback=None) -> Dict[str, Any]:
         """Execute the plan through the agent collaboration pipeline."""
 
         pipeline = AgentPipeline(task=task)
@@ -365,20 +422,38 @@ class CyberAIOrchestrator:
             }
             agent_task.update(context)
 
+            capability = context.get("capability", "unknown")
+            self._emit(event_callback, "agent_started", {
+                "task_id": task.id,
+                "agent": agent_name,
+                "capability": capability,
+                "objective": agent_task.get("objective", ""),
+            })
+
+            start = time.time()
             # Simulation mode: return deterministic mock
             if self.simulate:
-                return self._simulate_agent(agent_name, agent_task)
+                result = self._simulate_agent(agent_name, agent_task)
+            elif self.dry_run:
+                # Dry-run: don't execute
+                result = {"status": "dry_run", "agent": agent_name}
+            else:
+                # Real execution
+                try:
+                    result = await agent.run(agent_task)
+                except Exception as e:
+                    result = {"success": False, "error": str(e), "agent": agent_name}
 
-            # Dry-run: don't execute
-            if self.dry_run:
-                return {"status": "dry_run", "agent": agent_name}
-
-            # Real execution
-            start = time.time()
-            try:
-                result = await agent.run(agent_task)
-            except Exception as e:
-                result = {"success": False, "error": str(e), "agent": agent_name}
+            self._emit(event_callback, "agent_completed", {
+                "task_id": task.id,
+                "agent": agent_name,
+                "capability": capability,
+                "success": result.get("success", True),
+                "latency_ms": round((time.time() - start) * 1000, 1),
+                "summary": str(result.get("analysis") or result.get("research")
+                               or result.get("content") or result.get("status")
+                               or result.get("output") or "")[:300],
+            })
             latency = time.time() - start
 
             # Record performance

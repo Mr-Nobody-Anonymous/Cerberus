@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.ico">
+<title>CERBERUS — Command Deck</title>
+<style>
+  /* ============ CARTOON BRUTALIST DESIGN SYSTEM ============ */
+  :root {
+    --bg: #f2e8cf;
+    --ink: #1a1a1a;
+    --paper: #fffdf5;
+    --red: #e63946;
+    --red-dark: #b02a35;
+    --yellow: #f4a261;
+    --green: #2a9d8f;
+    --blue: #386fa4;
+    --panel-border: 3px solid var(--ink);
+    --shadow: 6px 6px 0 rgba(0,0,0,1);
+    --shadow-sm: 4px 4px 0 rgba(0,0,0,1);
+    --radius: 10px;
+    --mono: "Courier New", Courier, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg);
+    background-image: repeating-linear-gradient(
+      45deg, rgba(26,26,26,0.03) 0 8px, transparent 8px 16px);
+    color: var(--ink);
+    font-family: var(--mono);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  /* ============ TOP BAR ============ */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    background: var(--ink); color: var(--paper);
+    border: var(--panel-border); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px 20px; margin-bottom: 20px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 22px; font-weight: 900; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .logo .dog-head { font-size: 34px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 999px;
+    padding: 6px 14px; font-weight: 900; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .status-light {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 2px solid var(--ink);
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:.35;} }
+  .stat-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat {
+    background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 8px;
+    padding: 6px 12px; font-weight: 700; font-size: 13px;
+  }
+  /* ============ LAYOUT ============ */
+  .grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
+  }
+  .panel {
+    background: var(--paper);
+    border: var(--panel-border); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--yellow);
+    border-bottom: 3px solid var(--ink);
+    padding: 10px 16px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 1px; font-size: 14px;
+  }
+  .panel-body { padding: 16px; }
+  /* ============ LAUNCHER ============ */
+  .launcher-box { display: flex; flex-direction: column; gap: 12px; }
+  .label { font-weight: 900; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+  textarea.objective {
+    width: 100%; min-height: 84px; resize: vertical;
+    background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 8px;
+    font-family: var(--mono); font-size: 15px; padding: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  textarea.objective:focus { outline: 3px solid var(--yellow); }
+  .mode-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .target-select {
+    flex: 1; min-width: 160px;
+    background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 8px;
+    font-family: var(--mono); font-weight: 700; padding: 10px 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 900; font-size: 13px; cursor: pointer; user-select: none;
+  }
+  .toggle input { width: 20px; height: 20px; accent-color: var(--green); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 3px solid var(--ink); border-radius: 8px;
+    font-family: var(--mono); font-weight: 900; font-size: 15px;
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 12px 18px; cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform .06s, box-shadow .06s;
+  }
+  .btn:active { transform: translate(3px,3px); box-shadow: none; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-launch { background: var(--green); color: var(--ink); width: 100%; }
+  .btn-launch:hover:not(:disabled) { background: #35b3a6; }
+  .btn-cmd { background: var(--paper); color: var(--ink); }
+  .btn-cmd:hover { background: var(--yellow); }
+  .btn-stop { background: var(--red); color: var(--paper); }
+  .btn-stop:hover:not(:disabled) { background: var(--red-dark); }
+  /* ============ COMMAND BOX ============ */
+  .cmd-form { display: flex; gap: 10px; }
+  .cmd-input {
+    flex: 1;
+    background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 8px;
+    font-family: var(--mono); font-size: 14px; padding: 10px 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cmd-input:focus { outline: 3px solid var(--blue); }
+  .cmd-reply {
+    margin-top: 10px; white-space: pre-wrap;
+    background: var(--ink); color: #7ef9a0;
+    border-radius: 8px; padding: 12px;
+    font-size: 13px; line-height: 1.5;
+    display: none;
+  }
+  .cmd-reply.show { display: block; }
+  /* ============ AGENT FEED ============ */
+  .feed {
+    display: flex; flex-direction: column; gap: 8px;
+    max-height: 420px; overflow-y: auto;
+    padding: 4px 2px;
+  }
+  .feed-msg {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--paper);
+    border: 3px solid var(--ink); border-radius: 8px;
+    padding: 10px 12px; font-size: 13px;
+    animation: slidein .18s ease;
+  }
+  @keyframes slidein { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .feed-msg .icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+  .feed-msg .txt { flex: 1; }
+  .feed-msg .lbl { font-weight: 900; text-transform: uppercase; }
+  .feed-msg .ts { color: #666; font-size: 11px; flex-shrink: 0; }
+  .feed-msg.agent_started { border-left: 8px solid var(--blue); }
+  .feed-msg.agent_completed { border-left: 8px solid var(--green); }
+  .feed-msg.task_started { border-left: 8px solid var(--yellow); }
+  .feed-msg.plan_ready { border-left: 8px solid var(--yellow); }
+  .feed-msg.phase { border-left: 8px solid var(--red); }
+  .feed-msg.task_completed { border-left: 8px solid var(--green); background: #eaffef; }
+  .feed-msg.task_result { border-left: 8px solid var(--green); }
+  .feed-msg.task_error { border-left: 8px solid var(--red); background: #ffe9e9; }
+  .feed-msg.ready { border-left: 8px solid #999; color: #555; }
+  .feed-summary {
+    white-space: pre-wrap; font-size: 12px; line-height: 1.5;
+    background: var(--ink); color: #7ef9a0;
+    border-radius: 8px; padding: 12px; margin-top: 8px;
+  }
+  /* ============ AGENT ROSTER ============ */
+  .roster { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .agent-card {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--paper);
+    border: 3px solid var(--ink); border-radius: 8px;
+    padding: 10px; font-size: 13px;
+  }
+  .agent-card .icon { font-size: 26px; }
+  .agent-card .name { font-weight: 900; text-transform: uppercase; }
+  .agent-card .role { font-size: 11px; color: #444; }
+  .agent-card.active { background: #cfe8ff; box-shadow: var(--shadow-sm); }
+  .agent-card.done { background: #d9f7e9; }
+  /* ============ TARGETS / TOOLS / MODELS LISTS ============ */
+  .chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: var(--paper); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 999px;
+    padding: 5px 12px; font-size: 12px; font-weight: 700;
+  }
+  .chip.allow { background: #d9f7e9; }
+  .chip.deny { background: #ffe9e9; }
+  .model-chip { background: var(--ink); color: #7ef9a0; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .detail-item {
+    background: var(--paper); border: 3px solid var(--ink);
+    border-radius: 8px; padding: 10px;
+  }
+  .detail-item .k { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+  .detail-item .v { font-weight: 900; font-size: 18px; }
+  .section-title {
+    font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+    font-size: 13px; margin: 4px 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before { content: "▸ "; color: var(--red); }
+  .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+  .hist-item {
+    background: var(--paper); border: 2px solid var(--ink);
+    border-radius: 8px; padding: 10px; font-size: 12px;
+  }
+  .hist-item .hdr { font-weight: 900; text-transform: uppercase; display: flex; justify-content: space-between; }
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .roster { grid-template-columns: 1fr; }
+    .detail-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    body { padding: 10px; }
+    .stat-row { display: none; }
+  }
+</style>
+</head>
+<body>
+<!-- ======== TOP BAR ======== -->
+<header class="topbar">
+  <div class="logo">
+    <span class="dog-head">🐕</span>
+    <span>CERBERUS</span>
+  </div>
+  <div class="stat-row">
+    <span class="stat" id="stat-agents">AGENTS 7</span>
+    <span class="stat" id="stat-tools">TOOLS 0</span>
+    <span class="stat" id="stat-targets">TARGETS 0</span>
+    <span class="stat" id="stat-memory">MEM 0</span>
+  </div>
+  <span class="status-pill"><span class="status-light"></span><span id="status-text">ONLINE</span></span>
+</header>
+
+<main class="grid">
+  <!-- ======== LEFT COLUMN ======== -->
+  <section>
+    <!-- TASK LAUNCHER -->
+    <div class="panel">
+      <div class="panel-header"><span>⚡ TASK LAUNCHER</span><span>UNIFIED AI</span></div>
+      <div class="panel-body">
+        <div class="launcher-box">
+          <label class="label" for="objective">Objective — what should CERBERUS do?</label>
+          <textarea id="objective" class="objective" placeholder="e.g. Analyze the lab-web-01 target for SQL injection vulnerabilities"></textarea>
+          <div class="mode-row">
+            <select id="target-select" class="target-select">
+              <option value="">Auto target (simulation)</option>
+            </select>
+            <label class="toggle"><input type="checkbox" id="simulate" checked><span>SIMULATE</span></label>
+          </div>
+          <button id="btn-launch" class="btn btn-launch">🚀 LAUNCH TASK</button>
+          <button id="btn-stop" class="btn btn-stop" disabled>■ STOP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMAND BOX -->
+    <div class="panel">
+      <div class="panel-header"><span>⌨️ OPERATOR COMMAND BOX</span><span>CERBERUS</span></div>
+      <div class="panel-body">
+        <form id="cmd-form" class="cmd-form" autocomplete="off">
+          <input id="cmd-input" class="cmd-input" type="text"
+                 placeholder="help · status · targets · tools · simulate <objective>">
+          <button class="btn btn-cmd" type="submit">SEND</button>
+        </form>
+        <div id="cmd-reply" class="cmd-reply"></div>
+      </div>
+    </div>
+
+    <!-- AGENT ROSTER -->
+    <div class="panel">
+      <div class="panel-header"><span>🤖 AGENT SWARM</span><span id="active-count">0 ACTIVE</span></div>
+      <div class="panel-body">
+        <div id="roster" class="roster"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======== RIGHT COLUMN ======== -->
+  <section>
+    <!-- LIVE FEED -->
+    <div class="panel">
+      <div class="panel-header"><span>📡 LIVE AGENT FEED</span><span>SSE</span></div>
+      <div class="panel-body">
+        <div id="feed" class="feed"></div>
+        <div id="feed-summary" class="feed-summary" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- TARGETS -->
+    <div class="panel">
+      <div class="panel-header"><span>🎯 AUTHORIZED TARGETS</span></div>
+      <div class="panel-body">
+        <div id="targets" class="chip-list"></div>
+      </div>
+    </div>
+
+    <!-- TOOL REGISTRY -->
+    <div class="panel">
+      <div class="panel-header"><span>🧰 TOOL REGISTRY</span></div>
+      <div class="panel-body">
+        <div id="tools" class="chip-list"></div>
+      </div>
+    </div>
+
+    <!-- MODELS -->
+    <div class="panel">
+      <div class="panel-header"><span>🧬 MODEL REGISTRY</span></div>
+      <div class="panel-body">
+        <div id="models" class="chip-list"></div>
+      </div>
+    </div>
+
+    <!-- FINDINGS -->
+    <div class="panel">
+      <div class="panel-header"><span>📋 FINDINGS</span></div>
+      <div class="panel-body">
+        <div id="findings" class="history-list"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+/* =========================================================
+   CERBERUS Command Deck — front-end controller
+   All user-generated strings are written with textContent
+   so no HTML escaping layer is required.
+   ========================================================= */
+
+const $ = (id) => document.getElementById(id);
+
+const AGENT_ICONS = {
+  planner: "🧠", researcher: "🔍", recon: "🛰️", analyst: "📊",
+  coder: "💻", verifier: "✅", reporter: "📋"
+};
+const AGENT_ROLES = {
+  planner: "Mission planning", researcher: "Threat intelligence", recon: "Network discovery",
+  analyst: "Pattern analysis", coder: "Exploit / PoC", verifier: "Evidence validation",
+  reporter: "Report generation"
+};
+
+let agents = [];
+let running = false;
+
+/* ---------- Feed ---------- */
+function addFeed(kind, label, text, icon) {
+  const feed = $("feed");
+  const el = document.createElement("div");
+  el.className = "feed-msg " + kind;
+
+  const iconSpan = document.createElement("span");
+  iconSpan.className = "icon";
+  iconSpan.textContent = icon || "▸";
+
+  const txtSpan = document.createElement("span");
+  txtSpan.className = "txt";
+  const lbl = document.createElement("span");
+  lbl.className = "lbl";
+  lbl.textContent = label;
+  txtSpan.appendChild(lbl);
+  txtSpan.appendChild(document.createTextNode(" " + String(text == null ? "" : text)));
+
+  const ts = document.createElement("span");
+  ts.className = "ts";
+  ts.textContent = new Date().toLocaleTimeString();
+
+  el.appendChild(iconSpan);
+  el.appendChild(txtSpan);
+  el.appendChild(ts);
+  feed.appendChild(el);
+  feed.scrollTop = feed.scrollHeight;
+  while (feed.children.length > 60) feed.removeChild(feed.firstChild);
+}
+
+function addSummary(text) {
+  const box = $("feed-summary");
+  box.style.display = "block";
+  box.textContent = text;
+}
+
+/* ---------- Roster ---------- */
+function renderRoster() {
+  const box = $("roster");
+  box.textContent = "";
+  agents.forEach((a) => {
+    const card = document.createElement("div");
+    card.className = "agent-card";
+    card.id = "agent-" + a.name;
+
+    const icon = document.createElement("span");
+    icon.className = "icon";
+    icon.textContent = AGENT_ICONS[a.name] || a.icon || "🤖";
+
+    const info = document.createElement("span");
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = a.name;
+    const role = document.createElement("span");
+    role.className = "role";
+    role.textContent = AGENT_ROLES[a.name] || a.role || "";
+    info.appendChild(name);
+    info.appendChild(document.createElement("br"));
+    info.appendChild(role);
+
+    card.appendChild(icon);
+    card.appendChild(info);
+    box.appendChild(card);
+  });
+}
+
+function setAgentActive(name, active) {
+  const card = $("agent-" + name);
+  if (!card) return;
+  card.classList.toggle("active", active);
+  if (active) card.classList.remove("done");
+}
+function setAgentDone(name) {
+  const card = $("agent-" + name);
+  if (!card) return;
+  card.classList.remove("active");
+  card.classList.add("done");
+}
+function countActive() {
+  let n = 0;
+  agents.forEach((a) => {
+    const c = $("agent-" + a.name);
+    if (c && c.classList.contains("active")) n += 1;
+  });
+  $("active-count").textContent = n + " ACTIVE";
+}
+
+/* ---------- SSE ---------- */
+function connectEvents() {
+  const es = new EventSource("/api/realtime");
+  es.addEventListener("ready", () => {
+    addFeed("ready", "LINK", "Live telemetry connected.", "🔗");
+  });
+  es.addEventListener("task_started", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    running = true;
+    $("btn-launch").disabled = true;
+    $("btn-stop").disabled = false;
+    addFeed("task_started", "TASK", d.objective || "", "🚀");
+  });
+  es.addEventListener("plan_ready", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    const steps = (d.steps || []).map((s) => s.step + "." + (s.action || "?")).join("  ");
+    addFeed("plan_ready", "PLAN", steps, "🗺️");
+  });
+  es.addEventListener("phase", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    addFeed("phase", (d.phase || "PHASE").toUpperCase(), d.message || "", "⚙️");
+  });
+  es.addEventListener("agent_started", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    setAgentActive(d.agent, true);
+    countActive();
+    addFeed("agent_started", "AGENT " + String(d.agent || "").toUpperCase(),
+      "engaging capability " + (d.capability || "unknown"), AGENT_ICONS[d.agent] || "🤖");
+  });
+  es.addEventListener("agent_completed", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    setAgentDone(d.agent);
+    countActive();
+    const ok = d.success ? "OK" : "FAIL";
+    let text = String(d.summary || "");
+    if (d.latency_ms) text += " (" + d.latency_ms + "ms)";
+    addFeed("agent_completed", "AGENT " + String(d.agent || "").toUpperCase() + " " + ok,
+      text, AGENT_ICONS[d.agent] || "🤖");
+  });
+  es.addEventListener("task_completed", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    setFinished();
+    addFeed("task_completed", "COMPLETE",
+      d.findings_count + " findings · " + (d.agents_used || []).join(", "), "🏁");
+  });
+  es.addEventListener("task_result", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    addSummary(d.summary || "");
+  });
+  es.addEventListener("task_error", (ev) => {
+    const d = JSON.parse(ev.data).data;
+    setFinished();
+    addFeed("task_error", "ERROR", d.error || "", "⛔");
+  });
+}
+
+function setFinished() {
+  running = false;
+  $("btn-launch").disabled = false;
+  $("btn-stop").disabled = true;
+}
+
+/* ---------- Launch ---------- */
+async function launchTask() {
+  const objective = $("objective").value.trim();
+  if (!objective) {
+    addFeed("task_error", "INPUT", "Enter an objective first.", "⚠️");
+    $("objective").focus();
+    return;
+  }
+  if (running) return;
+  const body = {
+    objective: objective,
+    simulate: $("simulate").checked,
+    target_id: $("target-select").value || null
+  };
+  try {
+    const resp = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    await resp.json();
+  } catch (e) {
+    addFeed("task_error", "LAUNCH", e.message, "⛔");
+  }
+}
+
+/* ---------- Command box ---------- */
+$("cmd-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = $("cmd-input").value.trim();
+  if (!msg) return;
+  try {
+    const resp = await fetch("/api/command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+    const data = await resp.json();
+    const reply = $("cmd-reply");
+    reply.textContent = "> " + msg + "\n\n" + (data.reply || "");
+    reply.classList.add("show");
+    $("cmd-input").value = "";
+  } catch (err) {
+    addFeed("task_error", "CMD", err.message, "⛔");
+  }
+});
+
+/* ---------- Stop ---------- */
+$("btn-stop").addEventListener("click", () => {
+  addFeed("ready", "STOP", "Manual stop requested (server task continues in background).", "🛑");
+  setFinished();
+});
+
+/* ---------- Bootstrap ---------- */
+async function bootstrap() {
+  try {
+    const resp = await fetch("/api/bootstrap");
+    const data = await resp.json();
+    agents = data.agents || [];
+    renderRoster();
+    $("stat-agents").textContent = "AGENTS " + agents.length;
+    const targets = data.targets || [];
+    $("stat-targets").textContent = "TARGETS " + targets.length;
+    const tools = data.tools || [];
+    $("stat-tools").textContent = "TOOLS " + tools.length;
+    const mem = (data.memory || {}).total || 0;
+    $("stat-memory").textContent = "MEM " + mem;
+
+    // Targets select + chips
+    const sel = $("target-select");
+    const chips = $("targets");
+    targets.forEach((t) => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.id + " — " + (t.description || "");
+      sel.appendChild(opt);
+      const chip = document.createElement("span");
+      chip.className = "chip allow";
+      chip.textContent = t.id;
+      chip.title = t.description || "";
+      chips.appendChild(chip);
+    });
+    if (!targets.length) {
+      const none = document.createElement("span");
+      none.className = "chip deny";
+      none.textContent = "none registered";
+      chips.appendChild(none);
+    }
+
+    // Tools chips
+    const toolsBox = $("tools");
+    tools.forEach((t) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = t;
+      toolsBox.appendChild(chip);
+    });
+
+    // Models chips
+    const modelsBox = $("models");
+    (data.models || []).forEach((m) => {
+      const chip = document.createElement("span");
+      chip.className = "chip model-chip";
+      chip.textContent = (m.alias || m.model || "?") + " · " + String(m.status || "").split("_").join(" ");
+      chip.title = "provider: " + (m.provider || "?") + " — model: " + (m.model || "?");
+      modelsBox.appendChild(chip);
+    });
+
+    // Findings
+    const findingsBox = $("findings");
+    (data.findings || []).forEach((f) => {
+      const el = document.createElement("div");
+      el.className = "hist-item";
+      const hdr = document.createElement("div");
+      hdr.className = "hdr";
+      const statusSpan = document.createElement("span");
+      statusSpan.textContent = String(f.status || "").toUpperCase();
+      const timeSpan = document.createElement("span");
+      timeSpan.textContent = new Date(f.timestamp || Date.now()).toLocaleString();
+      hdr.appendChild(statusSpan);
+      hdr.appendChild(timeSpan);
+      const body = document.createElement("div");
+      body.textContent = String(f.observation || "").slice(0, 180);
+      el.appendChild(hdr);
+      el.appendChild(body);
+      findingsBox.appendChild(el);
+    });
+    if (!(data.findings || []).length) {
+      const none = document.createElement("span");
+      none.className = "chip deny";
+      none.textContent = "no findings yet";
+      findingsBox.appendChild(none);
+    }
+    $("status-text").textContent = "ONLINE";
+  } catch (e) {
+    addFeed("task_error", "BOOT", e.message, "⛔");
+  }
+}
+
+/* ---------- Init ---------- */
+$("btn-launch").addEventListener("click", launchTask);
+connectEvents();
+bootstrap();
+</script>
+</body>
+</html>

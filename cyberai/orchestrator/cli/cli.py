@@ -16,6 +16,7 @@ Provides a single `cyber-ai` (or `cyberai`) command group with subcommands:
   - session    Session management
   - doctor     Health check
   - evolve     Run one generation of strategy evolution
+  - ui         Launch the unified Command Deck web UI
 
 No sys.path hacks — the package is importable because the workspace root
 is on PYTHONPATH (or the package is installed).
@@ -355,6 +356,31 @@ def session_show(session_id):
     else:
         click.echo(f"Session not found: {session_id}")
     mm.close()
+
+
+# ---------------------------------------------------------------------------
+# ui — one-command launch of the unified command deck
+# ---------------------------------------------------------------------------
+@cli.command()
+@click.option("--port", default=8710, help="UI port (default 8710)")
+@click.option("--no-browser", is_flag=True, default=False, help="Do not auto-open the browser")
+def ui(port, no_browser):
+    """Launch the unified CERBERUS Command Deck web UI (one AI cockpit)."""
+    try:
+        import uvicorn
+        from cyberai.ui.server import app
+    except ImportError as e:
+        click.echo(f"[ERROR] UI dependencies missing: {e}")
+        click.echo("Install with: pip install fastapi uvicorn")
+        return
+
+    url = f"http://127.0.0.1:{port}"
+    click.echo(f"[CERBERUS] Command Deck listening on {url}")
+    if not no_browser:
+        import threading
+        import webbrowser
+        threading.Timer(1.2, lambda: webbrowser.open(url)).start()
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
 # ---------------------------------------------------------------------------
