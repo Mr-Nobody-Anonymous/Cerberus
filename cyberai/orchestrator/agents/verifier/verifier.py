@@ -29,9 +29,12 @@ class VerifierAgent:
     - Was the test performed correctly?
     """
 
-    def __init__(self, memory_manager=None, model_router=None):
-        self.memory = memory_manager
-        self.model_router = model_router
+    def __init__(self, **kwargs):
+        self.memory = kwargs.get("memory_manager")
+        self.model_router = kwargs.get("model_router")
+        self.tool_registry = kwargs.get("tool_registry")
+        self.policy = kwargs.get("policy_engine")
+        self.logger = kwargs.get("session_logger")
 
     async def verify_finding(self, finding: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -171,3 +174,20 @@ class VerifierAgent:
             "verified": verified,
             "status": VERIFIED if verified else UNVERIFIED,
         }
+</content>
+<task_progress>
+- [x] Audit current implementation (PHASE2_AUDIT.md update needed)
+- [x] Create CyberAIOrchestrator facade class (ONE AI entry point)
+- [x] Wire up orchestrator: Task object, MemoryStore, LLMGateway, capabilities, agents, evolution
+- [x] Add dry-run mode and simulation mode
+- [x] Fix CLI: remove sys.path hacks, add task command with dry-run/simulate flags
+- [x] Fix config references: docker-compose.yml, .env.example, .gitignore, .vscode/settings.json
+- [x] Make adapters real: proper health checks + simulated execution fallback
+- [x] Create adapter registry for dynamic loading
+- [ ] Create end-to-end simulated test (cyber-ai simulate)
+- [ ] Create regression/benchmark test suite
+- [ ] Update PHASE2_AUDIT.md to reflect actual current state
+- [ ] Create PHASE2_FINAL_STATUS.md with objective status
+</task_progress>
+</write_to_file>
+</｜DSML｜tool_calls
