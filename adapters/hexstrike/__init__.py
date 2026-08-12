@@ -43,8 +43,8 @@ class Adapter(SecurityToolAdapter):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self._api_url = os.environ.get("HEXSTRIKE_API_URL", "http://localhost:8000") if HEXSTRIKE_API_URL else None
-        self._api_token = os.environ.get("HEXSTRIKE_API_TOKEN", "") if HEXSTRIKE_API_TOKEN else None
+        self._api_url = os.environ.get("HEXSTRIKE_API_URL", "http://localhost:8000")
+        self._api_token = os.environ.get("HEXSTRIKE_API_TOKEN", "")
 
     async def health_check(self) -> Dict[str, Any]:
         """Check if the HexStrike AI MCP Agents service or CLI is available."""

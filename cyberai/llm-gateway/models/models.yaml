@@ -1,66 +1,45 @@
-# Cyber AI Orchestrator — Model Registry
-# Document actual installed Ollama models and their platform roles.
-# NOTE: No Ollama models detected on this machine (Ollama not running).
-# These are the DEFAULT aliases the orchestrator will use once models are installed.
+# CERBERUS — Model Registry
+# Maps abstract model aliases to concrete provider/model pairs.
 
 models:
   local_reasoner:
     provider: ollama
-    purpose:
-      - reasoning
-      - planning
-      - verification
     default_model: llama3.1:8b
+    purpose: [reasoning, planning, verification]
     status: REQUIRES_MODEL_DOWNLOAD
 
   local_coder:
     provider: ollama
-    purpose:
-      - code_analysis
-      - code_generation
-      - exploit_development
     default_model: codellama:7b
+    purpose: [code_analysis, code_generation, exploit_development]
     status: REQUIRES_MODEL_DOWNLOAD
 
   local_fast:
     provider: ollama
-    purpose:
-      - classification
-      - summarization
-      - tool_selection
     default_model: llama3.2:3b
+    purpose: [classification, summarization, tool_selection]
     status: REQUIRES_MODEL_DOWNLOAD
 
   research_model:
     provider: ollama
-    purpose:
-      - web_research
-      - vulnerability_research
-      - cve_analysis
     default_model: qwen2.5:7b
+    purpose: [web_research, vulnerability_research, cve_analysis]
     status: REQUIRES_MODEL_DOWNLOAD
 
   embeddings:
     provider: ollama
-    purpose:
-      - semantic_memory_retrieval
-      - knowledge_embedding
     default_model: nomic-embed-text
+    purpose: [semantic_memory_retrieval, knowledge_embedding]
     status: REQUIRES_MODEL_DOWNLOAD
 
-  # Cloud models (disabled until API keys configured)
   cloud_reasoner:
     provider: openai
-    purpose:
-      - complex_reasoning
-      - advanced_planning
     default_model: gpt-4o
+    purpose: [complex_reasoning, advanced_planning]
     status: DISABLED_NO_API_KEY
 
   cloud_fast:
     provider: anthropic
-    purpose:
-      - fast_analysis
-      - classification
     default_model: claude-3-5-haiku-latest
+    purpose: [fast_analysis, classification]
     status: DISABLED_NO_API_KEY

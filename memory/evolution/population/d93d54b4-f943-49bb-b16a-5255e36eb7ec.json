@@ -1,8 +1,8 @@
 {
-  "strategy_id": "2e5cedc3-37a2-42ec-9a69-4c98c4868fca",
-  "parent_id": "14ce9e30-8837-4db0-966c-d7f1a111dd1e",
-  "generation": 3,
-  "description": "Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "strategy_id": "d93d54b4-f943-49bb-b16a-5255e36eb7ec",
+  "parent_id": "2e5cedc3-37a2-42ec-9a69-4c98c4868fca",
+  "generation": 4,
+  "description": "Mutation 3 of: Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
   "preconditions": [],
   "actions": [
     {
@@ -25,8 +25,8 @@
   "agent": "",
   "model": "",
   "expected_result": "",
-  "actual_result": "Simulated result for strategy: Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
-  "fitness": 2.6,
+  "actual_result": "Simulated result for strategy: Mutation 3 of: Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "fitness": 2.7800000000000002,
   "confidence": 0.0,
   "verification": "VERIFIED",
   "status": "successful",
@@ -37,6 +37,6 @@
     "mutation_type": "agent",
     "mutation_index": 2
   },
-  "created_at": "2026-08-12T09:57:50.859057+00:00",
-  "evaluated_at": "2026-08-12T09:57:50.869704+00:00"
+  "created_at": "2026-08-12T17:15:02.750056+00:00",
+  "evaluated_at": "2026-08-12T17:15:02.764610+00:00"
 }

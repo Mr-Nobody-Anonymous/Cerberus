@@ -1,30 +1,63 @@
-# Cyber AI Orchestrator — Model Routing Configuration
-# Maps task types to model aliases. Configurable at runtime.
+# CERBERUS — Model Routing Configuration
+# Maps task types to model aliases with fallback chains.
 
 routes:
-  # Planning and reasoning tasks
-  planning: local-reasoner
-  reasoning: local-reasoner
-  verification: local-reasoner
+  planning:
+    preferred: local_reasoner
+    fallback: local_fast
+    local_fallback: local_fast
 
-  # Code analysis and generation
-  code_analysis: local-coder
-  code_generation: local-coder
-  exploit_development: local-coder
+  reasoning:
+    preferred: local_reasoner
+    fallback: local_fast
+    local_fallback: local_fast
 
-  # Fast/cheap tasks
-  classification: local-fast
-  summarization: local-fast
-  tool_selection: local-fast
-  report_generation: local-fast
+  vulnerability_research:
+    preferred: research_model
+    fallback: local_reasoner
+    local_fallback: local_fast
 
-  # Research tasks
-  web_research: research-model
-  vulnerability_research: research-model
-  cve_analysis: research-model
+  web_research:
+    preferred: research_model
+    fallback: local_reasoner
+    local_fallback: local_fast
 
-  # Sensitive data - always local
-  sensitive_source_code: local-coder
+  code_analysis:
+    preferred: local_coder
+    fallback: local_reasoner
+    local_fallback: local_fast
 
-  # Default fallback
-  default: local-fast
+  code_generation:
+    preferred: local_coder
+    fallback: local_reasoner
+    local_fallback: local_fast
+
+  classification:
+    preferred: local_fast
+    fallback: local_reasoner
+    local_fallback: local_fast
+
+  summarization:
+    preferred: local_fast
+    fallback: local_reasoner
+    local_fallback: local_fast
+
+  verification:
+    preferred: local_reasoner
+    fallback: local_fast
+    local_fallback: local_fast
+
+  report_generation:
+    preferred: local_fast
+    fallback: local_reasoner
+    local_fallback: local_fast
+
+  tool_selection:
+    preferred: local_fast
+    fallback: local_reasoner
+    local_fallback: local_fast
+
+  default:
+    preferred: local_reasoner
+    fallback: local_fast
+    local_fallback: local_fast

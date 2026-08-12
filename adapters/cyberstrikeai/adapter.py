@@ -43,8 +43,8 @@ class Adapter(SecurityToolAdapter):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self._api_url = os.environ.get("CYBERSTRIKEAI_API_URL", "http://localhost:8080") if CYBERSTRIKEAI_API_URL else None
-        self._api_token = os.environ.get("CYBERSTRIKEAI_API_TOKEN", "") if CYBERSTRIKEAI_API_TOKEN else None
+        self._api_url = os.environ.get("CYBERSTRIKEAI_API_URL", "http://localhost:8080")
+        self._api_token = os.environ.get("CYBERSTRIKEAI_API_TOKEN", "")
 
     async def health_check(self) -> Dict[str, Any]:
         """Check if the CyberStrikeAI service or CLI is available."""

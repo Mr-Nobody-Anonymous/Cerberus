@@ -43,8 +43,8 @@ class Adapter(SecurityToolAdapter):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self._api_url = os.environ.get("CAI_API_URL", "http://localhost:0") if CAI_API_URL else None
-        self._api_token = os.environ.get("CAI_API_TOKEN", "") if CAI_API_TOKEN else None
+        self._api_url = os.environ.get("CAI_API_URL", "http://localhost:0")
+        self._api_token = os.environ.get("CAI_API_TOKEN", "")
 
     async def health_check(self) -> Dict[str, Any]:
         """Check if the Cybersecurity AI (CAI) service or CLI is available."""
