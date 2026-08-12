@@ -1,23 +1,142 @@
-# Local Autonomous Multi-Agent Security Research Platform
+<div align="center">
+  <img src="images.jfif" alt="ULTRONE Battlefield AI" width="600"/>
+</div>
 
-**Cyber AI Orchestrator** — A local, orchestrator-centric offensive security research and vulnerability testing platform that leverages AI agents, local models (Ollama), and cloud model routing (LiteLLM Gateway) to conduct authorized security assessments in isolated lab environments.
+# ⚡ CERBERUS - Self-Evolving Multi-Agent Cyber AI Orchestrator
+
+> **An autonomous, self-improving security research platform coordinating specialized AI agents across local labs**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
+[![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
+[![Evolution](https://img.shields.io/badge/Self--Evolution-Genetic%20Algorithms-orange.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-red.svg)](https://modelcontextprotocol.io/)
+[![Ollama](https://img.shields.io/badge/LLM-Ollama%20%7C%20LiteLLM-8A2BE2.svg)](https://ollama.com/)
 
 ---
 
-## System Overview
+## 🌟 What Makes CERBERUS Different?
 
-The Cyber AI Orchestrator is a production-grade security research platform designed for authorized penetration testing, vulnerability assessment, and security research. It coordinates multiple specialized AI agents through a central orchestrator, routing tasks to appropriate tools and models while maintaining strict lab isolation and comprehensive audit logging.
+Unlike traditional security platforms, **CERBERUS thinks and evolves**. Every engagement feeds back into a collective intelligence mesh—strategies mutate, fitness scores update, elite tactics are archived, and failures teach the system what to avoid. The platform coordinates specialized AI agents through a master orchestrator, routing tasks to appropriate tools and models while maintaining strict lab isolation.
 
-### Core Design Philosophy
-
-1. **Non-Destructive Modular Integration**: Original repositories are preserved intact; integration occurs through adapters and the Model Context Protocol (MCP), never through merged source code.
-2. **Experience-Based Learning**: The platform records tactics, techniques, and results to persistent memory without corrupting model weights. Success and failure patterns inform future planning.
-3. **Strict Lab Isolation**: All active execution is confined to explicitly authorized lab targets (Docker containers, VMs, CTF environments). The host system is never directly targeted.
-4. **Verification Over Trust**: Every finding requires evidence and passes through a verifier agent before acceptance. Finding states: UNVERIFIED, LIKELY, VERIFIED, REJECTED.
+```
+🧬 INTELLIGENCE BECOMES STRENGTH 🧬
+```
 
 ---
 
-## Master Architecture
+## 🚀 Core Capabilities
+
+### 🧬 **Evolutionary Combat Engine**
+- Tactical strategies mutate in real-time based on assessment performance
+- Combinatorial strategy generation: `RECON + ANALYSIS → VERIFIED FINDING`
+- Automatic adaptation when threat patterns change
+- **Population Management**: Successful strategies breed; failures are recorded and avoided
+- **Elite Archive**: Best-of-generation strategies persist across sessions
+- **Coevolution**: Red Force counter-evolves alongside Blue, creating an adversarial arms race
+- **A-Evolve Integration**: Universal infrastructure for self-improving agents (`cyberai/evolution/a-evolve/`)
+
+### 🤖 **Specialized AI Agents**
+Each capability has its own AI specialist coordinated by the Master Orchestrator:
+
+| Agent | Role | Capability | Specialty |
+|-------|------|-----------|-----------|
+| 🧠 **Planner** | Decomposes objectives into actionable steps | `planning` | Mission planning, strategy selection |
+| 🔍 **Researcher** | Gathers intelligence on targets | `research` | Threat intelligence, CVE analysis |
+| 🛰️ **Recon** | Network and host discovery | `reconnaissance` | Port scanning, service enumeration |
+| 📊 **Analyst** | Correlates findings, identifies patterns | `analysis` | Vulnerability pattern recognition |
+| 💻 **Coder** | Generates exploits and PoC code | `code_generation` | Exploit development, code analysis |
+| ✅ **Verifier** | Challenges findings, requires evidence | `verification` | Independent verification, evidence validation |
+| 📋 **Reporter** | Generates structured reports | `reporting` | Assessment reporting, documentation |
+
+### ⚡ **Capability-Based Routing**
+Instead of hard-coding which tool to use, CERBERUS reasons in **capabilities**:
+
+| Capability | Top Providers |
+|-----------|---------------|
+| **Reconnaissance** | Strix → PentAGI → Recon Agent |
+| **Source Analysis** | CAI → local-coder → Analyst Agent |
+| **Web Testing** | Dark-Moon → PentAGI |
+| **Tool Execution** | HexStrike → MCPStrike |
+| **Research** | PentestGPT → Researcher Agent |
+| **Planning** | Planner Agent → local-reasoner model |
+| **Verification** | Verifier Agent → local-reasoner model |
+| **Exploitation** | PentAGI → Dark-Moon |
+| **Static Analysis** | PenClaw → CAI |
+| **Secret Detection** | PenClaw |
+| **Dynamic Scanning** | PenClaw → Strix |
+
+The orchestrator asks *"I need reconnaissance"* and the registry returns the best available providers.
+
+### 🧠 **Meta-Learning Performance Tracker**
+- **SQLite-backed** performance database tracking every model, agent, tool, and strategy call
+- **Adaptive Routing**: The system learns which entity performs best for each task type
+- **Success Rate Tracking**: `best_for_task()` finds the optimum provider per capability
+- **Ranking Engine**: `ranking_for_task()` provides ranked provider lists
+- **Quality Scoring**: Latency, verification status, and quality metrics per entity
+
+### 🔄 **Self-Improvement Pipeline**
+AI-proposed code improvements flow through a controlled gatekeeper:
+
+```
+AI Proposes → Patch Generated → Static Checks → Unit Tests →
+Security Checks → Benchmark Compare → Human Approval → Git Branch → Apply
+```
+
+- **10-stage validation**: The AI *cannot* directly modify production code
+- **Static checks**: Python syntax validation on all changed files
+- **Security checks**: Blocks dangerous patterns (`os.system`, `eval`, `exec`, etc.)
+- **Benchmark gating**: Accepted only if it beats or preserves the baseline score
+- **Git-based rollback**: Every applied proposal records its rollback commit
+- **Proposal lifecycle**: `PENDING → VALIDATED → APPROVED → APPLIED → ROLLED_BACK`
+
+### 🤝 **Agent Collaboration Pipeline**
+- **Sequential orchestration**: Researcher → Recon → Analyst → Verifier → Reporter
+- **Context filtering**: Each agent receives only relevant context, not every previous output
+- **Bloat prevention**: Prevents context window overflow in long assessments
+- **Failure isolation**: One agent's failure doesn't kill the pipeline
+
+### 🎛️ **Human-in-the-Loop API**
+- FastAPI REST server for live operational command
+- `GET /status` — Platform health and metrics
+- `GET /targets` — List registered targets
+- `GET /targets/authorized` — List authorized targets
+- `GET /sessions` — Session management
+- `GET /findings` — Retrieve findings by verification status
+- `GET /memory/search` — Semantic memory search
+- `GET /tools` — Tool registry listing
+- `GET /models` — Model routing table
+
+### 🛡️ **Policy & Safety Engine**
+- **Target Authorization**: All active testing requires explicit target registration in `lab/targets/targets.yaml` with `allowed: true`
+- **Environment Enforcement**: The policy engine blocks execution on unregistered targets
+- **Action Whitelisting**: Per-target `allowed_actions` control what operations are permitted
+- **Lab-Only Default**: No tools execute against the host system or external networks by default
+- **Evidence Retention**: All actions logged with timestamps, tool outputs, and verification status
+
+### 🔫 **F2T2EA Kill Chain Management**
+- Full **Find → Fix → Track → Target → Engage → Assess** state machine
+- Phase timeout and success/failure tracking per target
+- Concurrent multi-target engagement coordination
+- **Verification states**: `UNVERIFIED → LIKELY → VERIFIED` or `REJECTED`
+
+### 📡 **Multi-Model LLM Gateway**
+- **Local Models**: Ollama serves quantized models (Llama 3.1, CodeLlama, Qwen, etc.) for offline operation
+- **Cloud Models**: LiteLLM gateway routes to OpenAI, Anthropic, Google, AWS Bedrock, and 100+ providers
+- **Model Aliases**: Agents use abstract aliases (`local-reasoner`, `local-coder`, `research-model`) decoupled from specific model names
+- **Fallback Chain**: LiteLLM proxy → Direct Ollama → Direct provider API
+- **Privacy Enforcement**: `local_only` mode blocks all cloud calls
+
+### 👻 **Ghost Wargaming & Failure Learning**
+- **Failure Memory**: Every failed strategy is recorded with its reason and category
+- **Avoidance Logic**: Similar-to-failed strategies are skipped automatically
+- **Failure Analytics**: Query failures by tool or category
+- **Fast-forward simulation**: Test evolved strategies in `simulate` mode
+
+---
+
+## 🏗️ Master Architecture
 
 ```
                          ┌─────────────────┐
@@ -27,8 +146,9 @@ The Cyber AI Orchestrator is a production-grade security research platform desig
                                   │
                                   ▼
                          ┌─────────────────┐
+                         │  MASTER         │
                          │  ORCHESTRATOR   │
-                         │  (PentAGI Core) │
+                         │  (CyberAI)      │
                          │                 │
                          │  ┌────────────┐ │
                          │  │  Planner   │ │
@@ -37,7 +157,7 @@ The Cyber AI Orchestrator is a production-grade security research platform desig
                          │  │ Researcher │ │
                          │  └────────────┘ │
                          │  ┌────────────┐ │
-                         │  │ Recon Agent│ │
+                         │  │  Recon     │ │
                          │  └────────────┘ │
                          │  ┌────────────┐ │
                          │  │  Analyst   │ │
@@ -53,83 +173,116 @@ The Cyber AI Orchestrator is a production-grade security research platform desig
                          │  └────────────┘ │
                          └────────┬────────┘
                                   │
-                    ┌─────────────┴─────────────┐
-                    │                           │
-          ┌─────────▼──────────┐    ┌───────────▼─────────┐
-          │  LLM GATEWAY       │    │  TOOL GATEWAY       │
-          │  (LiteLLM)         │    │  (MCP / Adapters)   │
-          │                    │    │                     │
-          │  Model Aliases:    │    │  Adapters:          │
-          │  - local-reasoner  │    │  - PentAGI          │
-          │  - local-coder     │    │  - Strix            │
-          │  - local-fast      │    │  - HexStrike        │
-          │  - research-model  │    │  - MCPStrike        │
-          │  - cloud-reasoner  │    │  - Dark-Moon        │
-          │                    │    │  - CAI              │
-          │  Providers:        │    │  - PentestGPT       │
-          │  - Ollama (local)  │    │  - PentestAgent     │
-          │  - OpenAI (cloud)  │    │  - CyberStrikeAI    │
-          │  - Anthropic       │    │  - AutoPentest      │
-          │  - Custom          │    │  - PenClaw          │
-          └────────────────────┘    │  - LuaN1aoAgent     │
-                                    │  - ARACNE           │
-                                    │  - Guardian-CLI     │
-                                    │  - DRAKBEN          │
-                                    │  - h4cker (KB)      │
-                                    │  - kali-pentest(Skills)│
-                                    └───────────┬─────────┘
-                                                │
-                                  ┌─────────────▼─────────────┐
-                                  │   AUTHORIZED LAB          │
-                                  │   ┌───────────────────┐   │
-                                  │   │  Docker Targets   │   │
-                                  │   └───────────────────┘   │
-                                  │   ┌───────────────────┐   │
-                                  │   │  VM Targets       │   │
-                                  │   └───────────────────┘   │
-                                  │   ┌───────────────────┐   │
-                                  │   │  CTF Challenges   │   │
-                                  │   └───────────────────┘   │
-                                  └─────────────┬─────────────┘
-                                                │
-                                  ┌─────────────▼─────────────┐
-                                  │   EVIDENCE & MEMORY       │
-                                  │   ┌───────────────────┐   │
-                                  │   │  SQLite DB        │   │
-                                  │   │  (experiences,    │   │
-                                  │   │   findings,       │   │
-                                  │   │   sessions)       │   │
-                                  │   └───────────────────┘   │
-                                  │   ┌───────────────────┐   │
-                                  │   │  Knowledge Base   │   │
-                                  │   │  (CVE, CWE,       │   │
-                                  │   │   techniques)     │   │
-                                  │   └───────────────────┘   │
-                                  └───────────────────────────┘
+         ┌────────────────────────┼────────────────────────┐
+         │                        │                        │
+┌────────▼─────────┐   ┌──────────▼─────────┐   ┌──────────▼─────────┐
+│  CAPABILITY      │   │  LLM GATEWAY       │   │  TOOL GATEWAY      │
+│  REGISTRY        │   │  (Ollama/LiteLLM)  │   │  (MCP / Adapters)  │
+│                  │   │                    │   │                    │
+│  reconnaissance  │   │  Model Aliases:    │   │  Adapters:          │
+│  source_analysis │   │  - local-reasoner  │   │  - PentAGI          │
+│  web_testing     │   │  - local-coder     │   │  - Strix            │
+│  tool_execution  │   │  - local-fast      │   │  - HexStrike        │
+│  research        │   │  - research-model  │   │  - MCPStrike        │
+│  planning        │   │  - cloud-reasoner  │   │  - Dark-Moon        │
+│  verification    │   │  - embeddings      │   │  - CAI              │
+│  code_generation │   │                    │   │  - PentestGPT       │
+│  analysis        │   │  Providers:        │   │  - PentestAgent     │
+│  reporting       │   │  - Ollama (local)  │   │  - CyberStrikeAI    │
+│  exploitation    │   │  - OpenAI (cloud)  │   │  - AutoPentest      │
+│  static_analysis │   │  - Anthropic       │   │  - PenClaw          │
+│  secret_detection│   │  - Custom          │   │  - LuaN1aoAgent     │
+│  dynamic_scanning│   │                    │   │  - ARACNE           │
+└──────────────────┘   └────────────────────┘   │  - Guardian-CLI     │
+         │                        │             │  - DRAKBEN          │
+         │                        │             │  - h4cker (KB)      │
+         │                        │             │  - kali-pentest     │
+         │                        │             └──────────┬─────────┘
+         │                        │                        │
+┌────────▼─────────┐   ┌──────────▼─────────┐   ┌──────────▼─────────┐
+│  EVOLUTION       │   │  META-LEARNING     │   │  SELF-IMPROVEMENT  │
+│  ENGINE          │   │  TRACKER           │   │  PIPELINE          │
+│                  │   │                    │   │                    │
+│  Population      │   │  SQLite-backed     │   │  Proposals         │
+│  Mutation        │   │  performance.db    │   │  Static Checks     │
+│  Selection       │   │  best_for_task()   │   │  Unit Tests        │
+│  Evaluation      │   │  ranking_for_task()│   │  Security Checks   │
+│  Fitness         │   │  success_rate      │   │  Benchmark Gate    │
+│  Elite Archive   │   │  avg_latency       │   │  Human Approval    │
+│  Failure Memory  │   │  quality_score     │   │  Git Branch/Rollback│
+└──────────────────┘   └────────────────────┘   └────────────────────┘
+         │                        │                        │
+         └────────────────────────┼────────────────────────┘
+                                  │
+                    ┌──────────────▼──────────────┐
+                    │      AUTHORIZED LAB         │
+                    │   ┌─────────────────────┐   │
+                    │   │  Docker Targets     │   │
+                    │   └─────────────────────┘   │
+                    │   ┌─────────────────────┐   │
+                    │   │  VM Targets         │   │
+                    │   └─────────────────────┘   │
+                    │   ┌─────────────────────┐   │
+                    │   │  CTF Challenges     │   │
+                    │   └─────────────────────┘   │
+                    └──────────────┬──────────────┘
+                                   │
+                    ┌──────────────▼──────────────┐
+                    │   EVIDENCE & MEMORY         │
+                    │   ┌─────────────────────┐   │
+                    │   │  SQLite DB          │   │
+                    │   │  (experiences,      │   │
+                    │   │   findings,         │   │
+                    │   │   sessions,         │   │
+                    │   │   performance)      │   │
+                    │   └─────────────────────┘   │
+                    │   ┌─────────────────────┐   │
+                    │   │  Evolution Archive  │   │
+                    │   │  (elite, failures,  │   │
+                    │   │   population)       │   │
+                    │   └─────────────────────┘   │
+                    │   ┌─────────────────────┐   │
+                    │   │  Knowledge Base     │   │
+                    │   │  (CVE, CWE,         │   │
+                    │   │   techniques)       │   │
+                    │   └─────────────────────┘   │
+                    └─────────────────────────────┘
 ```
 
 ---
 
-## Key Capabilities
+## 🔄 The Evolution Loop
 
-### Multi-Model Routing
-- **Local Models**: Ollama serves quantized models (Llama 3.1, CodeLlama, Qwen, etc.) for offline operation
-- **Cloud Models**: LiteLLM gateway routes to OpenAI, Anthropic, Google, AWS Bedrock, and 100+ providers
-- **Model Aliases**: Agents use abstract aliases (`local-reasoner`, `local-coder`, `research-model`) decoupled from specific model names
-- **Fallback Chain**: LiteLLM proxy → Direct Ollama → Direct provider API
+Every engagement feeds back into the evolutionary engine:
 
-### Agent Specialization
-| Agent | Role | Primary Tools |
-|-------|------|---------------|
-| **Planner** | Decomposes objectives into actionable steps | PentAGI, AutoPentest |
-| **Researcher** | Gathers intelligence on targets | Strix, PentestGPT |
-| **Recon** | Network and host discovery | HexStrike, MCPStrike |
-| **Analyst** | Correlates findings, identifies patterns | CAI, DRAKBEN |
-| **Coder** | Generates exploits and proof-of-concept code | PentAGI, HexStrike |
-| **Verifier** | Challenges findings, requires evidence | Built-in verifier |
-| **Reporter** | Generates structured reports | Built-in reporter |
+```
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────┐    ┌────────┐
+│  Solve  │───▶│ Observe │───▶│ Evolve  │───▶│ Gate │───▶│ Reload │
+└─────────┘    └─────────┘    └─────────┘    └──────┘    └────────┘
+```
 
-### Non-Weight Learning Loop
+1. **Solve** — Agents process tasks (black-box execution in the lab)
+2. **Observe** — Trajectories + benchmark feedback collected into structured logs
+3. **Evolve** — Evolution engine mutates strategies (prompts, skills, memory)
+4. **Gate** — Validate mutations; regressed strategies are rolled back
+5. **Reload** — The system reloads with the (possibly rolled-back) workspace
+
+Every accepted mutation is git-tagged (`evo-1`, `evo-2`, …) providing a full audit trail.
+
+### Fitness Function
+```
+Success:            +1.0
+Verification:       +0.8
+Evidence Quality:   +0.6
+Repeatability:      +0.5
+Unnecessary Actions: -0.3
+Failures:           -0.5
+```
+
+---
+
+## 🧩 Non-Weight Learning Loop
+
 ```
 Hypothesis → Execution → Sandbox Verification → Memory Storage
      │              │                │                  │
@@ -146,16 +299,213 @@ Hypothesis → Execution → Sandbox Verification → Memory Storage
 - **Semantic retrieval**: Vector embeddings enable similarity search for relevant past experiences
 - **Pattern recognition**: The planner retrieves top-K similar past scenarios before generating new plans
 
-### Safe Execution Layer
-- **Docker Isolation**: All active tools execute in containers with network isolation
-- **VM Support**: Targets can be isolated virtual machines with snapshots
-- **CTF Framework**: Integration with Docker-based CTF platforms (Juice Shop, DVWA, etc.)
-- **Network Segmentation**: Lab traffic isolated on dedicated Docker networks
-- **Evidence Chain**: All tool outputs captured with timestamps, hashes, and verification status
+---
+
+## 🗂️ Project Structure
+
+```
+CERBERUS/
+├── README.md                    # This file
+├── ARCHITECTURE.md              # Deep-dive technical reference
+├── WORKSPACE_INVENTORY.md       # Detailed repository inventory
+├── REPOSITORY_MAP.yaml          # Repository-to-role mapping
+├── INTEGRATION_STATUS.md        # Component status tracking
+├── FINAL_STATUS.md              # Final delivery report
+├── PHASE2_AUDIT.md              # Phase 2 audit report
+├── .env.example                 # Environment configuration template
+├── .gitignore                   # Git ignore rules
+├── docker-compose.yml           # Infrastructure services
+├── images.jfif                  # Platform banner image
+│
+├── cyberai/                     # Core platform package
+│   ├── __init__.py
+│   ├── config.py                # Central configuration loader
+│   ├── task.py                  # Canonical Task state (shared across components)
+│   │
+│   ├── capabilities/            # Capability-based routing
+│   │   ├── __init__.py
+│   │   └── registry.py          # Maps capabilities → providers (agents/tools/models)
+│   │
+│   ├── collaboration/           # Multi-agent collaboration
+│   │   ├── __init__.py
+│   │   └── pipeline.py          # AgentPipeline: sequential agent execution
+│   │
+│   ├── evolution/               # 🧬 Evolutionary strategy engine
+│   │   ├── __init__.py
+│   │   ├── engine.py            # EvolutionEngine: coordinates the evolution loop
+│   │   ├── strategy.py          # Strategy dataclass (genome)
+│   │   ├── population.py        # Population management
+│   │   ├── mutation.py          # Mutation & crossover operations
+│   │   ├── selection.py         # Fitness-based selection
+│   │   ├── evaluation.py        # Strategy evaluation (lab/simulation)
+│   │   ├── fitness.py           # Fitness function scoring
+│   │   ├── archive.py           # Elite strategy archive
+│   │   └── a-evolve/            # 📦 A-Evolve: universal self-improving agent infra
+│   │       ├── README.md        # Full A-Evolve documentation
+│   │       ├── DESIGN.md
+│   │       ├── QUICKSTART.md
+│   │       ├── agent_evolve/    # Evolution framework
+│   │       ├── artifacts/       # Evolution artifacts
+│   │       ├── docs/            # Algorithm docs
+│   │       ├── examples/        # Example agents
+│   │       ├── figs/            # Figures
+│   │       ├── seed_workspaces/ # Seed agent workspaces
+│   │       └── tests/           # Test suite
+│   │
+│   ├── llm_gateway/             # 🔌 LLM Gateway
+│   │   ├── __init__.py          # LLMGateway: routing, fallback, health checks
+│   │   └── models/              # Model registry config
+│   │
+│   ├── llm-gateway/             # LiteLLM gateway config
+│   │   ├── config/              # LiteLLM configuration
+│   │   ├── litellm/             # LiteLLM service files
+│   │   └── models/              # models.yaml model registry
+│   │
+│   ├── memory/                  # 🧠 Memory system
+│   │   ├── __init__.py
+│   │   └── memory_store.py      # Typed memory (episodic, semantic, procedural)
+│   │
+│   ├── meta_learning/           # 📊 Meta-learning
+│   │   ├── __init__.py
+│   │   └── tracker.py           # PerformanceTracker: SQLite performance DB
+│   │
+│   ├── observability/           # 👁️ Observability
+│   │   ├── __init__.py
+│   │   └── logger.py            # Structured logging
+│   │
+│   ├── orchestrator/            # 🎛️ Master Orchestrator
+│   │   ├── __init__.py
+│   │   ├── master.py            # CyberAIOrchestrator: unified AI interface
+│   │   ├── orchestrator.py      # Core orchestrator
+│   │   ├── tool_registry.py     # Security tool registry
+│   │   ├── tools.yaml           # Tool registry YAML
+│   │   ├── adapters/            # Adapter management
+│   │   │   ├── __init__.py
+│   │   │   ├── adapter_manager.py  # AdapterManager
+│   │   │   └── base.py          # Base adapter interface
+│   │   ├── agents/              # 🤖 AI agents
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py          # Base agent interface
+│   │   │   ├── planner/         # 🧠 Planner agent
+│   │   │   ├── researcher/      # 🔍 Researcher agent
+│   │   │   ├── recon/           # 🛰️ Recon agent
+│   │   │   ├── analyst/         # 📊 Analyst agent
+│   │   │   ├── coder/           # 💻 Coder agent
+│   │   │   ├── verifier/        # ✅ Verifier agent
+│   │   │   └── reporter/        # 📋 Reporter agent
+│   │   ├── api/                 # 🔌 REST API
+│   │   │   └── api_server.py    # FastAPI server
+│   │   ├── cli/                 # ⌨️ Command-line interface
+│   │   │   ├── __init__.py
+│   │   │   ├── __main__.py
+│   │   │   ├── cli.py           # CLI entry point
+│   │   │   └── doctor.py        # Health check
+│   │   ├── evidence/            # 📎 Evidence collection
+│   │   │   └── evidence.py      # Evidence chain management
+│   │   ├── knowledge/           # 📚 Knowledge base
+│   │   │   └── knowledge_loader.py
+│   │   ├── logging/             # 📝 Session logging
+│   │   │   └── session_logger.py
+│   │   ├── memory/              # 🧠 Orchestrator memory
+│   │   │   └── memory_manager.py
+│   │   ├── policies/            # 🛡️ Safety policies
+│   │   │   └── policy_engine.py # Target authorization & action whitelisting
+│   │   ├── routing/             # 🔀 Model routing
+│   │   │   ├── model_router.py  # ModelRouter
+│   │   │   └── routing.yaml     # Routing fallback chains
+│   │   ├── scheduler/           # 📅 Task scheduling
+│   │   │   └── scheduler.py
+│   │   └── workflows/           # 🔄 Workflow management
+│   │       └── workflow_manager.py
+│   │
+│   ├── self_improvement/        # 🧬 Self-improvement
+│   │   ├── __init__.py
+│   │   ├── pipeline.py          # SelfImprovementPipeline: 10-stage gatekeeper
+│   │   └── proposal.py          # ImprovementProposal model
+│   │
+│   ├── tool-gateway/            # 🔧 MCP Tool Gateway
+│   │   └── mcp/                 # MCP server management
+│   │
+│   └── ui/                      # 🖥️ UI package
+│       └── __init__.py
+│
+├── adapters/                    # 🔌 Security tool adapters (20+)
+│   ├── pentagi/                 # Primary pentesting agent
+│   ├── strix/                   # Assessment agent
+│   ├── darkmoon/                # MCP pentesting agent
+│   ├── hexstrike/               # MCP tool gateway (150+ tools)
+│   ├── mcpstrike/               # Ollama MCP gateway
+│   ├── cai/                     # Agent framework
+│   ├── pentestgpt/              # Research/planning
+│   ├── pentestagent/            # LiteLLM-based agent
+│   ├── cyberstrikeai/           # Gin REST + MCP
+│   ├── autopentest/             # LangChain research
+│   ├── penclaw/                 # Static/dynamic analysis
+│   ├── luan1aoagent/            # Cognitive agent
+│   ├── aracne/                  # SSH-driven pentesting
+│   ├── guardian-cli/            # CLI pentesting
+│   ├── drakben/                 # Autonomous pentesting
+│   ├── h4cker/                  # Knowledge base (reference)
+│   ├── kali-pentest/            # Skill definitions (reference)
+│   ├── mcpstrike/               # MCP server
+│   └── pentestagent/            # Agent wrapper
+│
+├── infrastructure/              # ⚙️ Infrastructure services
+│   ├── ollama/                  # Ollama models and config
+│   ├── open-webui/              # Open WebUI data
+│   ├── airllm/                  # AirLLM inference
+│   └── other-inference/         # Additional inference engines
+│
+├── lab/                         # 🔬 Isolated lab environment
+│   ├── targets/                 # Authorized target registry
+│   │   └── targets.yaml         # Target definitions
+│   ├── docker/                  # Docker Compose stacks
+│   ├── networks/                # Network definitions
+│   ├── snapshots/               # VM/target snapshots
+│   ├── scenarios/               # Pre-built assessment scenarios
+│   └── evidence/                # Collected evidence files
+│
+├── knowledge/                   # 📚 Security knowledge base
+│   ├── cve/                     # CVE database
+│   ├── cwe/                     # CWE weakness taxonomy
+│   ├── advisories/              # Security advisories
+│   ├── techniques/              # ATT&CK techniques
+│   ├── research/                # Security research papers
+│   └── documentation/           # Tool documentation
+│
+├── memory/                      # 🧠 Persistent memory
+│   ├── memory.db                # SQLite database
+│   ├── performance.db           # Performance tracking DB
+│   ├── evolution/               # Evolution engine state
+│   │   ├── population/          # Strategy population
+│   │   ├── elite/               # Elite strategy archive
+│   │   └── failures/            # Failure records
+│   ├── embeddings/              # Vector embeddings
+│   ├── findings/                # Individual findings
+│   ├── failures/                # Failed strategies
+│   ├── successful-strategies/   # Successful tactics
+│   ├── observations/            # Agent observations
+│   └── sessions/                # Session logs
+│
+├── logs/                        # 📝 Platform logs
+│   └── sessions/                # Per-session logs
+│
+├── projects/                    # 📦 Additional projects
+│   ├── security-agents/         # Custom security agents
+│   ├── research-tools/          # Research utilities
+│   ├── analysis-tools/          # Analysis scripts
+│   └── legacy/                  # Legacy integrations
+│
+├── scripts/                     # ⚡ Utility scripts
+│   └── generate_platform.py     # Platform generator
+│
+├── backups/                     # 💾 Backup storage
+└── tests/                       # 🧪 Test suite
+```
 
 ---
 
-## Quick Start & Setup Guide
+## 🛠️ Quick Start & Setup Guide
 
 ### Prerequisites
 - Windows 11 / Linux / macOS
@@ -167,19 +517,16 @@ Hypothesis → Execution → Sandbox Verification → Memory Storage
 ### Installation
 
 ```bash
-# 1. Clone the platform (already done)
-cd C:\Users\hp\Desktop\cyber
-
-# 2. Set up Python environment
+# 1. Set up Python environment
 python -m venv .venv
-.\.venv\Scripts\activate
-pip install -e platform\orchestrator
+.\.venv\Scripts\activate        # Windows
+pip install -e "cyberai[all]"   # or: pip install -r requirements.txt
 
-# 3. Configure environment
-copy .env.example .env
+# 2. Configure environment
+copy .env.example .env          # Windows
 # Edit .env with your API keys and preferences
 
-# 4. Install Ollama and pull models
+# 3. Install Ollama and pull models
 # Download from https://ollama.com
 ollama pull llama3.1:8b
 ollama pull codellama:7b
@@ -187,10 +534,10 @@ ollama pull llama3.2:3b
 ollama pull qwen2.5:7b
 ollama pull nomic-embed-text
 
-# 5. Start infrastructure services
+# 4. Start infrastructure services
 docker compose up -d
 
-# 6. Run health check
+# 5. Run health check
 python -m cyberai.orchestrator.cli doctor
 ```
 
@@ -205,12 +552,15 @@ OLLAMA_MODEL=llama3.1:8b
 # LiteLLM Gateway
 LITELLM_MASTER_KEY=sk-your-master-key-here
 LITELLM_PORT=4000
-LITELLM_CONFIG_PATH=platform/llm-gateway/config/config.yaml
+LITELLM_CONFIG_PATH=cyberai/llm-gateway/config/config.yaml
 
 # Cloud Providers (Optional)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
+
+# Privacy Mode (local_only | hybrid)
+PRIVACY_MODE=local_only
 
 # Lab Configuration
 LAB_TARGETS_PATH=lab/targets/targets.yaml
@@ -233,18 +583,23 @@ targets:
       - exploitation
 ```
 
-### Running the Platform
+### Using the Master Orchestrator
 
-#### Start Infrastructure
-```bash
-# Start LiteLLM, Ollama, Open WebUI
-docker compose up -d
+```python
+import asyncio
+from cyberai.orchestrator.master import CyberAIOrchestrator
 
-# Verify services
-docker compose ps
+async def main():
+    ai = CyberAIOrchestrator(simulate=True)  # Simulation mode
+    result = await ai.run("Find SQL injection vulnerabilities", target_id="lab-web-01")
+    print(result["status"])
+    ai.close()
+
+asyncio.run(main())
 ```
 
-#### Use the CLI
+### Using the CLI
+
 ```bash
 # Check status
 python -m cyberai.orchestrator.cli status
@@ -265,15 +620,93 @@ python -m cyberai.orchestrator.cli memory search "SQL injection"
 python -m cyberai.orchestrator.cli doctor
 ```
 
-#### Open WebUI
+### Using the REST API
+
 ```bash
-# Access at http://localhost:3000
-# Configure to use LiteLLM endpoint: http://localhost:4000
+# Start the API server
+uvicorn cyberai.orchestrator.api.api_server:create_app --factory --host 0.0.0.0 --port 8000
+
+# Check platform status
+curl http://localhost:8000/status
+
+# List authorized targets
+curl http://localhost:8000/targets/authorized
+
+# Search memory
+curl "http://localhost:8000/memory/search?query=SQL%20injection"
+
+# List tools
+curl http://localhost:8000/tools
+
+# List model routes
+curl http://localhost:8000/models
 ```
 
 ---
 
-## Ethical & Safety Boundaries
+## 🔬 A-Evolve: Self-Improving Agent Infrastructure
+
+CERBERUS integrates **A-Evolve** (`cyberai/evolution/a-evolve/`), the universal infrastructure for self-improving agents. A-Evolve evolves *any* agent across *any* domain using *any* evolution algorithm — with zero human intervention.
+
+### The Evolution Loop (A-Evolve)
+
+```
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────┐    ┌────────┐
+│  Solve  │───▶│ Observe │───▶│ Evolve  │───▶│ Gate │───▶│ Reload │
+└─────────┘    └─────────┘    └─────────┘    └──────┘    └────────┘
+```
+
+1. **Solve** — Agent processes a batch of tasks (black-box execution)
+2. **Observe** — Collect trajectories + benchmark feedback into structured logs
+3. **Evolve** — Evolution engine mutates workspace files (prompts, skills, memory)
+4. **Gate** — Validate mutations on holdout tasks; regressions rolled back via git
+5. **Reload** — Agent reloads from the (possibly rolled-back) workspace
+
+### Built-in Adapters
+
+| Adapter | Domain | Seed Workspace |
+| :--- | :--- | :--- |
+| `swe-verified` | Real-world GitHub issues (Python repos) | `seed_workspaces/swe/` |
+| `mcp-atlas` | Tool-calling via MCP (16+ servers) | `seed_workspaces/mcp/` |
+| `terminal-bench` | Terminal/CLI ops in Docker | `seed_workspaces/terminal/` |
+| `skill-bench` | Agentic skill discovery | `seed_workspaces/skillbench/` |
+
+### 3-Line Evolution
+
+```python
+import agent_evolve as ae
+
+evolver = ae.Evolver(agent="./my_agent", benchmark="swe-verified")
+results = evolver.run(cycles=10)
+```
+
+---
+
+## 🧩 Tool Registry — 20+ Integrated Adapters
+
+| Tool | Type | API | Capabilities |
+|------|------|-----|--------------|
+| **PentAGI** | Security Agent | REST/GraphQL + MCP | Research, Analysis, Exploitation, Reporting |
+| **Strix** | Security Agent | Server API | Assessment, Vulnerability Scanning |
+| **HexStrike** | Tool Gateway | Flask REST + MCP | Tool Execution, MCP Servers, Web Scraping |
+| **MCPStrike** | Tool Gateway | FastAPI + MCP | Tool Execution, MCP Servers |
+| **Dark-Moon** | Security Agent | MCP Server | Research, Analysis, Exploitation |
+| **CAI** | Security Agent | Python Library + MCP | Research, Analysis, Agent Framework |
+| **PentestGPT** | Security Agent | CLI | Research, Planning |
+| **PentestAgent** | Security Agent | CLI + MCP | Research, Analysis, Exploitation |
+| **CyberStrikeAI** | Security Agent | Gin REST + MCP | Tool Execution, MCP Servers, Analysis |
+| **AutoPentest** | Security Agent | CLI | Research, Planning |
+| **PenClaw** | Analysis Tool | CLI | Static Analysis, Dynamic Scanning, Secret Detection |
+| **LuaN1aoAgent** | Security Agent | CLI/Web | Research, Analysis, Planning |
+| **ARACNE** | Security Agent | CLI (SSH) | Research, Exploitation, SSH-Driven |
+| **Guardian-CLI** | Security Agent | CLI | Research, Analysis, Reporting |
+| **DRAKBEN** | Security Agent | CLI (async) | Research, Analysis, Exploitation |
+| **Kali-Pentest** | Skill Definitions | Documentation | Tool Guidance, Methodology |
+| **h4cker** | Knowledge Base | Documentation | Reference, Training, Labs |
+
+---
+
+## 🔒 Ethical & Safety Boundaries
 
 ### Authorized Use Only
 
@@ -289,6 +722,7 @@ This platform is designed for:
 2. **Environment Enforcement**: The policy engine blocks execution on unregistered targets
 3. **Lab-Only Default**: No tools execute against the host system or external networks by default
 4. **Evidence Retention**: All actions are logged with timestamps, tool outputs, and verification status
+5. **Privacy Mode**: `local_only` mode blocks all cloud model calls
 
 ### Prohibited Uses
 
@@ -308,217 +742,7 @@ If you discover vulnerabilities during authorized testing:
 
 ---
 
-## Repository Integration Map
-
-| Original Repository | Local Path | Role | Integration Method |
-|---------------------|------------|------|-------------------|
-| **litellm** | `infrastructure/litellm/` | LLM Gateway | Service (Docker) |
-| **ollama** | `infrastructure/ollama/` | Local Models | Service (Docker) |
-| **open-webui** | `infrastructure/open-webui/` | Human UI | Service (Docker) |
-| **airllm** | `infrastructure/airllm/` | Alternate Inference | Library |
-| **pentagi** | `adapters/pentagi/` | Primary Security Agent | REST/GraphQL API |
-| **strix** | `adapters/strix/` | Assessment Agent | Server API |
-| **darkmoon** | `adapters/darkmoon/` | Pentesting Agent | MCP Server |
-| **hexstrike-ai** | `adapters/hexstrike/` | Tool Gateway (150+ tools) | Flask REST + MCP |
-| **mcpstrike** | `adapters/mcpstrike/` | Ollama MCP Gateway | FastAPI + MCP |
-| **CAI** | `adapters/cai/` | Agent Framework | Python Library |
-| **pentestgpt** | `adapters/pentestgpt/` | Research/Planning | CLI Wrapper |
-| **pentestagent** | `adapters/pentestagent/` | Security Agent | CLI + MCP |
-| **CyberStrikeAI** | `adapters/cyberstrikeai/` | MCP Tools | Gin REST + MCP |
-| **autopentest** | `adapters/autopentest/` | Research/Planning | CLI (LangChain) |
-| **penclaw** | `adapters/penclaw/` | Static/Dynamic Analysis | CLI (Node.js) |
-| **LuaN1aoAgent** | `adapters/luan1aoagent/` | Cognitive Agent | CLI/Web (Node.js) |
-| **aracne** | `adapters/aracne/` | SSH-Driven Pentesting | CLI (Python/SSH) |
-| **guardian-cli** | `adapters/guardian-cli/` | CLI Pentesting | CLI (Python) |
-| **drakben** | `adapters/drakben/` | Autonomous Pentesting | CLI (Python/async) |
-| **h4cker** | `adapters/h4cker/` | Knowledge Base | Documentation |
-| **kali-pentest** | `adapters/kali-pentest/` | Skill Definitions | Documentation |
-
----
-
-## Technology Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Orchestrator** | Python 3.10+, asyncio | Core coordination and agent management |
-| **LLM Gateway** | LiteLLM, FastAPI | Unified model routing and proxy |
-| **Local Models** | Ollama | Quantized model serving (Llama, CodeLlama, Qwen) |
-| **Tool Gateway** | FastMCP, MCP Protocol | Tool discovery and execution |
-| **Adapters** | Python, Go, Node.js | Integration wrappers for external tools |
-| **Memory** | SQLite, JSON | Experience and finding storage |
-| **Lab** | Docker, Docker Compose | Isolated execution environments |
-| **UI** | Open WebUI, Click CLI | Human interfaces |
-| **Monitoring** | Structured logging, JSONL | Audit trails and debugging |
-
----
-
-## Project Structure
-
-```
-C:\Users\hp\Desktop\cyber/
-├── README.md                    # This file
-├── ARCHITECTURE.md              # Deep-dive technical reference
-├── WORKSPACE_INVENTORY.md       # Detailed repository inventory
-├── REPOSITORY_MAP.yaml          # Repository-to-role mapping
-├── INTEGRATION_STATUS.md        # Component status tracking
-├── FINAL_STATUS.md              # Final delivery report
-├── .env.example                 # Environment configuration template
-├── .gitignore                   # Git ignore rules
-├── docker-compose.yml           # Infrastructure services
-│
-├── platform/                    # Core platform code
-│   ├── orchestrator/            # Master orchestrator
-│   │   ├── agents/              # AI agent implementations
-│   │   ├── routing/             # Model and tool routing
-│   │   ├── memory/              # Experience storage
-│   │   ├── policies/            # Authorization and safety
-│   │   ├── scheduler/           # Task scheduling
-│   │   ├── workflows/           # Predefined assessment flows
-│   │   ├── api/                 # REST API server
-│   │   ├── evidence/            # Evidence collection
-│   │   ├── knowledge/           # Knowledge base loader
-│   │   └── cli/                 # Command-line interface
-│   │
-│   ├── llm-gateway/             # LiteLLM integration
-│   │   ├── models/              # Model registry
-│   │   ├── config/              # LiteLLM configuration
-│   │   └── logs/                # Gateway logs
-│   │
-│   ├── tool-gateway/            # MCP tool discovery
-│   │   └── mcp/                 # MCP server management
-│   │
-│   └── ui/                      # UI package (future)
-│
-├── adapters/                    # Security tool adapters
-│   ├── pentagi/                 # Primary pentesting agent
-│   ├── strix/                   # Assessment agent
-│   ├── darkmoon/                # MCP pentesting agent
-│   ├── hexstrike/               # MCP tool gateway
-│   ├── mcpstrike/               # Ollama MCP gateway
-│   ├── cai/                     # Agent framework
-│   ├── pentestgpt/              # Research/planning
-│   ├── pentestagent/            # LiteLLM-based agent
-│   ├── cyberstrikeai/           # Gin REST + MCP
-│   ├── autopentest/             # LangChain research
-│   ├── penclaw/                 # Static/dynamic analysis
-│   ├── luan1aoagent/            # Cognitive agent
-│   ├── aracne/                  # SSH-driven pentesting
-│   ├── guardian-cli/            # CLI pentesting
-│   ├── drakben/                 # Autonomous pentesting
-│   ├── h4cker/                  # Knowledge base (reference)
-│   └── kali-pentest/            # Skill definitions (reference)
-│
-├── infrastructure/              # Infrastructure services
-│   ├── ollama/                  # Ollama models and config
-│   ├── open-webui/              # Open WebUI data
-│   ├── airllm/                  # AirLLM inference
-│   └── other-inference/         # Additional inference engines
-│
-├── lab/                         # Isolated lab environment
-│   ├── targets/                 # Authorized target registry
-│   │   └── targets.yaml         # Target definitions
-│   ├── docker/                  # Docker Compose stacks
-│   ├── networks/                # Network definitions
-│   ├── snapshots/               # VM/target snapshots
-│   ├── scenarios/               # Pre-built assessment scenarios
-│   └── evidence/                # Collected evidence files
-│
-├── knowledge/                   # Security knowledge base
-│   ├── cve/                     # CVE database
-│   ├── cwe/                     # CWE weakness taxonomy
-│   ├── advisories/              # Security advisories
-│   ├── techniques/              # ATT&CK techniques
-│   ├── research/                # Security research papers
-│   └── documentation/           # Tool documentation
-│
-├── memory/                      # Persistent memory
-│   ├── memory.db                # SQLite database
-│   ├── embeddings/              # Vector embeddings
-│   ├── findings/                # Individual findings
-│   ├── failures/                # Failed strategies
-│   ├── successful-strategies/   # Successful tactics
-│   ├── observations/            # Agent observations
-│   └── sessions/                # Session logs
-│
-├── logs/                        # Platform logs
-│   └── sessions/                # Per-session logs
-│
-├── projects/                    # Additional projects
-│   ├── security-agents/         # Custom security agents
-│   ├── research-tools/          # Research utilities
-│   ├── analysis-tools/          # Analysis scripts
-│   └── legacy/                  # Legacy integrations
-│
-├── scripts/                     # Utility scripts
-│   └── generate_platform.py     # Platform generator
-│
-├── backups/                     # Backup storage
-└── tests/                       # Test suite
-```
-
----
-
-## Getting Started
-
-### 1. Verify Installation
-```bash
-python -m cyberai.orchestrator.cli doctor
-```
-
-Expected output:
-```
-[OK] Python: 3.10.11
-[OK] Git: git version 2.49.0.windows.1
-[WARN] Docker: not installed (expected on fresh install)
-[WARN] Ollama: not running
-[OK] Repositories: 17 tracked adapters
-[WARN] Adapters: 15/17 have Python wrappers
-[OK] MCP Gateway: configured
-[OK] Memory system: DB ready
-[OK] Policy engine: 0 targets registered
-```
-
-### 2. Install Dependencies
-```bash
-# Install Docker Desktop from https://docker.com
-# Install Ollama from https://ollama.com
-# Pull required models
-ollama pull llama3.1:8b
-ollama pull codellama:7b
-```
-
-### 3. Configure Environment
-```bash
-copy .env.example .env
-# Add your API keys to .env
-```
-
-### 4. Start Services
-```bash
-docker compose up -d
-```
-
-### 5. Register Lab Target
-```yaml
-# lab/targets/targets.yaml
-targets:
-  - id: juice-shop
-    environment: authorized_lab
-    allowed: true
-    host: 127.0.0.1
-    port: 3000
-    description: OWASP Juice Shop
-    allowed_actions: [recon, scan, analysis, exploitation]
-```
-
-### 6. Run First Assessment
-```bash
-python -m cyberai.orchestrator.cli assess juice-shop --objective "Identify injection vulnerabilities"
-```
-
----
-
-## Documentation
+## 📚 Documentation
 
 | Document | Purpose |
 |----------|---------|
@@ -528,11 +752,25 @@ python -m cyberai.orchestrator.cli assess juice-shop --objective "Identify injec
 | `REPOSITORY_MAP.yaml` | Repository-to-role mapping |
 | `INTEGRATION_STATUS.md` | Component status tracking |
 | `FINAL_STATUS.md` | Final delivery report |
+| `PHASE2_AUDIT.md` | Phase 2 audit report |
+| `cyberai/evolution/a-evolve/README.md` | A-Evolve full documentation |
 | `.env.example` | Environment configuration template |
 
 ---
 
-## Support & Contributing
+## 🧪 Running Tests
+
+```bash
+# Run the full test suite
+python -m pytest tests/ -v
+
+# Run a single test module
+python -m pytest tests/test_evolution.py -v
+```
+
+---
+
+## 🤝 Support & Contributing
 
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Discussions**: Join community discussions for use cases and integrations
@@ -540,12 +778,12 @@ python -m cyberai.orchestrator.cli assess juice-shop --objective "Identify injec
 
 ---
 
-## License
+## 📜 License
 
 This platform structure is provided as-is. Individual components retain their original licenses. See `REPOSITORY_MAP.yaml` for details.
 
 **Primary Licenses:**
-- MIT: litellm, hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix, drakben
+- MIT: litellm, hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix, drakben, a-evolve
 - Apache 2.0: ollama, open-webui, strix
 - GPL v3: Dark-Moon
 - Dual MIT + Proprietary: CAI
@@ -553,9 +791,10 @@ This platform structure is provided as-is. Individual components retain their or
 
 ---
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 This platform integrates the following open-source security research projects:
+- **A-Evolve** by A-EVO-Lab — Universal self-improving agent infrastructure
 - **PentAGI** by vxcontrol — Autonomous penetration testing
 - **Strix** by usestrix — Security assessment agent
 - **HexStrike AI** by 0x4m4 — MCP tool gateway
@@ -570,4 +809,8 @@ And many more. See `WORKSPACE_INVENTORY.md` for complete list.
 
 ---
 
-**Status**: Platform structure complete and ready for deployment. Awaiting Docker, Ollama, and API key configuration for full operational capability.
+> **Status**: Platform structure complete and ready for deployment. Awaiting Docker, Ollama, and API key configuration for full operational capability.
+
+<div align="center">
+  <sub>Built with 🧬 evolutionary intelligence · CERBERUS</sub>
+</div>
