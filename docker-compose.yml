@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # LiteLLM Gateway - LLM proxy for all agents
+  litellm:
+    image: ghcr.io/berriai/litellm:main
+    container_name: cyberai-litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./platform/llm-gateway/config:/app/config
+      - ./platform/llm-gateway/models:/app/models
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-test}
+      - LITELLM_PORT=4000
+    command: --config /app/config/config.yaml
+    restart: unless-stopped
+    networks:
+      - cyberai-net
+
+  # Open WebUI - Human-facing interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: cyberai-open-webui
+    ports:
+      - "3000:3000"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE=http://litellm:4000
+    volumes:
+      - ./infrastructure/open-webui/data:/app/backend/data
+    restart: unless-stopped
+    networks:
+      - cyberai-net
+    depends_on:
+      - ollama
+      - litellm
+
+  # Ollama - Local model service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: cyberai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./infrastructure/ollama/models:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - cyberai-net
+
+  # Optional: PentAGI - Primary security agent (requires GPU for best performance)
+  # pentagi:
+  #   image: vxcontrol/pentagi:latest
+  #   container_name: cyberai-pentagi
+  #   ports:
+  #     - "8443:8443"
+  #   environment:
+  #     - OPEN_AI_KEY=${OPENAI_API_KEY}
+  #     - OLLAMA_SERVER_URL=http://ollama:11434
+  #   volumes:
+  #     - ./adapters/pentagi/data:/app/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - cyberai-net
+  #   depends_on:
+  #     - ollama
+  #     - litellm
+
+networks:
+  cyberai-net:
+    name: cyberai-net
+    driver: bridge

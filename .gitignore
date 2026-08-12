@@ -31,3 +31,42 @@ out/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# ============ CYBER AI ORCHESTRATOR ============
+
+# Secrets - NEVER commit
+.env
+*.env.local
+*.env.*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Memory data
+memory/*.db
+memory/embeddings/*
+!memory/embeddings/.gitkeep
+memory/sessions/*
+!memory/sessions/.gitkeep
+
+# Logs
+logs/sessions/*
+!logs/sessions/.gitkeep
+
+# Lab evidence
+lab/evidence/*
+!lab/evidence/.gitkeep
+
+# Backups
+backups/*
+!backups/.gitkeep
+
+# LiteLLM data
+platform/llm-gateway/litellm.db
+platform/llm-gateway/logs/*
+!platform/llm-gateway/logs/.gitkeep
+
+# Local model data
+infrastructure/ollama/models/
