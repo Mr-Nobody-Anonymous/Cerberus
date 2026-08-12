@@ -64,9 +64,9 @@ backups/*
 !backups/.gitkeep
 
 # LiteLLM data
-platform/llm-gateway/litellm.db
-platform/llm-gateway/logs/*
-!platform/llm-gateway/logs/.gitkeep
+cyberai/llm-gateway/litellm.db
+cyberai/llm-gateway/logs/*
+!cyberai/llm-gateway/logs/.gitkeep
 
 # Local model data
 infrastructure/ollama/models/

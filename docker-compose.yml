@@ -8,8 +8,8 @@ services:
     ports:
       - "4000:4000"
     volumes:
-      - ./platform/llm-gateway/config:/app/config
-      - ./platform/llm-gateway/models:/app/models
+      - ./cyberai/llm-gateway/config:/app/config
+      - ./cyberai/llm-gateway/models:/app/models
     environment:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-test}
       - LITELLM_PORT=4000

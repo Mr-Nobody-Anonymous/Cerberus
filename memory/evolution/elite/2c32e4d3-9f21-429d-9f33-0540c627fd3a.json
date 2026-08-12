@@ -1,0 +1,42 @@
+{
+  "strategy_id": "2c32e4d3-9f21-429d-9f33-0540c627fd3a",
+  "parent_id": "14ce9e30-8837-4db0-966c-d7f1a111dd1e",
+  "generation": 3,
+  "description": "Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "preconditions": [],
+  "actions": [
+    {
+      "action": "recon",
+      "capability": "reconnaissance"
+    },
+    {
+      "action": "analysis",
+      "capability": "analysis"
+    },
+    {
+      "action": "verification",
+      "capability": "verification"
+    }
+  ],
+  "tools": [
+    "strix",
+    "pentagi"
+  ],
+  "agent": "",
+  "model": "",
+  "expected_result": "",
+  "actual_result": "Simulated result for strategy: Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "fitness": 1.96,
+  "confidence": 0.0,
+  "verification": "LIKELY",
+  "status": "successful",
+  "task_type": "assessment",
+  "environment": "authorized_lab",
+  "target_type": "",
+  "metadata": {
+    "mutation_type": "action",
+    "mutation_index": 2
+  },
+  "created_at": "2026-08-12T09:58:01.485497+00:00",
+  "evaluated_at": "2026-08-12T09:58:01.493861+00:00"
+}

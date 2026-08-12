@@ -1,0 +1,57 @@
+{
+  "strategy_id": "43820a7f-baa3-475b-8e0d-5cede0295da1",
+  "parent_id": "14ce9e30-8837-4db0-966c-d7f1a111dd1e+31e03345-05f3-4ab6-a162-eddc27fa1810",
+  "generation": 3,
+  "description": "Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 2 of: Basic strategy 1 for assessment",
+  "preconditions": [],
+  "actions": [
+    {
+      "action": "recon",
+      "capability": "reconnaissance"
+    },
+    {
+      "action": "analysis",
+      "capability": "analysis"
+    },
+    {
+      "action": "verification",
+      "capability": "verification"
+    },
+    {
+      "action": "recon",
+      "capability": "reconnaissance"
+    },
+    {
+      "action": "analysis",
+      "capability": "analysis"
+    },
+    {
+      "action": "verification",
+      "capability": "verification"
+    }
+  ],
+  "tools": [
+    "pentagi",
+    "strix"
+  ],
+  "agent": "",
+  "model": "",
+  "expected_result": "",
+  "actual_result": "Simulated result for strategy: Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 2 of: Basic strategy 1 for assessment",
+  "fitness": 0.94,
+  "confidence": 0.0,
+  "verification": "LIKELY",
+  "status": "successful",
+  "task_type": "test",
+  "environment": "authorized_lab",
+  "target_type": "",
+  "metadata": {
+    "recombination": true,
+    "parents": [
+      "14ce9e30-8837-4db0-966c-d7f1a111dd1e",
+      "31e03345-05f3-4ab6-a162-eddc27fa1810"
+    ]
+  },
+  "created_at": "2026-08-12T09:40:28.205728+00:00",
+  "evaluated_at": "2026-08-12T09:40:28.212701+00:00"
+}

@@ -33,8 +33,16 @@ class PolicyEngine:
 
                 with open(self.targets_path, "r") as f:
                     data = yaml.safe_load(f)
-                targets = data.get("targets", []) if data else []
+                # Handle: file is empty (data=None), targets key missing,
+                # or targets key present but value is None (e.g. "targets:" with no items)
+                if data and isinstance(data, dict):
+                    raw_targets = data.get("targets", [])
+                    targets = raw_targets if isinstance(raw_targets, list) else []
+                else:
+                    targets = []
                 for t in targets:
+                    if not isinstance(t, dict):
+                        continue
                     target_id = t.get("id", "")
                     if target_id:
                         self._targets[target_id] = t
@@ -117,3 +125,7 @@ class PolicyEngine:
         data = {"targets": list(self._targets.values())}
         with open(self.targets_path, "w") as f:
             yaml.dump(data, f, default_flow_style=False)
+
+    def close(self) -> None:
+        """Clean up resources (no-op for PolicyEngine — file-based)."""
+        pass

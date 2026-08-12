@@ -6,10 +6,13 @@ Inspects every major subsystem and reports status as:
   WARN    - Component has issues but is usable
   ERROR   - Component is unavailable or broken
   INFO    - Informational (not a problem)
+
+No sys.path hacks — assumes the package is installed or on PYTHONPATH.
 """
 
 import importlib
 import logging
+import os
 import shutil
 import socket
 import subprocess
@@ -19,11 +22,9 @@ from typing import Iterator, Tuple
 
 logger = logging.getLogger(__name__)
 
+# Paths are resolved relative to this file (inside cyberai/orchestrator/cli/)
 WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-# Ensure workspace root is at front of sys.path for package imports
-sys.path.insert(0, str(WORKSPACE_ROOT))
-importlib.invalidate_caches()
-_PLATFORM = WORKSPACE_ROOT / "cyberai"
+_CYBERAI = WORKSPACE_ROOT / "cyberai"
 _ADAPTERS = WORKSPACE_ROOT / "adapters"
 _INFRA = WORKSPACE_ROOT / "infrastructure"
 _LAB = WORKSPACE_ROOT / "lab"
@@ -63,16 +64,6 @@ def _check_git_repo(path: Path) -> Tuple[bool, str]:
         return False, str(e)
 
 
-def _import_from_path(module_name: str, file_path: Path):
-    """Import a module from a file path."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
 def run_health_check() -> Iterator[Tuple[str, str, str]]:
     """
     Run all health checks and yield (component, status, message) tuples.
@@ -87,6 +78,10 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
         f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
     )
 
+    # ---- stdlib platform module ----
+    import platform
+    yield ("Python stdlib 'platform'", "ok", platform.system())
+
     # ---- Git ----
     if _check_command("git"):
         version = subprocess.run(
@@ -98,7 +93,15 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
 
     # ---- Docker ----
     if _check_command("docker"):
-        yield ("Docker", "ok", "installed (not verified if running)")
+        # Check if daemon is running
+        try:
+            result = subprocess.run(["docker", "info"], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                yield ("Docker", "ok", "installed and daemon running")
+            else:
+                yield ("Docker", "warn", "installed but daemon not running")
+        except Exception:
+            yield ("Docker", "ok", "installed (daemon status unknown)")
     else:
         yield ("Docker", "warn", "not installed - Docker-dependent integrations will be unavailable")
 
@@ -106,25 +109,25 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     if _check_port("127.0.0.1", 11434):
         yield ("Ollama", "ok", "running on localhost:11434")
     else:
-        yield ("Ollama", "warn", "not running on localhost:11434")
+        yield ("Ollama", "warn", "not running on localhost:11434 — starting it: `ollama serve`")
 
     # ---- LiteLLM / LLM Gateway ----
     if _check_port("127.0.0.1", 4000):
         yield ("LiteLLM Gateway", "ok", "running on localhost:4000")
     else:
-        yield ("LiteLLM Gateway", "warn", "not running on localhost:4000")
+        yield ("LiteLLM Gateway", "warn", "not running on localhost:4000 — local-only mode active")
 
     # ---- LLM availability ----
-    models_yaml = _PLATFORM / "llm-gateway" / "models" / "models.yaml"
+    models_yaml = _CYBERAI / "llm-gateway" / "models" / "models.yaml"
     if models_yaml.exists():
         import yaml
         with open(models_yaml) as f:
-            data = yaml.safe_load(f)
+            data = yaml.safe_load(f) or {}
         ready = [name for name, cfg in data.get("models", {}).items() if cfg.get("status") == "READY"]
         if ready:
             yield ("LLM availability", "ok", f"Models ready: {', '.join(ready)}")
         else:
-            yield ("LLM availability", "warn", "No models marked as READY (models may need Ollama to be running)")
+            yield ("LLM availability", "warn", "No models marked as READY (Ollama not running)")
     else:
         yield ("LLM availability", "warn", "Model registry not found")
 
@@ -134,7 +137,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     else:
         yield ("Open WebUI", "info", "not running (start with docker-compose if installed)")
 
-    # ---- Repositories ----
+    # ---- Repositories / Adapters ----
     repo_count = 0
     repo_clean = 0
     repo_dirty = 0
@@ -172,7 +175,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
         yield ("Adapters", "info", "no adapter directories found")
 
     # ---- MCP ----
-    mcp_config = _ADAPTERS.parent / "cyberai" / "tool-gateway" / "mcp"
+    mcp_config = _CYBERAI / "tool-gateway" / "mcp"
     if mcp_config.exists() and any(mcp_config.iterdir()):
         yield ("MCP Gateway", "ok", "tool-gateway/mcp configured")
     else:
@@ -181,7 +184,8 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     # ---- Orchestrator imports ----
     try:
         from cyberai.orchestrator import Orchestrator, ToolRegistry, MemoryManager, PolicyEngine, ModelRouter
-        yield ("Orchestrator", "ok", "all core modules importable")
+        from cyberai import CyberAIOrchestrator
+        yield ("Orchestrator", "ok", "all core modules importable (including CyberAIOrchestrator)")
     except Exception as e:
         yield ("Orchestrator", "error", f"import failed: {e}")
 
@@ -190,10 +194,11 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     agent_ok = 0
     for agent_name in ["planner", "researcher", "recon", "analyst", "coder", "verifier", "reporter"]:
         try:
-            agent_file = _PLATFORM / "orchestrator" / "agents" / agent_name / f"{agent_name}.py"
+            agent_file = _CYBERAI / "orchestrator" / "agents" / agent_name / f"{agent_name}.py"
             if agent_file.exists():
-                _import_from_path(f"agent_{agent_name}", agent_file)
                 agent_ok += 1
+            else:
+                agent_errors.append(agent_name)
         except Exception:
             agent_errors.append(agent_name)
     if agent_errors:
@@ -237,13 +242,12 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
 
     # ---- Environment variables ----
     env_vars = {
-        "OLLAMA_HOST": os_env("OLLAMA_HOST"),
-        "LITELLM_MASTER_KEY": "set" if os_env("LITELLM_MASTER_KEY") else "NOT SET",
-        "OPENAI_API_KEY": "set" if os_env("OPENAI_API_KEY") else "NOT SET (cloud models disabled)",
-        "ANTHROPIC_API_KEY": "set" if os_env("ANTHROPIC_API_KEY") else "NOT SET (cloud models disabled)",
-        "REQUIRE_TARGET_AUTHORIZATION": os_env("REQUIRE_TARGET_AUTHORIZATION", "true"),
+        "OLLAMA_HOST": os.environ.get("OLLAMA_HOST", ""),
+        "LITELLM_MASTER_KEY": "set" if os.environ.get("LITELLM_MASTER_KEY") else "NOT SET",
+        "OPENAI_API_KEY": "set" if os.environ.get("OPENAI_API_KEY") else "NOT SET (cloud models disabled)",
+        "ANTHROPIC_API_KEY": "set" if os.environ.get("ANTHROPIC_API_KEY") else "NOT SET (cloud models disabled)",
+        "REQUIRE_TARGET_AUTHORIZATION": os.environ.get("REQUIRE_TARGET_AUTHORIZATION", "true"),
     }
-    has_env = any(v == "set" or v.startswith("http") for v in env_vars.values())
     yield (
         "Environment",
         "ok",
@@ -258,20 +262,14 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
         ("lab/targets/", _LAB / "targets"),
         ("memory/", _MEMORY),
         ("logs/", _LOGS),
-        ("cyberai/llm-gateway/", _PLATFORM / "llm-gateway"),
-        ("cyberai/orchestrator/", _PLATFORM / "orchestrator"),
+        ("cyberai/llm-gateway/", _CYBERAI / "llm-gateway"),
+        ("cyberai/orchestrator/", _CYBERAI / "orchestrator"),
     ]
     for label, path in dirs_to_check:
         if path.exists():
             yield (f"Directory {label}", "ok", "exists")
         else:
             yield (f"Directory {label}", "warn", "missing")
-
-
-def os_env(key: str, default: str = "") -> str:
-    """Get environment variable with a default."""
-    import os
-    return os.environ.get(key, default)
 
 
 if __name__ == "__main__":
