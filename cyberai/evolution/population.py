@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .strategy import Strategy, StrategyStatus
+from cyberai.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,9 @@ class Population:
     """Manages a population of strategies."""
 
     def __init__(self, population_dir: Optional[Path] = None, max_size: int = 50):
-        self.population_dir = population_dir or Path(__file__).parent.parent.parent / "memory" / "evolution" / "population"
+        self.population_dir = population_dir or config.get_path(
+            "memory", "evolution_dir", "memory/evolution"
+        ) / "population"
         self.population_dir.mkdir(parents=True, exist_ok=True)
         self.max_size = max_size
         self._strategies: Dict[str, Strategy] = {}

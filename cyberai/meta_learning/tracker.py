@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import config
+
 logger = logging.getLogger(__name__)
 
 # Physical schema with views for calculation
@@ -144,7 +146,9 @@ class PerformanceTracker:
     """
 
     def __init__(self, db_path: Optional[Path] = None):
-        self.db_path = db_path or Path(__file__).parent.parent.parent / "memory" / "performance.db"
+        self.db_path = db_path or config.get_path(
+            "memory", "performance_db_path", "memory/performance.db"
+        )
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.db_path))
         self._conn.row_factory = sqlite3.Row

@@ -20,14 +20,15 @@ The AI must NOT automatically overwrite its production code.
 import json
 import logging
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from cyberai.config import WORKSPACE_ROOT
 
 from .proposal import ImprovementProposal, ProposalStatus
 
 logger = logging.getLogger(__name__)
-
-WORKSPACE_ROOT = Path(__file__).parent.parent.parent
 
 
 class SelfImprovementPipeline:
@@ -202,7 +203,7 @@ class SelfImprovementPipeline:
     def approve(self, proposal: ImprovementProposal) -> None:
         """Approve a proposal for application."""
         proposal.status = ProposalStatus.APPROVED.value
-        proposal.reviewed_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        proposal.reviewed_at = datetime.now(timezone.utc).isoformat()
         self._save(proposal)
         logger.info(f"Approved proposal {proposal.proposal_id}")
 
@@ -210,7 +211,7 @@ class SelfImprovementPipeline:
         """Reject a proposal."""
         proposal.status = ProposalStatus.REJECTED.value
         proposal.metadata["rejection_reason"] = reason
-        proposal.reviewed_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        proposal.reviewed_at = datetime.now(timezone.utc).isoformat()
         self._save(proposal)
         logger.info(f"Rejected proposal {proposal.proposal_id}: {reason}")
 

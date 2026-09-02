@@ -23,6 +23,7 @@ from .selection import SelectionEngine
 from .evaluation import EvaluationEngine
 from .fitness import FitnessFunction
 from .archive import EliteArchive
+from cyberai.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,9 @@ class EvolutionEngine:
         mutation_rate: float = 0.3,
         crossover_rate: float = 0.5,
     ):
-        self.evolution_dir = evolution_dir or Path(__file__).parent.parent.parent / "memory" / "evolution"
+        self.evolution_dir = evolution_dir or config.get_path(
+            "memory", "evolution_dir", "memory/evolution"
+        )
         self.evolution_dir.mkdir(parents=True, exist_ok=True)
 
         self.population = Population(self.evolution_dir / "population", max_size=population_size)

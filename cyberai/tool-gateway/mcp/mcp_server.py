@@ -13,6 +13,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import WORKSPACE_ROOT
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,7 +63,7 @@ class MCPGateway:
                 "type": "stdio",
                 "command": "python",
                 "args": ["hexstrike_mcp.py"],
-                "cwd": str(Path(__file__).parent.parent.parent.parent / "adapters" / "hexstrike"),
+                "cwd": str(WORKSPACE_ROOT / "adapters" / "hexstrike"),
                 "capabilities": ["tool_execution", "mcp_servers"],
             },
             "mcpstrike": {
@@ -69,7 +71,7 @@ class MCPGateway:
                 "type": "stdio",
                 "command": "python",
                 "args": ["-m", "mcpstrike.server"],
-                "cwd": str(Path(__file__).parent.parent.parent.parent / "adapters" / "mcpstrike"),
+                "cwd": str(WORKSPACE_ROOT / "adapters" / "mcpstrike"),
                 "capabilities": ["tool_execution", "mcp_servers"],
             },
             "darkmoon": {
@@ -77,7 +79,7 @@ class MCPGateway:
                 "type": "stdio",
                 "command": "python",
                 "args": ["mcp/src/server.py"],
-                "cwd": str(Path(__file__).parent.parent.parent.parent / "adapters" / "darkmoon"),
+                "cwd": str(WORKSPACE_ROOT / "adapters" / "darkmoon"),
                 "capabilities": ["research", "analysis"],
             },
         }

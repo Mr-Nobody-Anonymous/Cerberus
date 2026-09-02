@@ -19,11 +19,11 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import WORKSPACE_ROOT
 from .base import AdapterCapability, AdapterResult, SecurityToolAdapter
 
 logger = logging.getLogger(__name__)
 
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 ADAPTERS_DIR = WORKSPACE_ROOT / "adapters"
 
 # Known adapter directories and their integration methods

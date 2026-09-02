@@ -26,20 +26,19 @@ classifiers = [
 ]
 
 dependencies = [
-    "click>=8.1.0",
-    "PyYAML>=6.0",
-    "httpx>=0.24.0",
-    "pydantic>=2.0.0",
+    "click>=8.1.0,<9",
+    "PyYAML>=6.0,<7",
+    "httpx>=0.24.0,<1",
 ]
 
 [project.optional-dependencies]
 api = [
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
+    "fastapi>=0.104.0,<1",
+    "uvicorn>=0.24.0,<1",
 ]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.23.0",
+    "pytest>=7.4.0,<9",
+    "pytest-asyncio>=0.23.0,<1",
 ]
 a-evolve = [
     "a-evolve[all]",
@@ -49,10 +48,10 @@ cloud = [
     "anthropic>=0.25.0",
 ]
 all = [
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.23.0",
+    "fastapi>=0.104.0,<1",
+    "uvicorn>=0.24.0,<1",
+    "pytest>=7.4.0,<9",
+    "pytest-asyncio>=0.23.0,<1",
 ]
 
 [project.scripts]
@@ -63,3 +62,7 @@ include = ["cyberai*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml", "*.json", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

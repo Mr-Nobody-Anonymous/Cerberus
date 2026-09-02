@@ -20,10 +20,11 @@ import sys
 from pathlib import Path
 from typing import Iterator, Tuple
 
+from cyberai.config import WORKSPACE_ROOT
+
 logger = logging.getLogger(__name__)
 
-# Paths are resolved relative to this file (inside cyberai/orchestrator/cli/)
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+# Workspace-relative paths come from the central config loader
 _CYBERAI = WORKSPACE_ROOT / "cyberai"
 _ADAPTERS = WORKSPACE_ROOT / "adapters"
 _INFRA = WORKSPACE_ROOT / "infrastructure"

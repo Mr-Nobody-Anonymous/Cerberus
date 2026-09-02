@@ -20,13 +20,15 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# Workspace root
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent
+from cyberai.config import WORKSPACE_ROOT
 
-# Environment
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-LITELLM_PORT = os.environ.get("LITELLM_PORT", "4000")
-LITELLM_MASTER_KEY = os.environ.get("LITELLM_MASTER_KEY", "")
+# Workspace root resolved by the central config loader
+from cyberai.config import config
+
+# Environment (from central config: defaults < .env < process env)
+OLLAMA_HOST = config.get("llm", "ollama_host", "http://localhost:11434")
+LITELLM_PORT = str(config.get("llm", "litellm_port", 4000))
+LITELLM_MASTER_KEY = config.get("llm", "litellm_master_key", "")
 
 # Logical roles -> model alias mapping (configurable)
 ROLE_MODEL_MAP = {

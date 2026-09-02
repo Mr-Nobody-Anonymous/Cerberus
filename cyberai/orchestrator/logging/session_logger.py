@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import config
+
 logger = logging.getLogger(__name__)
 
 # Patterns to redact from logs
@@ -44,7 +46,9 @@ class SessionLogger:
     """
 
     def __init__(self, base_dir: Optional[Path] = None):
-        self.base_dir = base_dir or Path(__file__).parent.parent.parent.parent / "logs" / "sessions"
+        self.base_dir = base_dir or config.get_path(
+            "logging", "sessions_dir", "logs/sessions"
+        )
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def create_session_dir(self, session_id: str) -> Path:

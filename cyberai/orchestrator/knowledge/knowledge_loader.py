@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
+from cyberai.config import WORKSPACE_ROOT
 KNOWLEDGE_DIR = WORKSPACE_ROOT / "knowledge"
 
 

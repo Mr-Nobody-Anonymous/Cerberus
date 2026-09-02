@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import config, validate_targets_file
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,36 +23,30 @@ class PolicyEngine:
     """
 
     def __init__(self, targets_path: Optional[Path] = None):
-        self.targets_path = targets_path or Path(__file__).parent.parent.parent.parent / "lab" / "targets" / "targets.yaml"
+        self.targets_path = targets_path or config.get_path(
+            "policy", "targets_path", "lab/targets/targets.yaml"
+        )
         self._targets: Dict[str, Dict[str, Any]] = {}
         self._load_targets()
 
     def _load_targets(self) -> None:
-        """Load authorized targets from the targets file."""
-        if self.targets_path.exists():
-            try:
-                import yaml
-
-                with open(self.targets_path, "r") as f:
-                    data = yaml.safe_load(f)
-                # Handle: file is empty (data=None), targets key missing,
-                # or targets key present but value is None (e.g. "targets:" with no items)
-                if data and isinstance(data, dict):
-                    raw_targets = data.get("targets", [])
-                    targets = raw_targets if isinstance(raw_targets, list) else []
-                else:
-                    targets = []
-                for t in targets:
-                    if not isinstance(t, dict):
-                        continue
-                    target_id = t.get("id", "")
-                    if target_id:
-                        self._targets[target_id] = t
-                logger.info(f"Loaded {len(self._targets)} authorized targets")
-            except Exception as e:
-                logger.warning(f"Failed to load targets: {e}")
-        else:
-            logger.warning(f"No targets file found at {self.targets_path}")
+        """Load and validate authorized targets from the targets file."""
+        if not self.targets_path.exists():
+            raise FileNotFoundError(
+                f"Targets file not found at {self.targets_path}. "
+                "Create lab/targets/targets.yaml or set LAB_TARGETS_PATH."
+            )
+        try:
+            # Central validation: fails fast with a clear error on
+            # missing/invalid required fields (id, environment, allowed).
+            targets = validate_targets_file(self.targets_path)
+        except Exception as e:
+            raise ValueError(f"Invalid targets file {self.targets_path}: {e}") from e
+        for t in targets:
+            target_id = t.get("id", "")
+            if target_id:
+                self._targets[target_id] = t
+        logger.info("Loaded %d authorized targets", len(self._targets))
 
     def is_authorized(self, target_id: str) -> bool:
         """

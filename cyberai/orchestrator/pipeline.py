@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from cyberai.config import WORKSPACE_ROOT
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -234,7 +236,7 @@ async def run_tool_command(
                 *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=str(Path(__file__).parent.parent.parent.parent),  # workspace root
+                cwd=str(WORKSPACE_ROOT),  # workspace root
             )
 
             try:

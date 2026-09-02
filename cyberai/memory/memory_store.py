@@ -23,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import config
+
 logger = logging.getLogger(__name__)
 
 MEMORY_TYPES = {
@@ -64,7 +66,9 @@ class MemoryStore:
     """Typed, ranked memory store for experiences."""
 
     def __init__(self, db_path: Optional[Path] = None):
-        self.db_path = db_path or Path(__file__).parent.parent.parent / "memory" / "experiences.db"
+        self.db_path = db_path or config.get_path(
+            "memory", "experiences_db_path", "memory/experiences.db"
+        )
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.db_path))
         self._conn.row_factory = sqlite3.Row

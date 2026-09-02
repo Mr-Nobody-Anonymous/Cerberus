@@ -17,6 +17,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from cyberai.config import config, WORKSPACE_ROOT
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,7 @@ class StructuredLogger:
     """Writes structured JSONL log entries to subject-specific directories."""
 
     def __init__(self, logs_root: Optional[Path] = None):
-        self.logs_root = logs_root or Path(__file__).parent.parent.parent / "logs"
+        self.logs_root = logs_root or WORKSPACE_ROOT / "logs"
         for sub in ("tasks", "models", "agents", "evolution"):
             (self.logs_root / sub).mkdir(parents=True, exist_ok=True)
 

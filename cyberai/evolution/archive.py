@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .strategy import Strategy, StrategyStatus
+from cyberai.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,9 @@ class EliteArchive:
     """Maintains the elite archive of best verified strategies."""
 
     def __init__(self, archive_dir: Optional[Path] = None, max_elite: int = 20):
-        self.archive_dir = archive_dir or Path(__file__).parent.parent.parent / "memory" / "evolution" / "elite"
+        self.archive_dir = archive_dir or config.get_path(
+            "memory", "evolution_dir", "memory/evolution"
+        ) / "elite"
         self.archive_dir.mkdir(parents=True, exist_ok=True)
         self.max_elite = max_elite
         self._elite: Dict[str, Strategy] = {}

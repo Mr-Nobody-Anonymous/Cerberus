@@ -12,10 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from cyberai.config import config
+
 logger = logging.getLogger(__name__)
 
-WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
-EVIDENCE_DIR = WORKSPACE_ROOT / "lab" / "evidence"
+EVIDENCE_DIR = config.get_path("evidence", "dir", "lab/evidence")
 
 
 class EvidenceManager:

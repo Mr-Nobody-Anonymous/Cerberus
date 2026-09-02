@@ -30,6 +30,7 @@ from pathlib import Path
 
 import click
 
+from cyberai.config import WORKSPACE_ROOT
 from cyberai.orchestrator import Orchestrator
 from cyberai.orchestrator import ToolRegistry
 from cyberai.orchestrator import MemoryManager
@@ -38,7 +39,7 @@ from cyberai.orchestrator.adapters.adapter_manager import AdapterManager
 
 
 def _get_workspace_root() -> Path:
-    return Path(__file__).resolve().parent.parent.parent.parent
+    return WORKSPACE_ROOT
 
 
 @click.group(name="cyber-ai")

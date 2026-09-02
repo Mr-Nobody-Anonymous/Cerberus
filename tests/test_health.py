@@ -1,9 +1,8 @@
-"""Basic health check tests."""
-import sys
-from pathlib import Path
+"""Basic health check tests.
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
+Run with ``python -m pytest tests/ -v`` from the repository root so the
+``cyberai`` package resolves without any sys.path manipulation.
+"""
 
 def test_imports():
     """Test that core modules can be imported."""

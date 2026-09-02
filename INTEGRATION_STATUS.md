@@ -77,6 +77,9 @@ All adapters implement the `SecurityToolAdapter` interface with health checks, c
 7. ~~**No meta-learning**~~ → **RESOLVED**: `PerformanceTracker` at `cyberai/meta_learning/tracker.py`.
 8. ~~**No self-improvement**~~ → **RESOLVED**: `SelfImprovementPipeline` at `cyberai/self_improvement/pipeline.py`.
 9. ~~**Syntax error in verifier.py**~~ → **RESOLVED**: Corrupted trailing content removed.
+10. ~~**Hardcoded paths everywhere**~~ → **RESOLVED (Phase A)**: Single central config loader at `cyberai/config.py` resolves every path relative to `CERBERUS_HOME` (env) or the repo root, validates required YAML fields on load, and fails fast with `ConfigError` instead of "NOT FOUND" at call time. All workspace-path derivation in `cyberai/` now goes through it.
+11. ~~**Undeclared / unpinned dependencies**~~ → **RESOLVED (Phase A)**: `pyproject.toml` + `requirements.txt` cross-checked against actual imports in `cyberai/` (core: click, PyYAML, httpx; api: fastapi, uvicorn; dev: pytest, pytest-asyncio) and upper-bounded.
+12. ~~**Path hacks in tests** (`sys.path.insert`) and `__import__` workarounds~~ → **RESOLVED (Phase A)**: Tests run via `python -m pytest` from the repo root with zero path manipulation; `__import__("datetime")` hacks in the self-improvement pipeline replaced with real imports.
 
 ## Known Issues
 

@@ -4,6 +4,9 @@ End-to-end integration tests for the Cyber AI Orchestrator.
 These tests verify the full autonomous pipeline in simulation mode,
 requiring no Docker, no Ollama, and no cloud APIs.
 
+Run with ``python -m pytest tests/ -v`` from the repository root so the
+``cyberai`` package resolves without any sys.path manipulation.
+
 Test flow:
   USER → ORCHESTRATOR → PLAN → MEMORY RETRIEVAL → MODEL ROUTING →
   MOCK AGENT → MOCK TOOL → RESULT → VERIFY → MEMORY → EVOLUTION → REPORT
@@ -12,11 +15,7 @@ Test flow:
 import asyncio
 import json
 import os
-import sys
 from pathlib import Path
-
-# Ensure workspace root is importable
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from cyberai import CyberAIOrchestrator
 from cyberai import __version__
