@@ -11,7 +11,7 @@ This file tracks the integration status of all components in the CERBERUS Cyber 
 | Master Orchestrator | ✅ WORKING | `CyberAIOrchestrator` facade — unified AI entry point |
 | Core Orchestrator | ✅ WORKING | `cyberai/orchestrator/orchestrator.py` |
 | Task State | ✅ WORKING | Canonical `Task` object with plan, findings, evidence |
-| LLM Gateway | ⚠️ PARTIAL | Code complete; requires Ollama running + models downloaded |
+| LLM Gateway | ✅ WORKING | Real transport fallback chain (LiteLLM → Ollama → provider); per-alias health; local-only enforcement at gateway level |
 | Tool Registry | ✅ WORKING | 17 tools registered |
 | Capability Registry | ✅ WORKING | 17 capabilities mapped to providers |
 | Memory System | ✅ WORKING | SQLite DB operational (experiences, findings, sessions) |
@@ -80,6 +80,7 @@ All adapters implement the `SecurityToolAdapter` interface with health checks, c
 10. ~~**Hardcoded paths everywhere**~~ → **RESOLVED (Phase A)**: Single central config loader at `cyberai/config.py` resolves every path relative to `CERBERUS_HOME` (env) or the repo root, validates required YAML fields on load, and fails fast with `ConfigError` instead of "NOT FOUND" at call time. All workspace-path derivation in `cyberai/` now goes through it.
 11. ~~**Undeclared / unpinned dependencies**~~ → **RESOLVED (Phase A)**: `pyproject.toml` + `requirements.txt` cross-checked against actual imports in `cyberai/` (core: click, PyYAML, httpx; api: fastapi, uvicorn; dev: pytest, pytest-asyncio) and upper-bounded.
 12. ~~**Path hacks in tests** (`sys.path.insert`) and `__import__` workarounds~~ → **RESOLVED (Phase A)**: Tests run via `python -m pytest` from the repo root with zero path manipulation; `__import__("datetime")` hacks in the self-improvement pipeline replaced with real imports.
+13. ~~**No real LLM calls**: LLM gateway was config-only with no transport fallback~~ → **RESOLVED (Phase B)**: `LLMGateway.complete()` implements LiteLLM-proxy → direct-Ollama → direct-provider transport fallback; each hop independently timed with structured error logging; `health()` probes both transports and reports per-alias availability; `local_only` provably blocks cloud routes at the gateway level (tested). All 7 agents call the gateway through per-agent `prompts.py` modules — prompts are never hardcoded in the gateway.
 
 ## Known Issues
 
