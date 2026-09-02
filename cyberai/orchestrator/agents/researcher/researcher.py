@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..base import BaseAgent
+from .prompts import build_research_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -57,17 +58,9 @@ class ResearcherAgent(BaseAgent):
                 for e in experiences
             )
 
-        prompt = (
-            f"You are a cybersecurity research agent. Research the following topic.\n\n"
-            f"Target: {target}\n"
-            f"Topic: {topic}\n"
-            f"Target ID: {target_id}\n"
-            f"\nPast relevant experiences:\n{relevant if relevant else 'None found.'}\n"
-            f"\nProvide a structured summary of:\n"
-            f"1. What is known about this target/topic\n"
-            f"2. Known vulnerabilities or weaknesses\n"
-            f"3. Recommended next steps\n"
-            f"4. Tools that would be useful for further investigation\n"
+        prompt = build_research_prompt(
+            target=target, topic=topic, target_id=target_id,
+            experiences_text=relevant,
         )
 
         llm_response = await self._llm_call(prompt, task_type="vulnerability_research")

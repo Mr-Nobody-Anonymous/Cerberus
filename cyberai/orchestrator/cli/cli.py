@@ -82,9 +82,9 @@ def task(ctx, objective, target, dry_run, simulate, scope):
 @click.option("--target", "-t", "target_id", default=None)
 @click.option("--dry-run", "dry_run", is_flag=True, default=False)
 @click.option("--simulate", "simulate", is_flag=True, default=False)
-def assess(objective, target, dry_run, simulate):
+def assess(objective, target_id, dry_run, simulate):
     """Legacy alias for 'task'."""
-    asyncio.run(_run_task(objective, target, dry_run, simulate))
+    asyncio.run(_run_task(objective, target_id, dry_run, simulate))
 
 
 async def _run_task(objective, target_id, dry_run, simulate, scope="authorized_lab"):

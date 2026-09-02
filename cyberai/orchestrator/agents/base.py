@@ -32,6 +32,7 @@ class BaseAgent:
         memory_manager=None,
         policy_engine=None,
         session_logger=None,
+        llm_gateway=None,
     ):
         self.name = name
         self.model_router = model_router
@@ -39,6 +40,7 @@ class BaseAgent:
         self.memory = memory_manager
         self.policy = policy_engine
         self.logger = session_logger
+        self.llm_gateway = llm_gateway
 
     async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -52,30 +54,33 @@ class BaseAgent:
         """
         raise NotImplementedError(f"Agent {self.name} must implement run()")
 
+    async def _get_gateway(self):
+        """Return the shared LLM gateway (lazily created if not injected)."""
+        if self.llm_gateway is None:
+            from cyberai.llm_gateway import LLMGateway
+
+            self.llm_gateway = LLMGateway()
+        return self.llm_gateway
+
     async def _llm_call(self, prompt: str, task_type: str = "default", **kwargs) -> str:
         """
-        Make an LLM call through the gateway using the model router.
+        Make an LLM call through the gateway's transport fallback chain
+        (LiteLLM proxy -> direct Ollama -> direct provider API).
 
         Args:
             prompt: The prompt text
             task_type: Task type for routing (e.g. "planning", "reasoning")
-            **kwargs: Additional parameters
+            **kwargs: Additional parameters forwarded to complete()
 
         Returns:
-            LLM response text
+            LLM response text ("" on failure — never fabricated)
         """
-        if not self.model_router:
-            return "[LLM_UNAVAILABLE: No model router configured]"
-
-        model_alias = self.model_router.route(task_type)
-
         if self.logger:
             self.logger.log_event(
                 "",
                 "model_calls",
                 {
                     "agent": self.name,
-                    "model": model_alias,
                     "task_type": task_type,
                     "prompt": prompt[:500],
                     "kwargs": {k: str(v)[:200] for k, v in kwargs.items()},
@@ -83,17 +88,18 @@ class BaseAgent:
             )
 
         try:
-            from cyberai.llm_gateway import LLMGateway
-
-            gateway = LLMGateway()
-            response = await gateway.generate(
-                role=task_type,
-                prompt=prompt,
-                **kwargs,
-            )
+            gateway = await self._get_gateway()
+            response = await gateway.complete(role=task_type, prompt=prompt, **kwargs)
+            if not response.get("success"):
+                logger.error(
+                    "LLM call failed in %s (task_type=%s): errors=%s blocked=%s",
+                    self.name, task_type,
+                    response.get("errors", []), response.get("blocked", []),
+                )
+                return f"[LLM_UNAVAILABLE: {response.get('message', 'all hops failed')}]"
             return response.get("content", "")
-        except Exception as e:
-            logger.warning(f"LLM call failed in {self.name}: {e}")
+        except Exception as e:  # noqa: BLE001 — structured, logged failure
+            logger.error("LLM call raised in %s: %s", self.name, e)
             return f"[LLM_ERROR: {e}]"
 
     def _record_experience(

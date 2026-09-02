@@ -1,5 +1,5 @@
 {
-  "strategy_id": "a6c98b90-34aa-4829-8f0e-c7c0a13597e4",
+  "strategy_id": "218fb558-4034-4420-abbb-bf5c52de38e5",
   "parent_id": "4508271b-f678-40a5-9cba-3bf75d5d0dae+4d76ca52-679d-4204-b243-2c045255dcee",
   "generation": 4,
   "description": "Hybrid: Mutation 2 of: Mutation 3 of: Basic strategy 1 for assessment + Mutation 1 of: Mutation 3 of: Basic strategy 1 for assessment",
@@ -31,14 +31,14 @@
     }
   ],
   "tools": [
-    "strix",
-    "pentagi"
+    "pentagi",
+    "strix"
   ],
   "agent": "",
   "model": "",
   "expected_result": "",
   "actual_result": "Simulated result for strategy: Hybrid: Mutation 2 of: Mutation 3 of: Basic strategy 1 for assessment + Mutation 1 of: Mutation 3 of: Basic strategy 1 for assessment",
-  "fitness": 2.6,
+  "fitness": 2.9,
   "confidence": 0.0,
   "verification": "VERIFIED",
   "status": "successful",
@@ -52,6 +52,6 @@
       "4d76ca52-679d-4204-b243-2c045255dcee"
     ]
   },
-  "created_at": "2026-08-12T18:23:46.595795+00:00",
-  "evaluated_at": "2026-08-12T18:23:46.621218+00:00"
+  "created_at": "2026-09-02T16:19:06.797098+00:00",
+  "evaluated_at": "2026-09-02T16:19:06.815504+00:00"
 }

@@ -168,6 +168,7 @@ class CyberAIOrchestrator:
                 memory_manager=self.memory,
                 policy_engine=self.policy,
                 session_logger=self._get_session_logger(),
+                llm_gateway=self.llm_gateway,
             )
         return self._agents[agent_name]
 

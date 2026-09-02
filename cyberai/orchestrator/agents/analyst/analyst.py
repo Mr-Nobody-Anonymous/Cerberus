@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..base import BaseAgent
+from .prompts import build_analysis_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -71,19 +72,12 @@ class AnalystAgent(BaseAgent):
             for e in evidence:
                 evidence_text += f"\n- {e.get('type', 'evidence')}: {str(e.get('content', ''))[:500]}"
 
-        prompt = (
-            f"You are a vulnerability analyst. Analyze the following findings and evidence "
-            f"to identify potential security issues and prioritize risks.\n\n"
-            f"Target: {target_id}\n"
-            f"Hypothesis: {hypothesis if hypothesis else 'None provided'}\n"
-            f"\nFindings:\n{findings_text if findings_text else 'No findings provided.'}"
-            f"\nEvidence:\n{evidence_text if evidence_text else 'No evidence provided.'}"
-            f"\nPast relevant experiences:\n{relevant if relevant else 'None found.'}"
-            f"\n\nProvide:\n"
-            f"1. Summary of identified risks\n"
-            f"2. Risk priority (critical/high/medium/low)\n"
-            f"3. Confidence level for each finding\n"
-            f"4. Recommended verification steps"
+        prompt = build_analysis_prompt(
+            target_id=target_id,
+            hypothesis=hypothesis,
+            findings_text=findings_text,
+            evidence_text=evidence_text,
+            experiences_text=relevant,
         )
 
         llm_response = await self._llm_call(prompt, task_type="reasoning")

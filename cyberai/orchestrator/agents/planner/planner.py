@@ -10,6 +10,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..base import BaseAgent
+from .prompts import build_planning_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -57,21 +58,11 @@ class PlannerAgent(BaseAgent):
                 for e in experiences
             )
 
-        prompt = (
-            f"You are a security planning agent. Create a detailed, step-by-step "
-            f"security assessment plan for the following objective.\n\n"
-            f"Objective: {objective}\n"
-            f"Target: {target_id}\n"
-            f"Constraints: {', '.join(constraints) if constraints else 'none'}\n"
-            f"\nRelevant past experiences:\n{relevant if relevant else 'None found.'}\n"
-            f"\nGenerate a JSON plan with a 'steps' array. Each step should have:\n"
-            f"  - step: integer step number\n"
-            f"  - action: one of: recon, research, analysis, code_analysis, code_generation, "
-            f"exploitation, verification, reporting\n"
-            f"  - tool: suggested tool name from the registry\n"
-            f"  - description: what to do in this step\n"
-            f"  - model: the task type for model routing\n"
-            f"\nRespond with valid JSON only."
+        prompt = build_planning_prompt(
+            objective=objective,
+            target_id=target_id,
+            constraints=constraints,
+            experiences_text=relevant,
         )
 
         llm_response = await self._llm_call(prompt, task_type="planning")

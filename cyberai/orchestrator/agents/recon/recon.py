@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..base import BaseAgent
+from .prompts import build_recon_analysis_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -77,22 +78,13 @@ class ReconAgent(BaseAgent):
             if adapter_path:
                 adapter_result = await self._try_adapter(adapter_path, tool_task)
 
-        # Generate analysis using LLM
-        prompt = (
-            f"You are a reconnaissance analyst. Analyze the following recon "
-            f"data and extract key findings.\n\n"
-            f"Target: {target}\n"
-            f"Scope: {scope}\n"
-            f"Depth: {depth}\n"
-            f"Available tools: {', '.join(recon_tools) if recon_tools else 'none registered'}\n"
-            f"\nProvide a structured summary of potential attack surfaces, "
-            f"open ports, services, and interesting findings."
+        tool_output = (
+            adapter_result.get("output", "") if adapter_result else ""
         )
-
-        if adapter_result and adapter_result.get("success"):
-            prompt += f"\n\nTool output:\n{adapter_result.get('output', '')[:3000]}"
-        else:
-            prompt += "\n\nNo automated tool output available (tools may not be configured)."
+        prompt = build_recon_analysis_prompt(
+            target=target, scope=scope, depth=depth,
+            recon_tools=recon_tools, tool_output=tool_output,
+        )
 
         llm_response = await self._llm_call(prompt, task_type="web_research")
 

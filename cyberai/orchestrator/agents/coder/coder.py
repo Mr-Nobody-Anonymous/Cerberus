@@ -9,6 +9,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..base import BaseAgent
+from .prompts import build_code_analysis_prompt, build_code_generation_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -53,28 +54,11 @@ class CoderAgent(BaseAgent):
         task_type = "sensitive_source_code" if sensitive else "code_generation"
 
         if action == "analyze":
-            prompt = (
-                f"You are a security code analyst. Analyze the following source code "
-                f"for security vulnerabilities, weaknesses, and potential exploits.\n\n"
-                f"Language: {language}\n"
-                f"Target: {target_id}\n"
-                f"\nCode:\n```\n{code[:5000]}\n```\n"
-                f"\nProvide:\n"
-                f"1. Security issues found (CWE references where applicable)\n"
-                f"2. Severity rating for each issue\n"
-                f"3. Proof-of-concept code if applicable\n"
-                f"4. Remediation recommendations\n"
-                f"\nIMPORTANT: Use local-only model for this sensitive source code analysis."
-            )
+            prompt = build_code_analysis_prompt(
+                language=language, target_id=target_id, code=code)
         elif action == "generate":
-            prompt = (
-                f"You are a code generation agent. Generate secure code for "
-                f"the following specification.\n\n"
-                f"Description: {description}\n"
-                f"Language: {language}\n"
-                f"Target: {target_id}\n"
-                f"\nGenerate clean, well-commented code that follows security best practices."
-            )
+            prompt = build_code_generation_prompt(
+                description=description, language=language, target_id=target_id)
         else:
             return {"error": f"Unknown action: {action}"}
 
