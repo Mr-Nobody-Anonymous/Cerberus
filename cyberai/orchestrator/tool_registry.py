@@ -192,6 +192,9 @@ class ToolRegistry:
     """Registry of all available security tools and their adapters."""
 
     def __init__(self, registry_path: Optional[Path] = None):
+        # Intentionally package-relative: tools.yaml is registry data that
+        # ships next to this module — NOT a workspace resource (do not route
+        # through cyberai.config.resolve_path).
         self.registry_path = registry_path or Path(__file__).parent / "tools.yaml"
         self._tools: Dict[str, Dict[str, Any]] = {}
         self._load()

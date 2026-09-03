@@ -29,6 +29,9 @@ class MCPGateway:
     """
 
     def __init__(self, config_path: Optional[Path] = None):
+        # Intentionally package-relative: mcp_config.json is default package
+        # data that ships next to this module — NOT a workspace resource (do
+        # not route through cyberai.config.resolve_path).
         self.config_path = config_path or Path(__file__).parent / "mcp_config.json"
         self._servers: Dict[str, Dict[str, Any]] = {}
         self._tools: Dict[str, Dict[str, Any]] = {}

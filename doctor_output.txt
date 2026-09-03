@@ -1,0 +1,27 @@
+  [OK] Python: 3.10.11
+  [OK] Python stdlib 'platform': Windows
+  [OK] Git: git version 2.49.0.windows.1
+  [WARN] Docker: installed but daemon not running
+  [WARN] Ollama: not running on localhost:11434 — starting it: `ollama serve`
+  [WARN] LiteLLM Gateway: not running on localhost:4000 — local-only mode active
+  [WARN] LLM availability: No models marked as READY (Ollama not running)
+  [INFO] Open WebUI: not running (start with docker-compose if installed)
+  [OK] Repositories: 18 tracked adapters (18 clean, 0 with uncommitted changes)
+  [WARN] Adapters: 15/18 have Python adapter wrappers
+  [OK] MCP Gateway: tool-gateway/mcp configured
+  [OK] Orchestrator: all core modules importable (including CyberAIOrchestrator)
+  [OK] Agents: all 7 agent packages importable
+  [OK] Memory system: DB ready: 4 tables, 60 experiences, 0 findings
+  [OK] Policy engine: 4 targets registered, 4 authorized
+  [WARN] Port Ollama API: port 11434 not listening
+  [WARN] Port LiteLLM Gateway: port 4000 not listening
+  [WARN] Port Open WebUI: port 3000 not listening
+  [OK] Environment: OLLAMA_HOST=http://127.0.0.1:11434, LITELLM_MASTER_KEY=set, OPENAI_API_KEY=NOT SET (cloud models disabled)
+  [OK] Directory adapters/: exists
+  [OK] Directory infrastructure/: exists
+  [OK] Directory lab/: exists
+  [OK] Directory lab/targets/: exists
+  [OK] Directory memory/: exists
+  [OK] Directory logs/: exists
+  [OK] Directory cyberai/llm_gateway/: exists
+  [OK] Directory cyberai/orchestrator/: exists

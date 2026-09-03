@@ -1,4 +1,4 @@
-﻿# Integration Record - LiteLLM
+# Integration Record - LiteLLM
 
 ## Original Project
 - **Name:** LiteLLM
@@ -17,15 +17,16 @@
 
 ## How To Run
 ```bash
-cd platform/llm-gateway/litellm
+cd cyberai/llm_gateway/litellm
 pip install -e .
 litellm --config ../config/config.yaml
-```n
+```
+
 ## How To Update From Upstream
 ```bash
-cd platform/llm-gateway/litellm
+cd cyberai/llm_gateway/litellm
 git pull origin litellm_internal_staging
-```n
+```
 ## Attribution
 - **Original Repository:** https://github.com/BerriAI/litellm
 - **License:** MIT

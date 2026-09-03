@@ -1,4 +1,4 @@
-""""
+"""
 Health check / doctor module for the Cyber AI Orchestrator.
 
 Inspects every major subsystem and reports status as:
@@ -20,17 +20,17 @@ import sys
 from pathlib import Path
 from typing import Iterator, Tuple
 
-from cyberai.config import WORKSPACE_ROOT
+from cyberai.config import resolve_path
 
 logger = logging.getLogger(__name__)
 
-# Workspace-relative paths come from the central config loader
-_CYBERAI = WORKSPACE_ROOT / "cyberai"
-_ADAPTERS = WORKSPACE_ROOT / "adapters"
-_INFRA = WORKSPACE_ROOT / "infrastructure"
-_LAB = WORKSPACE_ROOT / "lab"
-_MEMORY = WORKSPACE_ROOT / "memory"
-_LOGS = WORKSPACE_ROOT / "logs"
+# Workspace-relative paths come exclusively from the central config loader.
+_CYBERAI = resolve_path("cyberai")
+_ADAPTERS = resolve_path("adapters")
+_INFRA = resolve_path("infrastructure")
+_LAB = resolve_path("lab")
+_MEMORY = resolve_path("memory")
+_LOGS = resolve_path("logs")
 
 
 def _check_port(host: str, port: int, timeout: float = 2.0) -> bool:

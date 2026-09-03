@@ -54,6 +54,10 @@ def get_workspace_root() -> Path:
                 "directory. Fix the variable or unset it to use the repo root."
             )
         return p
+    # Intentionally package-relative bootstrap: derive the repo root from this
+    # file's location only when CERBERUS_HOME is unset. This is the one
+    # sanctioned Path(__file__) fallback — every other module resolves paths
+    # through resolve_path()/WORKSPACE_ROOT.
     return Path(__file__).resolve().parent.parent
 
 
@@ -169,6 +173,8 @@ def validate_targets_file(rel_path: "str | Path" = "lab/targets/targets.yaml") -
                 f"got {t['allowed']!r}."
             )
     return targets
+
+
 class Config:
     """Central configuration with defaults, YAML-file and env merging."""
 

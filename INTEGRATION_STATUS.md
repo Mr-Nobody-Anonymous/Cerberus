@@ -82,12 +82,40 @@ All adapters implement the `SecurityToolAdapter` interface with health checks, c
 12. ~~**Path hacks in tests** (`sys.path.insert`) and `__import__` workarounds~~ → **RESOLVED (Phase A)**: Tests run via `python -m pytest` from the repo root with zero path manipulation; `__import__("datetime")` hacks in the self-improvement pipeline replaced with real imports.
 13. ~~**No real LLM calls**: LLM gateway was config-only with no transport fallback~~ → **RESOLVED (Phase B)**: `LLMGateway.complete()` implements LiteLLM-proxy → direct-Ollama → direct-provider transport fallback; each hop independently timed with structured error logging; `health()` probes both transports and reports per-alias availability; `local_only` provably blocks cloud routes at the gateway level (tested). All 7 agents call the gateway through per-agent `prompts.py` modules — prompts are never hardcoded in the gateway.
 
+## Phase A — Foundation Cleanup
+
+| Item | Status | Verification note |
+|------|--------|-------------------|
+| 1. Package naming | ✅ DONE | The importable package is consistently named `cyberai`; stdlib `platform` imports are no longer shadowed. |
+| 2. Doctor startup | ✅ DONE | Root-caused via `git log -p`: the `llm-gateway`→`llm_gateway` rename commit (`6bff1dc`, "ch 3") left a stray 4th `"` on line 1 of `doctor.py` (the docstring silently absorbed it instead of raising). Removed; sibling file from that commit (`llm_gateway/__init__.py`) verified clean; repo-wide single-char/truncated-token grep found no other corruption. `py_compile` + `python -m cyberai.orchestrator.cli doctor` both pass (exit 0). |
+| 3. Path/config cleanup | ✅ DONE | Every workspace path resolves through `cyberai.config` (`WORKSPACE_ROOT`/`resolve_path`): doctor, adapter_manager, knowledge_loader, observability logger, self_improvement, ui/server, tool-gateway/mcp, llm_gateway registry. The 5 remaining `Path(__file__)` sites are now each annotated as intentionally package-relative (`routing.yaml`, `tools.yaml`, `mcp_config.json`, `ui/static`, `config.py` bootstrap) — none is a workspace resource. `os.environ[...]` appears only inside `config.py` itself; zero `/home/`, `/Users/`, or `../..` hits outside vendored trees. Missing YAML sections/fields raise descriptive `ConfigError`s (covered by `tests/test_config.py`). |
+| 4. Dependency declarations | ✅ DONE | Import audit (AST + grep, excluding vendored `a-evolve`/`litellm` trees) found exactly: `click`, `PyYAML`, `httpx`, `fastapi`+`uvicorn` (lazy), `pytest`+`pytest-asyncio`. `requirements.txt` now pins those at installed versions; dead `pydantic`, `openai`, `anthropic` (never imported — gateway uses raw httpx) and the unreachable `a-evolve[all]` extra were removed from `pyproject.toml`. Verified in a fresh venv install. |
+| 5. Verification | ✅ DONE | `doctor` exits 0 in the dev environment and in the fresh venv; the full `tests/` suite passes. Diff vs. the Step-1 baseline: no regressions — remaining WARNs are unavailable external services (Ollama/LiteLLM/Open WebUI ports, Docker daemon), which are expected non-fatal warnings. |
+
+### Phase A path audit
+
+| Area/file | Path reference | Resolution |
+|-----------|----------------|------------|
+| `cyberai/orchestrator/cli/doctor.py` | `cyberai/`, `adapters/`, `infrastructure/`, `lab/`, `memory/`, `logs/` | Fixed in Phase A: all workspace roots use `resolve_path(...)` (verified in this pass). |
+| `cyberai/config.py:57` | `Path(__file__)` repo-root fallback | Intentionally package-relative: the one sanctioned bootstrap fallback, used only when `CERBERUS_HOME` is unset; annotated in-code. |
+| `cyberai/orchestrator/routing/model_router.py` | `Path(__file__).parent / "routing.yaml"` | Intentionally package-relative registry data; annotated in-code. |
+| `cyberai/orchestrator/tool_registry.py` | `Path(__file__).parent / "tools.yaml"` | Intentionally package-relative registry data; annotated in-code. |
+| `cyberai/tool-gateway/mcp/mcp_server.py` | `Path(__file__).parent / "mcp_config.json"` | Intentionally package-relative default config; annotated in-code. |
+| `cyberai/ui/server.py` | `Path(__file__).parent / "static"` | Intentionally package-relative frontend assets; annotated in-code. |
+| `cyberai/llm_gateway/litellm` | All `/home/`, `/Users/`, `Path(__file__)`, `sys.path` hits live inside the vendored upstream LiteLLM checkout | (b) Fixed in this pass: stale `platform/llm-gateway/litellm` paths and stray `n` characters after code fences in its `INTEGRATION.md` corrected to `cyberai/llm_gateway/litellm`. No other Cerberus code references the old path. Upstream source left untouched. |
+| `cyberai/evolution/a-evolve` | Package fixtures, seed workspaces, examples, caller-supplied paths | (c) Intentionally left package/caller-relative: a separately packaged embedded upstream project; no `cyberai.*` code imports it and Cerberus workspace paths are resolved by the integration boundary. |
+| `adapters/*` (aracne ssh-target Dockerfile etc.) | `/home/alice`, `/home/bob`, ... in lab-target images | (c) Intentionally left: these build simulated *target* users inside disposable container images — not Cerberus workspace paths. |
+| `infrastructure/open-webui/docker-compose.yaml` | container-internal volumes/ports via `${VAR-default}` env substitution | (c) Intentionally left: upstream compose file, already env-driven. |
+| `cyberai/llm-gateway/` (empty dir) | leftover after `llm-gateway`→`llm_gateway` rename | Removed in this pass (empty, untracked). |
+
+
 ## Known Issues
 
 1. **Docker daemon not running**: 10 adapters require Docker execution.
 2. **Ollama not running**: No local models available for inference.
 3. **No cloud API keys**: OpenAI, Anthropic, Gemini keys not configured in `.env`.
 4. **Adapters are wrappers**: Underlying tools need installation and configuration.
+5. **`adapters/drakben` blocks on first run**: `drakben.py` prompts "Configure LLM now? (y/n)" interactively; until drakben's own LLM config file is created, any subprocess-driven execution times out in the sandbox (observed in `tests/test_adapter_drakben.py::test_drakben_executes_for_authorized_target`). Pre-configuring the vendored tool or skipping that test is required on fresh machines — it is an adapter-environment issue, not a Phase A foundation one.
 
 ## Verified Commands
 

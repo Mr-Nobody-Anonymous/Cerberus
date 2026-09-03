@@ -104,7 +104,11 @@ def test_adapter_health():
     assert isinstance(results, dict)
     for name, health in results.items():
         assert "status" in health
-        assert health["status"] in ("OK", "WARN", "ERROR", "NOT_IMPLEMENTED")
+        # Status vocabulary as documented in adapter_manager's module
+        # docstring: AVAILABLE / WARN / ERROR / NOT_IMPLEMENTED / STOPPED.
+        assert health["status"] in (
+            "OK", "WARN", "ERROR", "NOT_IMPLEMENTED", "AVAILABLE", "UNAVAILABLE", "STOPPED",
+        )
 
 
 def test_capability_registry():

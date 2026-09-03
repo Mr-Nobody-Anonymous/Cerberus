@@ -39,6 +39,9 @@ class ModelRouter:
     """Routes tasks to appropriate models based on task type."""
 
     def __init__(self, config_path: Optional[Path] = None):
+        # Intentionally package-relative: routing.yaml is registry data that
+        # ships next to this module — NOT a workspace resource (do not route
+        # through cyberai.config.resolve_path).
         self.config_path = config_path or Path(__file__).parent / "routing.yaml"
         self._routes: Dict[str, Any] = {}
         self._load()

@@ -47,6 +47,9 @@ logger = logging.getLogger(__name__)
 
 from cyberai.config import WORKSPACE_ROOT
 
+# Intentionally package-relative: the static frontend ships next to this
+# module as package data — NOT a workspace resource (do not route through
+# cyberai.config.resolve_path).
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
