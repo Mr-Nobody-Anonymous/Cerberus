@@ -28,7 +28,7 @@ from cyberai.config import config, load_required_yaml
 logger = logging.getLogger(__name__)
 
 # Workspace-relative location of the model registry (package data).
-MODEL_REGISTRY_PATH = "cyberai/llm-gateway/models/models.yaml"
+MODEL_REGISTRY_PATH = "cyberai/llm_gateway/models/models.yaml"
 
 # Logical roles -> model alias mapping (configurable).
 ROLE_MODEL_MAP = {

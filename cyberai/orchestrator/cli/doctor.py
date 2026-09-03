@@ -1,4 +1,4 @@
-"""
+""""
 Health check / doctor module for the Cyber AI Orchestrator.
 
 Inspects every major subsystem and reports status as:
@@ -119,7 +119,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
         yield ("LiteLLM Gateway", "warn", "not running on localhost:4000 — local-only mode active")
 
     # ---- LLM availability ----
-    models_yaml = _CYBERAI / "llm-gateway" / "models" / "models.yaml"
+    models_yaml = _CYBERAI / "llm_gateway" / "models" / "models.yaml"
     if models_yaml.exists():
         import yaml
         with open(models_yaml) as f:
@@ -263,7 +263,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
         ("lab/targets/", _LAB / "targets"),
         ("memory/", _MEMORY),
         ("logs/", _LOGS),
-        ("cyberai/llm-gateway/", _CYBERAI / "llm-gateway"),
+        ("cyberai/llm_gateway/", _CYBERAI / "llm_gateway"),
         ("cyberai/orchestrator/", _CYBERAI / "orchestrator"),
     ]
     for label, path in dirs_to_check:

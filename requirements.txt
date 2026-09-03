@@ -1,27 +1,13 @@
 # Cyber AI Orchestrator — Core Dependencies
 # Python 3.10+
-# Install: pip install -r requirements.txt
-#
-# Cross-checked against actual imports in cyberai/ (excluding vendored
-# llm-gateway/litellm and evolution/a-evolve trees, which carry their own
-# dependency metadata).
 
-# --- Core (imported by cyberai core modules) ---
-click>=8.1.0,<9          # cyberai/orchestrator/cli
-PyYAML>=6.0,<7           # config loaders, policy engine, tool registry, routing
-httpx>=0.24.0,<1         # LLM gateway HTTP client
-
-# --- API Server (cyberai/orchestrator/api, cyberai/ui) ---
+click>=8.1.0,<9
+PyYAML>=6.0,<7
+httpx>=0.24.0,<1
 fastapi>=0.104.0,<1
 uvicorn>=0.24.0,<1
-
-# --- Development / Testing ---
+pydantic>=2.0.0
 pytest>=7.4.0,<9
 pytest-asyncio>=0.23.0,<1
-
-# --- Optional: A-Evolve self-improvement framework ---
-# a-evolve[all]  # Uncomment to enable the A-Evolve integration
-
-# --- Optional: Cloud LLM providers (direct fallback in the LLM gateway) ---
-# openai>=1.0.0
-# anthropic>=0.25.0
+openai>=1.0.0
+anthropic>=0.25.0
