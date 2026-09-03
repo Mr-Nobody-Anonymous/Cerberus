@@ -1,8 +1,8 @@
 {
-  "strategy_id": "6faa8deb-e982-4200-a6ab-27b7ef49895e",
-  "parent_id": "14ce9e30-8837-4db0-966c-d7f1a111dd1e+2e5cedc3-37a2-42ec-9a69-4c98c4868fca",
-  "generation": 4,
-  "description": "Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "strategy_id": "a64c7ce2-58b4-4ffe-bbd8-2eb7d89055bb",
+  "parent_id": "218fb558-4034-4420-abbb-bf5c52de38e5",
+  "generation": 5,
+  "description": "Mutation 1 of: Hybrid: Mutation 2 of: Mutation 3 of: Basic strategy 1 for assessment + Mutation 1 of: Mutation 3 of: Basic strategy 1 for assessment",
   "preconditions": [],
   "actions": [
     {
@@ -32,13 +32,13 @@
   ],
   "tools": [
     "pentagi",
-    "strix"
+    "strix_alt"
   ],
   "agent": "",
   "model": "",
   "expected_result": "",
-  "actual_result": "Simulated result for strategy: Hybrid: Mutation 3 of: Basic strategy 1 for assessment + Mutation 3 of: Mutation 3 of: Basic strategy 1 for assessment",
-  "fitness": 2.66,
+  "actual_result": "Simulated result for strategy: Mutation 1 of: Hybrid: Mutation 2 of: Mutation 3 of: Basic strategy 1 for assessment + Mutation 1 of: Mutation 3 of: Basic strategy 1 for assessment",
+  "fitness": 2.7800000000000002,
   "confidence": 0.0,
   "verification": "VERIFIED",
   "status": "successful",
@@ -46,12 +46,9 @@
   "environment": "authorized_lab",
   "target_type": "",
   "metadata": {
-    "recombination": true,
-    "parents": [
-      "14ce9e30-8837-4db0-966c-d7f1a111dd1e",
-      "2e5cedc3-37a2-42ec-9a69-4c98c4868fca"
-    ]
+    "mutation_type": "tool",
+    "mutation_index": 0
   },
-  "created_at": "2026-08-12T17:14:45.209513+00:00",
-  "evaluated_at": "2026-08-12T17:14:45.219595+00:00"
+  "created_at": "2026-09-02T18:39:41.805013+00:00",
+  "evaluated_at": "2026-09-02T18:39:41.805013+00:00"
 }

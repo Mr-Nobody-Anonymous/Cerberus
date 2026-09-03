@@ -4,8 +4,10 @@
 import logging
 import logging.handlers
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
+
+UTC = timezone.utc  # Python 3.10 compat (datetime.UTC is 3.11+)
 
 
 class DrakbenFormatter(logging.Formatter):

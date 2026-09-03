@@ -43,8 +43,8 @@ class Adapter(SecurityToolAdapter):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self._api_url = os.environ.get("LUAN1AO_API_URL", "http://localhost:3000") if LUAN1AO_API_URL else None
-        self._api_token = os.environ.get("", "") if  else None
+        self._api_url = os.environ.get(API_URL_ENV, "http://localhost:0") if API_URL_ENV else "http://localhost:0"
+        self._api_token = None
 
     async def health_check(self) -> Dict[str, Any]:
         """Check if the LuaN1aoAgent service or CLI is available."""

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, LiteralString
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -179,7 +179,7 @@ class DrakbenMenu(MenuAIProcessingMixin, MenuCommandsMixin, MenuConfigMixin):
         if not self.BANNER.strip():
             return
 
-        lines: list[LiteralString] = self.BANNER.strip("\n").split("\n")
+        lines: list[str] = self.BANNER.strip("\n").split("\n")
         text = Text()
 
         # Gradient: Cyan (#8BE9FD) -> Purple (#BD93F9) - Dracula theme

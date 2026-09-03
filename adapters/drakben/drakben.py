@@ -197,7 +197,8 @@ def main() -> None:
 
         # Initialize configuration
         config_manager = ConfigManager()
-        config_manager.prompt_llm_setup_if_needed()
+        if os.environ.get("DRAKBEN_NONINTERACTIVE") != "1":
+            config_manager.prompt_llm_setup_if_needed()
 
         # Boot log
         logger.info("DRAKBEN initialized successfully")

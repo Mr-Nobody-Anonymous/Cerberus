@@ -1,6 +1,7 @@
 """Script to update all imports after restructuring."""
 
 import os
+from pathlib import Path
 
 REPLACEMENTS = {
     "from core.agent.brain import": "from core.agent.brain import",
@@ -54,7 +55,13 @@ def update_file(filepath):
 
 def main():
     """Update all Python files."""
-    base_dir = r"c:\Users\E-YAZILIM\Desktop\drakben\drakbendosyalar"
+    # Default to the drakben directory relative to this script
+    base_dir = Path(__file__).resolve().parent.parent
+    
+    if not base_dir.exists():
+        print(f"Error: Base directory {base_dir} does not exist.")
+        return
+
     total = 0
 
     for root, dirs, files in os.walk(base_dir):

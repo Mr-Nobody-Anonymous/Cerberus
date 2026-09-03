@@ -1,3 +1,8 @@
+from __future__ import annotations
+try:
+    from typing import Self
+except ImportError:
+    from typing import Any as Self
 # core/state.py
 # DRAKBEN State Abstraction - SINGLE SOURCE OF TRUTH
 # REQUIRED: All modules access/update state ONLY through this API
@@ -11,7 +16,7 @@ import time
 from dataclasses import asdict, dataclass
 from enum import Enum
 from threading import RLock
-from typing import Any, Optional, Self
+from typing import Any, Optional
 
 # Setup logger
 logger: logging.Logger = logging.getLogger(__name__)

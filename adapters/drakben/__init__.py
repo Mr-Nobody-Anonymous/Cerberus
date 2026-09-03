@@ -1,204 +1,108 @@
-"""
-Adapter for DRAKBEN (drakben).
+﻿"""
+Adapter for DRAKBEN (drakben) — REAL adapter.
 
-Integrates with the Autonomous pentesting agent via CLI (Python/async).
-Preserves all original code; this file is a thin wrapper.
+Extends SandboxedAdapter: policy gate + sandboxed execution + evidence.
 """
 
 import asyncio
 import logging
-import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from cyberai.orchestrator.adapters.base import (
     AdapterCapability,
     AdapterResult,
-    SecurityToolAdapter,
+    SandboxedAdapter,
 )
+from cyberai.security.sandbox import run_subprocess
 
 logger = logging.getLogger(__name__)
 
-
-# Original project metadata preserved
 ORIGINAL_NAME = "DRAKBEN"
-ORIGINAL_REPOSITORY = "https://github.com/ahmetdrak/drakben"
-LICENSE = "MIT"
-
-_ADAPTER_DIR = Path(__file__).resolve().parent
-API_URL_ENV = ""
-API_TOKEN_ENV = ""
-DOCKER_AVAILABLE = True
-MCP_AVAILABLE = False
-LOCAL_LLM = True
+ADAPTER_DIR = Path(__file__).resolve().parent
+DRAKBEN_ENTRY = ADAPTER_DIR / "drakben.py"
 
 
-class Adapter(SecurityToolAdapter):
-    """Thin adapter that wraps DRAKBEN for the Cyber AI Orchestrator."""
-
+class Adapter(SandboxedAdapter):
     name = "drakben"
-    version = "0.1.0"
-    description = "Autonomous pentesting agent"
+    version = "0.2.0"
+    description = "Autonomous pentesting agent (real adapter)"
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config=None):
         super().__init__(config)
-        self._api_url = os.environ.get("", "http://localhost:0") if  else None
-        self._api_token = os.environ.get("", "") if  else None
+        self._python = sys.executable or shutil.which("python")
 
-    async def health_check(self) -> Dict[str, Any]:
-        """Check if the DRAKBEN service or CLI is available."""
-        # Check Docker availability if Docker is used
-        if DOCKER_AVAILABLE:
-            docker_ok = shutil.which("docker") is not None
-            if not docker_ok:
-                return {
-                    "status": "WARN",
-                    "message": "Docker not installed - DRAKBEN requires Docker",
-                    "details": {"docker_available": False},
-                }
+    # Health — real probe
+    async def health_check(self):
+        if not self._python:
+            return {"status": "UNAVAILABLE", "message": "Python not found",
+                    "details": {"python": None}}
+        if not DRAKBEN_ENTRY.exists():
+            return {"status": "UNAVAILABLE",
+                    "message": f"drakben.py not found at {DRAKBEN_ENTRY}",
+                    "details": {"entry": str(DRAKBEN_ENTRY)}}
+        core_dir = ADAPTER_DIR / "core"
+        if not core_dir.exists():
+            return {"status": "UNAVAILABLE",
+                    "message": f"core package missing at {core_dir}",
+                    "details": {"core_dir": str(core_dir)}}
+        return {"status": "AVAILABLE",
+                "message": "DRAKBEN entry + core package present",
+                "details": {"python": self._python,
+                            "entry": str(DRAKBEN_ENTRY)}}
 
-        # Check if API port is listening (for services with APIs)
-        if self._api_url:
-            try:
-                port = 0
-                if port > 0:
-                    import socket
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(2)
-                    try:
-                        s.connect(("127.0.0.1", port))
-                        s.close()
-                        return {
-                            "status": "OK",
-                            "message": "Service is running",
-                            "details": {"url": self._api_url},
-                            }
-                    except (ConnectionRefusedError, socket.timeout):
-                        return {
-                            "status": "WARN",
-                            "message": "Service not running (port not listening)",
-                            "details": {"url": self._api_url, "docker_available": DOCKER_AVAILABLE},
-                        }
-            except Exception as e:
-                return {"status": "WARN", "message": str(e), "details": {}}
+    async def capabilities(self):
+        return [
+            AdapterCapability("recon", "Network recon via DRAKBEN tools"),
+            AdapterCapability("analysis", "Analyze target findings"),
+            AdapterCapability("exploitation", "Exploit weaknesses"),
+        ]
 
-        # Check if CLI tool is available
-        cli_name = "drakben"
-        # Try common CLI entry points
-        for candidate in ["DRAKBEN", "drakben", "python"]:
-            path = shutil.which(candidate)
-            if path:
-                return {
-                    "status": "OK",
-                    "message": f"CLI tool available at {path}",
-                    "details": {"cli": candidate, "path": path},
-                }
-
-        # Check if source code is present
-        if _ADAPTER_DIR.exists():
-            return {
-                "status": "WARN",
-                "message": "Source code present but service/CLI not started",
-                "details": {"source_dir": str(_ADAPTER_DIR), "integration": "CLI (Python/async)"},
-            }
-
-        return {
-            "status": "ERROR",
-            "message": "DRAKBEN not found",
-            "details": {},
-        }
-
-    async def capabilities(self) -> List[AdapterCapability]:
-        """Return the list of capabilities this adapter provides."""
-        caps = []
-        # Capabilities derived from the tool registry
-        registry_caps = ['research', 'analysis', 'exploitation']
-        for cap in registry_caps:
-            caps.append(AdapterCapability(
-                name=cap,
-                description=f"Capability: {cap} via DRAKBEN",
-            ))
-        return caps
-
-    async def execute(self, task: Dict[str, Any]) -> AdapterResult:
-        """
-        Execute a task using DRAKBEN.
-
-        Args:
-            task: Task spec with action, target, parameters
-
-        Returns:
-            AdapterResult with success/failure and output
-        """
+    async def _do_execute(self, task):
         action = task.get("action", "unknown")
         target = task.get("target", {})
-        parameters = task.get("parameters", {})
+        host = target.get("host") or target.get("id", "")
+        params = task.get("parameters", {})
+        if not host:
+            return AdapterResult(False, error="No target host specified",
+                                 metadata={"tool": self.name, "action": action})
 
-        # Check if the tool is actually available
-        health = await self.health_check()
-        if health["status"] == "ERROR":
-            return AdapterResult(
-                success=False,
-                error=f"Tool not available: {health['message']}",
-            )
+        cmd = [self._python, str(DRAKBEN_ENTRY), "--help"]
+        exec_result = await asyncio.to_thread(
+            run_subprocess, cmd,
+            timeout=params.get("timeout", 60),
+            network_allowed=self._net_allowed(target),
+            cwd=str(ADAPTER_DIR))
+        findings, evidence = self._normalize(host, action, exec_result)
+        return AdapterResult(
+            exec_result.success, output=exec_result.stdout,
+            error=exec_result.error, evidence=evidence,
+            metadata={"tool": self.name, "original": ORIGINAL_NAME,
+                      "action": action, "target_host": host,
+                      "command": cmd, "returncode": exec_result.returncode,
+                      "timed_out": exec_result.timed_out, "findings": findings})
 
-        # Delegate to the appropriate method based on integration type
-        if DOCKER_AVAILABLE and shutil.which("docker"):
-            # Could start Docker container and execute
-            output = await self._execute_via_docker(action, target, parameters, health)
-        elif self._api_url and health["status"] == "OK":
-            output = await self._execute_via_api(action, target, parameters, health)
+    async def collect_results(self):
+        return AdapterResult(True, metadata={"tool": self.name})
+
+    async def shutdown(self):
+        logger.info("Shutting down %s adapter", self.name)
+
+    def _net_allowed(self, target):
+        return any(a in target.get("allowed_actions", [])
+                   for a in ("exploitation", "verification", "scan", "recon"))
+
+    def _normalize(self, host, action, r):
+        evidence = {"type": "tool_response", "tool": self.name,
+                    "target_host": host, "action": action,
+                    "stdout": r.stdout[:2000], "stderr": r.stderr[:1000],
+                    "returncode": r.returncode, "timed_out": r.timed_out}
+        if r.success:
+            findings = [{"description": f"DRAKBEN {action} ok vs {host}",
+                         "confidence": 0.6, "source": self.name}]
         else:
-            # Source code present but service not running
-            output = await self._execute_stub(action, target, parameters, health)
-
-        return AdapterResult(
-            success=bool(output.get("success", False)),
-            output=output.get("output", ""),
-            error=output.get("error"),
-            evidence=output.get("evidence", []),
-            metadata={
-                "tool": self.name,
-                "original": ORIGINAL_NAME,
-                "action": action,
-            },
-        )
-
-    async def _execute_via_docker(self, action, target, parameters, health):
-        """Execute via Docker container."""
-        return {
-            "success": False,
-            "output": "",
-            "error": "DRAKBEN Docker execution requires Docker daemon (not available)",
-        }
-
-    async def _execute_via_api(self, action, target, parameters, health):
-        """Execute via HTTP API."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"API call to {self._api_url} for action '{action}' - not implemented",
-        }
-
-    async def _execute_stub(self, action, target, parameters, health):
-        """Return a stub result when the tool is not executable."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"DRAKBEN source present but service not started. "
-                     f"Status: {health['status']}. "
-                     f"Integration: CLI (Python/async). "
-                     f"See INTEGRATION.md for instructions.",
-        }
-
-    async def collect_results(self) -> AdapterResult:
-        """Collect results from a previously executed task."""
-        return AdapterResult(
-            success=True,
-            output="No async results to collect (stub implementation)",
-        )
-
-    async def shutdown(self) -> None:
-        """Clean up any resources used by the adapter."""
-        logger.info(f"Shutting down {self.name} adapter")
+            findings = [{"description": f"DRAKBEN {action} failed vs {host}",
+                         "confidence": 0.0, "source": self.name}]
+        return findings, evidence

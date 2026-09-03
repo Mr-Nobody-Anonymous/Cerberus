@@ -59,9 +59,12 @@ class AdapterManager:
         result = await manager.execute("strix", task_dict)
     """
 
-    def __init__(self):
+    def __init__(self, policy_engine=None, evidence_manager=None, session_id=""):
         self._adapters: Dict[str, SecurityToolAdapter] = {}
         self._adapter_info: Dict[str, Dict[str, Any]] = {}
+        self.policy_engine = policy_engine
+        self.evidence_manager = evidence_manager
+        self.session_id = session_id
         self._load_known()
 
     def _load_known(self) -> None:
@@ -117,6 +120,9 @@ class AdapterManager:
             adapter_cls = getattr(module, "Adapter", None)
             if adapter_cls:
                 instance = adapter_cls()
+                # Wire policy + evidence into SandboxedAdapter instances so the
+                # gate has everything it needs. No-op for plain stubs.
+                self._wire(instance)
                 self._adapters[name] = instance
                 return instance
         except ImportError as e:
@@ -125,6 +131,15 @@ class AdapterManager:
             logger.warning(f"Adapter {name} instantiation failed: {e}")
 
         return None
+
+    def _wire(self, instance: SecurityToolAdapter) -> None:
+        """Inject policy engine + evidence manager into adapters that want them."""
+        from .base import SandboxedAdapter
+
+        if isinstance(instance, SandboxedAdapter):
+            instance.policy_engine = self.policy_engine
+            instance.evidence_manager = self.evidence_manager
+            instance.session_id = self.session_id
 
     async def health_check(self, name: str) -> Dict[str, Any]:
         """
