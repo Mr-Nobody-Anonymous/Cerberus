@@ -1,7 +1,9 @@
 # Cyber AI Orchestrator — Architecture Reference
 
-**Local Autonomous Multi-Agent Security Research Platform**  
+**Local Autonomous Multi-Agent Security Research Platform**
 Technical deep-dive into directory layout, component map, data flow, and integration methodologies.
+
+> **Status:** This document reflects the post-Phase A layout (`platform/` → `cyberai/` rename) verified on 2026-09-03 against `python -m cyberai.orchestrator.cli doctor` (exit 0, 18 tracked adapters, 4 memory tables). For phase history and resolved issues see [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md). For the pre-rename skeleton see [PHASE2_AUDIT.md](./PHASE2_AUDIT.md).
 
 ---
 
@@ -14,13 +16,15 @@ Technical deep-dive into directory layout, component map, data flow, and integra
 5. [Model Routing Matrix](#model-routing-matrix)
 6. [Data Flow Specifications](#data-flow-specifications)
 7. [Security Boundaries](#security-boundaries)
+8. [Configuration Reference](#configuration-reference)
+9. [Extension Points](#extension-points)
 
 ---
 
 ## Directory Tree
 
 ```
-C:\Users\hp\Desktop\cyber/
+C:\Users\hp\Desktop\Cerberus/
 ├── .env.example                          # Environment configuration template
 ├── .gitignore                            # Git ignore rules (secrets, DB, logs)
 ├── docker-compose.yml                    # Infrastructure services (LiteLLM, Ollama, Open WebUI)
@@ -28,696 +32,225 @@ C:\Users\hp\Desktop\cyber/
 ├── ARCHITECTURE.md                       # This file - technical reference
 ├── WORKSPACE_INVENTORY.md                # Detailed repository inventory
 ├── REPOSITORY_MAP.yaml                   # Repository-to-role mapping
-├── INTEGRATION_STATUS.md                 # Component status tracking
-├── FINAL_STATUS.md                       # Final delivery report
+├── INTEGRATION_STATUS.md                 # Component status tracking (source of truth)
+├── FINAL_STATUS.md                       # 2026-08-11 baseline report (historical)
+├── PHASE2_AUDIT.md                       # Pre-Phase-A audit (historical)
+├── pyproject.toml                        # Build metadata + pinned deps
+├── requirements.txt                      # Runtime pinned deps
 │
-├── platform/                             # Core platform code
-│   ├── orchestrator/                     # Master orchestrator
-│   │   ├── __init__.py                   # Package init, version info
-│   │   ├── orchestrator.py               # Master coordinator, session management
+├── cyberai/                              # Core platform code (the importable package)
+│   ├── __init__.py                       # Re-exports CyberAIOrchestrator facade
+│   ├── config.py                         # Central config loader (WORKSPACE_ROOT, resolve_path)
+│   ├── task.py                           # Canonical Task object
+│   │
+│   ├── orchestrator/                     # Master orchestrator + subsystems
+│   │   ├── master.py                     # CyberAIOrchestrator facade (top-level entry point)
+│   │   ├── orchestrator.py               # Core session/task/assessment flow
 │   │   ├── tool_registry.py              # Machine-readable tool catalog
 │   │   ├── tools.yaml                    # Tool definitions and capabilities
-│   │   │
-│   │   ├── agents/                       # AI agent implementations
-│   │   │   ├── __init__.py               # Agent package init
-│   │   │   ├── base.py                   # BaseAgent class with LLM/tool/memory access
-│   │   │   ├── planner/
-│   │   │   │   ├── __init__.py           # Exports PlannerAgent
-│   │   │   │   └── planner.py            # Planning agent with experience retrieval
-│   │   │   ├── researcher/
-│   │   │   │   ├── __init__.py           # Exports ResearcherAgent
-│   │   │   │   └── researcher.py         # Research and intelligence gathering
-│   │   │   ├── recon/
-│   │   │   │   ├── __init__.py           # Exports ReconAgent
-│   │   │   │   └── recon.py              # Network and host discovery
-│   │   │   ├── analyst/
-│   │   │   │   ├── __init__.py           # Exports AnalystAgent
-│   │   │   │   └── analyst.py            # Finding correlation and pattern analysis
-│   │   │   ├── coder/
-│   │   │   │   ├── __init__.py           # Exports CoderAgent
-│   │   │   │   └── coder.py              # Exploit and PoC generation
-│   │   │   ├── verifier/
-│   │   │   │   ├── __init__.py           # Exports VerifierAgent
-│   │   │   │   └── verifier.py           # Finding verification and evidence challenges
-│   │   │   └── reporter/
-│   │   │       ├── __init__.py           # Exports ReporterAgent
-│   │   │       └── reporter.py           # Report generation
-│   │   │
-│   │   ├── routing/                      # Routing engines
-│   │   │   ├── model_router.py           # Task-to-model alias routing
-│   │   │   └── routing.yaml              # Configurable routing rules
-│   │   │
-│   │   ├── memory/                       # Experience storage
-│   │   │   ├── __init__.py
-│   │   │   ├── memory_manager.py         # SQLite-backed memory system
-│   │   │   └── memory.db                 # SQLite database (auto-created)
-│   │   │
-│   │   ├── policies/                     # Authorization and safety
-│   │   │   ├── __init__.py
-│   │   │   └── policy_engine.py          # Target authorization enforcement
-│   │   │
-│   │   ├── scheduler/                    # Task scheduling
-│   │   │   ├── __init__.py
-│   │   │   └── scheduler.py              # Async task prioritization and lifecycle
-│   │   │
-│   │   ├── workflows/                    # Predefined assessment flows
-│   │   │   ├── __init__.py
-│   │   │   └── workflow_manager.py       # Workflow definitions (recon_to_report, code_audit, etc.)
-│   │   │
-│   │   ├── api/                          # REST API server
-│   │   │   ├── __init__.py
-│   │   │   └── api_server.py             # FastAPI endpoints for status, sessions, findings
-│   │   │
+│   │   ├── adapters/                     # Adapter framework (base, registry, registry.yaml)
+│   │   ├── agents/                       # AI agent implementations (planner, researcher, ...)
+│   │   ├── api/                          # FastAPI REST server
+│   │   ├── cli/                          # Click-based CLI (15 commands)
 │   │   ├── evidence/                     # Evidence collection
-│   │   │   ├── __init__.py
-│   │   │   └── evidence.py               # Evidence storage and retrieval
-│   │   │
 │   │   ├── knowledge/                    # Knowledge base loader
-│   │   │   ├── __init__.py
-│   │   │   └── knowledge_loader.py       # CVE/CWE/techniques indexing
-│   │   │
-│   │   ├── logging/                      # Session logging
-│   │   │   └── session_logger.py         # JSONL session logs
-│   │   │
-│   │   ├── adapters/                     # Adapter framework
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py                   # SecurityToolAdapter interface
-│   │   │   ├── adapter_registry.py       # Adapter loading and management
-│   │   │   └── registry.yaml             # Adapter configuration
-│   │   │
-│   │   └── cli/                          # Command-line interface
-│   │       ├── __init__.py
-│   │       ├── cli.py                    # Click-based CLI (status, tools, lab, assess, etc.)
-│   │       └── doctor.py                 # Health check subsystem
+│   │   ├── logging/                      # Structured session logging
+│   │   ├── memory/                       # Experience/finding/session storage
+│   │   ├── policies/                     # Authorization and safety
+│   │   ├── routing/                      # Task→model-alias routing
+│   │   ├── scheduler/                    # Task scheduling
+│   │   └── workflows/                    # Predefined assessment flows
 │   │
-│   ├── llm-gateway/                      # LiteLLM integration
-│   │   ├── __init__.py                   # LLMGateway class
-│   │   ├── models/
-│   │   │   └── models.yaml               # Model registry (aliases, providers, status)
-│   │   ├── config/
-│   │   │   └── config.yaml               # LiteLLM proxy configuration
-│   │   └── logs/                         # Gateway logs
-│   │
-│   ├── tool-gateway/                     # MCP tool discovery
-│   │   └── mcp/
-│   │       ├── __init__.py
-│   │       ├── mcp_server.py             # MCPGateway class
-│   │       └── mcp_config.json           # MCP server definitions
-│   │
-│   └── ui/                               # UI package (future expansion)
-│       └── __init__.py
+│   ├── capabilities/                     # Capability registry (17 capabilities)
+│   ├── collaboration/                    # Multi-agent collaboration primitives
+│   ├── evolution/                        # Evolution engine + A-Evolve integration
+│   ├── llm_gateway/                      # LiteLLM integration (transport fallback chain)
+│   ├── meta_learning/                    # Performance tracker / best_for_task() / ranking
+│   ├── observability/                    # Structured logging + tracing
+│   ├── security/                         # Policy + sandboxing helpers
+│   ├── self_improvement/                 # 10-stage self-improvement pipeline
+│   ├── tool-gateway/                     # MCP tool discovery (mcp/ subpackage)
+│   └── ui/                               # Unified CERBERUS Command Deck (working)
 │
 ├── adapters/                             # Security tool adapters (preserved upstream repos)
-│   ├── __init__.py                       # Adapters package init
-│   │
-│   ├── pentagi/                          # PentAGI - Primary autonomous pentesting agent
-│   │   ├── INTEGRATION.md                # Integration record
-│   │   ├── adapter.py                    # Adapter wrapper
-│   │   ├── __init__.py                   # Package init (re-export)
-│   │   ├── README.md                     # Original documentation
-│   │   ├── LICENSE                       # Original license
-│   │   ├── docker-compose.yml            # Original Docker config
-│   │   ├── backend/                      # Backend API (Go)
-│   │   ├── frontend/                     # Frontend UI (React)
-│   │   └── ...                           # All other original files preserved
-│   │
-│   ├── strix/                            # Strix - Security assessment agent
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   ├── strix/                        # Python package
-│   │   └── ...
-│   │
-│   ├── darkmoon/                         # Dark-Moon - Autonomous pentesting agent (MCP)
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   ├── mcp/                          # MCP server implementation
-│   │   └── ...
-│   │
-│   ├── hexstrike/                        # HexStrike AI - MCP tool gateway (150+ tools)
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   ├── hexstrike_server.py           # Flask REST server
-│   │   ├── hexstrike_mcp.py              # MCP server
-│   │   └── ...
-│   │
-│   ├── mcpstrike/                        # MCPStrike - Ollama-driven MCP gateway
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── src/mcpstrike/               # Python package
-│   │
-│   ├── cai/                              # CAI - Cybersecurity AI framework
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── src/cai/                      # Python package
-│   │
-│   ├── pentestgpt/                       # PentestGPT - Research/planning agent
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── pentestgpt_legacy/            # Python package
-│   │
-│   ├── pentestagent/                     # PentestAgent - LiteLLM-based security agent
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── pentestagent/                 # Python package
-│   │
-│   ├── cyberstrikeai/                    # CyberStrikeAI - Gin REST + MCP
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   ├── cmd/                          # Go entry points
-│   │   └── ...
-│   │
-│   ├── autopentest/                      # AutoPentest - LangChain/LangGraph research
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── src/                          # Python source
-│   │
-│   ├── penclaw/                          # PenClaw - Static/dynamic analysis (Node.js)
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── dist/                         # Compiled CLI
-│   │
-│   ├── luan1aoagent/                     # LuaN1aoAgent - Cognitive security agent
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── dist/                         # Compiled CLI/Web
-│   │
-│   ├── aracne/                           # ARACNE - SSH-driven pentesting agent
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── aracne.py                     # Main entry point
-│   │
-│   ├── guardian-cli/                     # Guardian - CLI-based pentesting
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── cli/                          # CLI implementation
-│   │
-│   ├── drakben/                          # DRAKBEN - Autonomous pentesting agent
-│   │   ├── INTEGRATION.md
-│   │   ├── adapter.py
-│   │   ├── __init__.py
-│   │   └── drakben.py                    # Main entry point
-│   │
-│   ├── h4cker/                           # h4cker - Knowledge base (reference)
-│   │   ├── README.md                     # Original documentation
-│   │   └── ...                           # Documentation and scripts
-│   │
-│   └── kali-pentest/                     # kali-pentest - Skill definitions (reference)
-│       ├── README.md
-│       └── ...                           # Skill definitions for AI agents
+│   ├── __init__.py
+│   ├── pentagi/   strix/   darkmoon/     # Primary autonomous pentesting agents (Docker)
+│   ├── hexstrike/ mcpstrike/             # MCP tool gateways
+│   ├── cai/  pentestagent/  cyberstrikeai/  # Agent frameworks
+│   ├── pentestgpt/  autopentest/         # Research/planning agents
+│   ├── penclaw/  luan1aoagent/           # Node.js analysis tools
+│   ├── aracne/  guardian-cli/  drakben/  # Specialized CLI/SSH agents
+│   └── h4cker/  kali-pentest/            # Knowledge references (no executable adapter)
 │
 ├── infrastructure/                       # Infrastructure services
 │   ├── ollama/                           # Ollama local model service
-│   │   ├── models/                       # Model storage (gitignored)
-│   │   └── config/                       # Ollama configuration
 │   ├── open-webui/                       # Open WebUI interface
-│   │   └── data/                         # WebUI data storage
-│   ├── airllm/                           # AirLLM - Low-VRAM inference
-│   │   └── air_llm/                      # Python package
+│   ├── airllm/                           # Low-VRAM inference (library)
 │   └── other-inference/                  # Additional inference engines
 │
+├── config/                               # Workspace YAML configs (targets, routing, ...)
+│
 ├── lab/                                  # Isolated lab environment
-│   ├── targets/                          # Authorized target registry
-│   │   └── targets.yaml                  # Target definitions (id, host, port, actions)
+│   ├── targets/targets.yaml              # Authorized target registry
 │   ├── docker/                           # Docker Compose stacks
-│   │   ├── docker-compose.yml            # Lab-specific compose
-│   │   └── Dockerfiles/                  # Custom target images
 │   ├── networks/                         # Network definitions
-│   │   └── lab-network.yml               # Docker network config
 │   ├── snapshots/                        # VM/target snapshots
 │   ├── scenarios/                        # Pre-built assessment scenarios
-│   │   ├── juice-shop.yml
-│   │   └── dvwa.yml
 │   └── evidence/                         # Collected evidence files
-│       └── .gitkeep
 │
 ├── knowledge/                            # Security knowledge base
-│   ├── cve/                              # CVE database files
-│   │   └── .gitkeep
-│   ├── cwe/                              # CWE weakness taxonomy
-│   │   └── .gitkeep
-│   ├── advisories/                       # Security advisories
-│   │   └── .gitkeep
-│   ├── techniques/                       # ATT&CK techniques
-│   │   └── .gitkeep
-│   ├── research/                         # Security research papers
-│   │   └── .gitkeep
-│   └── documentation/                    # Tool and technique documentation
-│       └── .gitkeep
+│   ├── cve/  cwe/  advisories/
+│   ├── techniques/  research/  documentation/
 │
 ├── memory/                               # Persistent memory
 │   ├── memory.db                         # SQLite database (auto-created, gitignored)
-│   ├── embeddings/                       # Vector embeddings for semantic search
-│   │   └── .gitkeep
-│   ├── findings/                         # Individual finding files
-│   │   └── .gitkeep
-│   ├── failures/                         # Failed strategy records
-│   │   └── .gitkeep
-│   ├── successful-strategies/            # Successful tactic records
-│   │   └── .gitkeep
-│   ├── observations/                     # Agent observation logs
-│   │   └── .gitkeep
-│   └── sessions/                         # Session logs
-│       └── .gitkeep
+│   ├── embeddings/  findings/  failures/
+│   ├── successful-strategies/  observations/  sessions/
 │
-├── logs/                                 # Platform logs
-│   └── sessions/                         # Per-session execution logs
-│       └── .gitkeep
+├── logs/                                 # Platform logs (sessions/, ...)
 │
-├── projects/                             # Additional projects
-│   ├── security-agents/                  # Custom security agent implementations
-│   ├── research-tools/                   # Research utilities
-│   ├── analysis-tools/                   # Analysis scripts
-│   └── legacy/                           # Legacy integrations
+├── projects/                             # Additional projects (legacy, research, analysis)
 │
 ├── scripts/                              # Utility scripts
-│   └── generate_platform.py              # Platform generator (creates adapters, modules)
 │
 ├── backups/                              # Backup storage
-│   └── .gitkeep
 │
 └── tests/                                # Test suite
-    ├── __init__.py
-    └── test_health.py                    # Basic health check tests
 ```
+
+> **Note on path layout:** The pre-Phase-A package was named `platform/`, which shadowed Python's stdlib `platform` module. Phase A renamed it to `cyberai/` — see [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) "Resolved Issues" #1. Two empty legacy directories (`cyberai/llm-gateway/`, `cyberai/tool-gateway/`) remain after the kebab→snake rename; they are reserved and not part of the active code.
 
 ---
 
 ## Component Breakdown
 
-### `platform/orchestrator/`
+### `cyberai/orchestrator/` — The brain
 
-The brain of the platform. Coordinates agents, routes tasks, manages memory, and enforces policies.
+Coordinates agents, routes tasks, manages memory, enforces policies. The top-level facade `cyberai.CyberAIOrchestrator` (re-exported from `cyberai/__init__.py`) lives at `cyberai/orchestrator/master.py`.
 
-#### Core Modules
+#### Core modules
 
-| File | Purpose | Key Classes/Functions |
-|------|---------|----------------------|
-| `orchestrator.py` | Master coordinator | `Orchestrator` - session management, task execution, assessment flow |
-| `tool_registry.py` | Tool catalog | `ToolRegistry` - 15 tools registered with capabilities |
-| `tools.yaml` | Tool definitions | YAML config for all adapters |
+| File | Purpose |
+|------|---------|
+| `master.py` | `CyberAIOrchestrator` — unified AI entry point |
+| `orchestrator.py` | Core session/task/assessment flow |
+| `tool_registry.py` | `ToolRegistry` — 17 tools registered with capabilities |
+| `tools.yaml` | Tool definitions (intentionally package-relative) |
 
-#### Agents (`agents/`)
+#### Agents (`cyberai/orchestrator/agents/`)
 
 Seven specialized AI agents, each inheriting from `BaseAgent`:
 
-| Agent | File | Purpose | LLM Task Type |
-|-------|------|---------|---------------|
-| **Planner** | `planner.py` | Decomposes objectives into steps | `planning` |
-| **Researcher** | `researcher.py` | Gathers target intelligence | `vulnerability_research` |
-| **Recon** | `recon.py` | Network/host discovery | `web_research` |
-| **Analyst** | `analyst.py` | Correlates findings | `reasoning` |
-| **Coder** | `coder.py` | Generates exploits/PoC | `code_generation` |
-| **Verifier** | `verifier.py` | Challenges findings, requires evidence | `verification` |
-| **Reporter** | `reporter.py` | Generates reports | `report_generation` |
+| Agent | Purpose | LLM task type |
+|-------|---------|---------------|
+| **Planner** | Decomposes objectives into steps | `planning` |
+| **Researcher** | Gathers target intelligence | `vulnerability_research` |
+| **Recon** | Network/host discovery | `web_research` |
+| **Analyst** | Correlates findings | `reasoning` |
+| **Coder** | Generates exploits/PoC | `code_generation` |
+| **Verifier** | Challenges findings, requires evidence | `verification` |
+| **Reporter** | Generates reports | `report_generation` |
 
-**Base Agent Capabilities:**
-- `_llm_call()` - Routes through model router to LLM gateway
-- `_record_experience()` - Stores outcomes to memory
-- Access to: model_router, tool_registry, memory, policy, logger
+Each agent calls the gateway through its own `prompts.py` module — prompts are never hardcoded in the gateway.
 
-#### Memory (`memory/`)
+#### Memory (`cyberai/orchestrator/memory/`)
 
-SQLite-backed persistent storage with three tables:
+SQLite-backed persistent storage. Doctor reports **4 tables** (`experiences`, `findings`, `sessions`, plus one performance/meta table). See [Memory & Learning Schema](#memory--learning-schema) for record shapes.
 
-```sql
-experiences: observation, hypothesis, action, tool, result, evidence, confidence, lessons, score
-findings: observation, evidence, status (UNVERIFIED/LIKELY/VERIFIED/REJECTED), confidence, source
-sessions: target_id, started_at, ended_at, status, summary
-```
+#### Policies (`cyberai/orchestrator/policies/`)
 
-**Key Methods:**
-- `store_experience()` - Record tactic/result with score
-- `search_experiences()` - Keyword search (future: semantic)
-- `score_experience()` - Update success/failure score
-- `store_finding()` - Record finding with verification status
+Target authorization enforcement. Doctor reports **4 targets registered, 4 authorized**. Targets are loaded from `lab/targets/targets.yaml` through the central config loader.
 
-#### Policies (`policies/`)
+#### Routing (`cyberai/orchestrator/routing/`)
 
-Target authorization enforcement:
+Task→model-alias mapping. `routing.yaml` is intentionally package-relative (registry data, not a workspace resource) — the only `Path(__file__)` site in this module, annotated in-code.
 
-```yaml
-target:
-  id: lab-web-01
-  environment: authorized_lab
-  allowed: true
-  allowed_actions: [recon, scan, analysis, exploitation]
-```
+#### CLI (`cyberai/orchestrator/cli/`)
 
-**Key Methods:**
-- `is_authorized(target_id)` - Check if target is registered and allowed
-- `check_action_allowed(target_id, action)` - Verify specific action permitted
-- `register_target(target)` - Add new authorized target
-
-#### Routing (`routing/`)
-
-Task-to-model alias mapping:
-
-```yaml
-planning: local-reasoner
-code_analysis: local-coder
-classification: local-fast
-vulnerability_research: research-model
-```
-
-Configurable via `routing.yaml`. Defaults defined in `DEFAULT_ROUTES`.
-
-#### CLI (`cli/`)
-
-Click-based command-line interface:
+Click-based command-line interface with **15 commands**:
 
 | Command | Purpose |
 |---------|---------|
-| `status` | Orchestrator status |
-| `models` | List available models |
+| `doctor` | Comprehensive health checks |
+| `status` | Full platform status |
+| `task` | Run an autonomous assessment |
+| `assess` | Legacy alias for `task` |
+| `simulate` | Run a complete end-to-end simulation without external dependencies |
+| `evolve` | Run the evolutionary strategy engine |
+| `tools` | List registered tools |
+| `adapters` | List adapters and their health |
 | `agents` | List agent types |
-| `tools` | List tools and adapters |
-| `lab list` | List authorized targets |
-| `lab start <target>` | Start lab target |
-| `assess <target>` | Run assessment |
-| `findings` | List findings |
-| `memory search <query>` | Search experiences |
-| `session list/show` | Session management |
-| `doctor` | Health check |
-
----
-
-### `platform/llm-gateway/`
-
-Unified LLM interface. Routes through LiteLLM proxy when available, falls back to direct provider calls.
-
-#### Model Registry (`models/models.yaml`)
-
-Defines model aliases decoupled from provider-specific names:
-
-```yaml
-models:
-  local_reasoner:
-    provider: ollama
-    default_model: llama3.1:8b
-    purpose: [reasoning, planning, verification]
-    status: REQUIRES_MODEL_DOWNLOAD
-
-  local_coder:
-    provider: ollama
-    default_model: codellama:7b
-    purpose: [code_analysis, code_generation, exploit_development]
-    status: REQUIRES_MODEL_DOWNLOAD
-
-  cloud_reasoner:
-    provider: openai
-    default_model: gpt-4o
-    purpose: [complex_reasoning, advanced_planning]
-    status: DISABLED_NO_API_KEY
-```
-
-#### Gateway Class (`__init__.py`)
-
-`LLMGateway` provides:
-- `resolve_model(alias)` - Resolve alias to provider config
-- `complete(model_alias, prompt)` - Generate completion
-- `list_available_models()` - List registry with status
-
-**Routing Priority:**
-1. LiteLLM proxy (if running with API key)
-2. Direct Ollama (for ollama provider models)
-3. Direct provider API (if API key configured)
-
----
-
-### `platform/tool-gateway/mcp/`
-
-MCP server discovery and management.
-
-#### MCP Gateway (`mcp_server.py`)
-
-`MCPGateway` discovers MCP servers from:
-- Configured definitions in `mcp_config.json`
-- Adapter directories (hexstrike, mcpstrike, darkmoon)
-- Runtime discovery
-
-**Discovered Servers:**
-```python
-{
-    "hexstrike-mcp": {
-        "type": "stdio",
-        "command": "python",
-        "args": ["hexstrike_mcp.py"],
-        "cwd": "adapters/hexstrike/",
-        "capabilities": ["tool_execution", "mcp_servers"]
-    },
-    "mcpstrike-mcp": {
-        "type": "stdio",
-        "command": "python",
-        "args": ["-m", "mcpstrike.server"],
-        "cwd": "adapters/mcpstrike/",
-        "capabilities": ["tool_execution", "mcp_servers"]
-    }
-}
-```
-
----
-
-### `adapters/`
-
-Thin wrappers around original repositories. Each adapter:
-1. Implements `SecurityToolAdapter` interface
-2. Preserves original project files and attribution
-3. Provides health check, capabilities, and execution methods
-4. Reports status: OK, WARN, ERROR
-
-#### Adapter Categories
-
-**Primary Security Agents (Docker-based):**
-| Adapter | Original Project | Capabilities | Integration |
-|---------|-----------------|--------------|-------------|
-| `pentagi` | PentAGI | research, analysis, exploitation, reporting | REST/GraphQL API |
-| `strix` | Strix | assessment, vulnerability_scanning | Server API |
-| `darkmoon` | Dark-Moon | research, analysis, exploitation | MCP Server |
-
-**MCP Tool Gateways:**
-| Adapter | Original Project | Capabilities | Integration |
-|---------|-----------------|--------------|-------------|
-| `hexstrike` | HexStrike AI | tool_execution, mcp_servers, web_scraping | Flask REST + MCP |
-| `mcpstrike` | MCPStrike | tool_execution, mcp_servers | FastAPI + MCP |
-
-**Agent Frameworks:**
-| Adapter | Original Project | Capabilities | Integration |
-|---------|-----------------|--------------|-------------|
-| `cai` | CAI | research, analysis, agent_framework | Python Library |
-| `pentestagent` | PentestAgent | research, analysis, exploitation | CLI + MCP |
-| `cyberstrikeai` | CyberStrikeAI | tool_execution, mcp_servers, analysis | Gin REST + MCP |
-
-**Research/Planning:**
-| Adapter | Original Project | Capabilities | Integration |
-|---------|-----------------|--------------|-------------|
-| `pentestgpt` | PentestGPT | research, planning | CLI Wrapper |
-| `autopentest` | AutoPentest | research, planning | CLI (LangChain) |
-
-**Analysis Tools:**
-| Adapter | Original Project | Capabilities | Integration |
-|---------|-----------------|--------------|-------------|
-| `penclaw` | PenClaw | static_analysis, dynamic_scanning, secret_detection | CLI (Node.js) |
-| `luan1aoagent` | LuaN1aoAgent | research, analysis, planning | CLI/Web (Node.js) |
-
-**Specialized:**
-| Adapter | Original Project | Capabilities | Integration |
-|---------|-----------------|--------------|-------------|
-| `aracne` | ARACNE | research, exploitation, ssh_driven | CLI (Python/SSH) |
-| `guardian-cli` | Guardian | research, analysis, reporting | CLI (Python) |
-| `drakben` | DRAKBEN | research, analysis, exploitation | CLI (Python/async) |
-
-**Knowledge References:**
-| Adapter | Original Project | Purpose | Integration |
-|---------|-----------------|---------|-------------|
-| `h4cker` | h4cker | Knowledge base (docs, labs) | Documentation |
-| `kali-pentest` | kali-pentest | Skill definitions | Documentation |
-
-#### Adapter Interface
-
-All adapters implement `SecurityToolAdapter`:
-
-```python
-class SecurityToolAdapter(ABC):
-    name: str
-    version: str
-    description: str
+| `models` | List models and their health |
+| `findings` | List findings from memory |
+| `memory` | Search experience memory |
+| `session` | Session management commands |
+| `lab` | Lab target management commands |
+| `ui` | Launch the CERBERUS Command Deck web UI |
 
-    async def health_check(self) -> Dict[str, Any]:
-        """Check if tool/service is available"""
+#### REST API (`cyberai/orchestrator/api/`)
 
-    async def capabilities(self) -> List[AdapterCapability]:
-        """Return list of capabilities"""
+FastAPI server. Endpoints: `GET /status`, `GET /targets`, `GET /targets/authorized`, `GET /sessions`, `GET /findings`, `GET /memory/search`, `GET /tools`, `GET /models`. See also [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) "Core Platform" row "REST API".
 
-    async def execute(self, task: Dict[str, Any]) -> AdapterResult:
-        """Execute task using underlying tool"""
+#### Adapter framework (`cyberai/orchestrator/adapters/`)
 
-    async def collect_results(self) -> AdapterResult:
-        """Collect results from async execution"""
-
-    async def shutdown(self) -> None:
-        """Clean up resources"""
-```
+The internal `SecurityToolAdapter` base class, registry loader, and `registry.yaml`. Adapters in `adapters/` at the repo root are the actual wrapped tools.
 
----
+### `cyberai/llm_gateway/` — Unified LLM interface
 
-### `lab/`
+Routes through LiteLLM proxy when available, falls back to direct Ollama, then to the direct provider API.
 
-Isolated execution environment for authorized targets.
+- `LLMGateway.complete()` implements **LiteLLM-proxy → direct-Ollama → direct-provider** transport fallback. Each hop is independently timed with structured error logging.
+- `LLMGateway.health()` probes both transports and reports per-alias availability.
+- `LLMGateway.local_only` provably blocks cloud routes at the gateway level.
+- `models/` registry and `config/` are intentionally package-relative (registry data, not workspace resources).
 
-#### Targets (`targets/targets.yaml`)
+### `cyberai/tool-gateway/mcp/` — MCP discovery
 
-Registry of authorized lab targets:
-
-```yaml
-targets:
-  - id: juice-shop
-    environment: authorized_lab
-    allowed: true
-    host: 127.0.0.1
-    port: 3000
-    description: OWASP Juice Shop
-    allowed_actions: [recon, scan, analysis, exploitation]
-```
+MCP server discovery and management. `mcp_config.json` is intentionally package-relative (default config).
 
-**Policy Enforcement:**
-- All targets must be explicitly registered
-- `allowed: true` required for active testing
-- Actions restricted to `allowed_actions` list
-- Unauthorized targets are refused by policy engine
+### `adapters/` — Vendor wrappers
 
-#### Docker (`docker/`)
+18 vendored adapter directories; 15 of them expose `SecurityToolAdapter` wrappers implementing `health_check`, `capabilities`, `execute`, `collect_results`, and `shutdown`. The 3 non-wrapped directories (`h4cker`, `kali-pentest`, plus knowledge-only refs) are reference material only.
 
-Docker Compose stacks for lab targets:
-- Custom target images
-- Network isolation configs
-- Volume mappings for evidence
+See [WORKSPACE_INVENTORY.md](./WORKSPACE_INVENTORY.md) for per-repository detail.
 
-#### Networks (`networks/`)
+### `cyberai/evolution/` — Evolution engine
 
-Docker network definitions:
-- `lab-network` - Isolated bridge network
-- Custom subnets for target environments
-- Traffic isolation rules
+Population, mutation, selection, elite archive, failure memory. Includes A-Evolve integration at `cyberai/evolution/a-evolve/`.
 
-#### Snapshots (`snapshots/`)
+### `cyberai/self_improvement/` — 10-stage pipeline
 
-VM/target snapshots for:
-- Clean state restoration
-- Pre/post-assessment comparison
-- Rollback on failure
+AI-proposed code improvements flow through: `AI Proposes → Patch Generated → Static Checks → Unit Tests → Security Checks → Benchmark Compare → Human Approval → Git Branch → Apply`. Each applied proposal records its rollback commit.
 
-#### Scenarios (`scenarios/`)
+### `cyberai/capabilities/`, `cyberai/collaboration/`, `cyberai/meta_learning/`, `cyberai/observability/`, `cyberai/security/`, `cyberai/ui/`
 
-Pre-built assessment configurations:
-- `juice-shop.yml` - OWASP Juice Shop assessment
-- `dvwa.yml` - DVWA assessment
-- `vulhub.yml` - VulHub scenarios
-
-#### Evidence (`evidence/`)
-
-Collected evidence files:
-- Scan outputs
-- Tool responses
-- Screenshots
-- Network captures
-- Manual notes
-
----
-
-### `knowledge/`
-
-Security knowledge base for RAG retrieval.
-
-| Directory | Contents | Format |
-|-----------|----------|--------|
-| `cve/` | CVE database | JSON, YAML |
-| `cwe/` | CWE weakness taxonomy | JSON, YAML |
-| `advisories/` | Security advisories | Markdown, JSON |
-| `techniques/` | ATT&CK techniques | Markdown, YAML |
-| `research/` | Security papers | PDF, Markdown |
-| `documentation/` | Tool docs | Markdown |
-
-**Loading:** `KnowledgeBase` class indexes all files on initialization, supports full-text search.
-
----
-
-### `memory/`
-
-Persistent experience storage.
-
-| Path | Type | Purpose |
-|------|------|---------|
-| `memory.db` | SQLite | Primary storage (experiences, findings, sessions) |
-| `embeddings/` | Directory | Vector embeddings for semantic search |
-| `findings/` | Directory | Individual finding JSON files |
-| `failures/` | Directory | Failed strategy records |
-| `successful-strategies/` | Directory | Successful tactic records |
-| `observations/` | Directory | Agent observation logs |
-| `sessions/` | Directory | Session log files |
-
----
-
-### `infrastructure/`
-
-Supporting services.
-
-| Directory | Service | Purpose |
-|-----------|---------|---------|
-| `ollama/` | Ollama | Local model serving (Llama, CodeLlama, Qwen) |
-| `open-webui/` | Open WebUI | Human-facing web interface |
-| `airllm/` | AirLLM | Low-VRAM inference alternative |
-| `other-inference/` | TGI, vLLM | Additional inference engines |
-
----
-
-### `gateway/` (Alternative naming)
-
-Some documentation may reference `gateway/` instead of `platform/llm-gateway/`. Both refer to the LiteLLM integration layer.
+Specialized subsystems supporting capability-based routing, multi-agent collaboration, performance tracking, structured logging/tracing, policy + sandboxing helpers, and the unified web UI respectively.
 
 ---
 
 ## Integration Methodologies
 
-The orchestrator integrates external tools through adapters using multiple methods:
+The orchestrator integrates external tools through adapters using multiple methods. The `cyberai/orchestrator/adapters/registry.yaml` records which method each adapter uses.
 
 ### 1. REST API (HTTP)
 
 **Tools:** PentAGI, Strix, CyberStrikeAI, HexStrike
 
-**Method:** Direct HTTP calls to tool's REST API
-
 ```python
-async def _execute_via_api(self, action, target, parameters, health):
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            f"{self._api_url}/api/v1/execute",
-            json={"action": action, "target": target, "params": parameters},
-            headers={"Authorization": f"Bearer {self._api_token}"}
-        )
-        return resp.json()
+async with httpx.AsyncClient() as client:
+    resp = await client.post(
+        f"{self._api_url}/api/v1/execute",
+        json={"action": action, "target": target, "params": parameters},
+        headers={"Authorization": f"Bearer {self._api_token}"},
+    )
+    return resp.json()
 ```
 
-### 2. MCP Protocol (Model Context Protocol)
+### 2. MCP Protocol
 
 **Tools:** Dark-Moon, HexStrike, MCPStrike, PentestAgent, CyberStrikeAI
 
-**Method:** Stdio or SSE MCP server communication
-
 ```python
-# Via FastMCP client
 from fastmcp import Client
 client = Client("hexstrike-mcp")
 async with client:
@@ -728,23 +261,16 @@ async with client:
 
 **Tools:** PentestGPT, AutoPentest, PenClaw, LuaN1aoAgent, ARACNE, Guardian-CLI, DRAKBEN
 
-**Method:** Spawn subprocess, capture stdout/stderr
-
 ```python
-async def _execute_via_cli(self, action, target, parameters):
-    cmd = [self._cli_path, action, "--target", target["host"]]
-    proc = await asyncio.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-    )
-    stdout, stderr = await proc.communicate()
-    return {"success": proc.returncode == 0, "output": stdout.decode()}
+proc = await asyncio.create_subprocess_exec(
+    *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+)
+stdout, stderr = await proc.communicate()
 ```
 
 ### 4. Docker SDK
 
 **Tools:** PentAGI, Strix, Dark-Moon, CAI, ARACNE, DRAKBEN
-
-**Method:** Python Docker SDK for container management
 
 ```python
 import docker
@@ -753,7 +279,7 @@ container = client.containers.run(
     "pentagi:latest",
     environment={"OLLAMA_URL": "http://ollama:11434"},
     network="cyberai-net",
-    detach=True
+    detach=True,
 )
 ```
 
@@ -761,17 +287,15 @@ container = client.containers.run(
 
 **Tools:** CAI, AirLLM
 
-**Method:** Direct Python import and function calls
-
 ```python
 from cai.sdk.agents import Agent
 agent = Agent(model="ollama/llama3.1:8b")
 result = await agent.run("Scan target for open ports")
 ```
 
-### Integration Priority Matrix
+### Integration priority matrix
 
-| Method | Latency | Isolation | Complexity | Preferred For |
+| Method | Latency | Isolation | Complexity | Preferred for |
 |--------|---------|-----------|------------|---------------|
 | REST API | Low | Medium | Low | Services with HTTP APIs |
 | MCP | Low | High | Medium | MCP-native tools |
@@ -783,7 +307,7 @@ result = await agent.run("Scan target for open ports")
 
 ## Memory & Learning Schema
 
-### Experience Record Schema
+### Experience record
 
 ```json
 {
@@ -798,20 +322,16 @@ result = await agent.run("Scan target for open ports")
   "tool": "hexstrike",
   "result": "success",
   "evidence": [
-    {
-      "type": "scan_output",
-      "content": "Nmap scan report...",
-      "source": "hexstrike"
-    }
+    {"type": "scan_output", "content": "Nmap scan report...", "source": "hexstrike"}
   ],
   "confidence": 0.9,
-  "lessons": ["Always check alternative ports", "HTTP 200 on non-standard port indicates app"],
+  "lessons": ["Always check alternative ports"],
   "timestamp": "2026-08-11T10:30:00Z",
   "score": 1.0
 }
 ```
 
-### Finding Record Schema
+### Finding record
 
 ```json
 {
@@ -820,16 +340,8 @@ result = await agent.run("Scan target for open ports")
   "target_id": "lab-web-01",
   "observation": "SQL injection vulnerability in login form",
   "evidence": [
-    {
-      "type": "tool_response",
-      "content": "sqlmap identified boolean-based blind injection",
-      "source": "pentagi"
-    },
-    {
-      "type": "http_request",
-      "content": "POST /login HTTP/1.1...",
-      "source": "burp"
-    }
+    {"type": "tool_response", "content": "sqlmap identified boolean-based blind injection", "source": "pentagi"},
+    {"type": "http_request", "content": "POST /login HTTP/1.1...", "source": "burp"}
   ],
   "status": "VERIFIED",
   "confidence": 0.95,
@@ -838,7 +350,7 @@ result = await agent.run("Scan target for open ports")
 }
 ```
 
-### Session Record Schema
+### Session record
 
 ```json
 {
@@ -851,57 +363,58 @@ result = await agent.run("Scan target for open ports")
 }
 ```
 
-### Scoring Mechanism
+### Scoring
 
 - **Success**: +1.0 to +2.0 (dependent on confidence and verification)
-- **Partial Success**: +0.5
+- **Partial success**: +0.5
 - **Failure**: -1.0 to -2.0
-- **Rejected Finding**: -2.0
+- **Rejected finding**: -2.0
 
-**Retrieval:** `search_experiences(query, limit=10)` performs keyword search. Future: vector similarity search using embeddings.
+**Retrieval:** `search_experiences(query, limit=10)` performs keyword search today; semantic search is staged behind the embeddings alias.
 
 ---
 
 ## Model Routing Matrix
 
-| Task Type | Model Alias | Provider | Model | Context Window | Best For |
-|-----------|-------------|----------|-------|----------------|----------|
-| **Planning** | `local-reasoner` | Ollama | llama3.1:8b | 8K | Strategic planning, step decomposition |
-| **Reasoning** | `local-reasoner` | Ollama | llama3.1:8b | 8K | Complex analysis, vulnerability correlation |
-| **Verification** | `local-reasoner` | Ollama | llama3.1:8b | 8K | Evidence evaluation, finding validation |
-| **Code Analysis** | `local-coder` | Ollama | codellama:7b | 16K | Code review, vulnerability identification |
-| **Code Generation** | `local-coder` | Ollama | codellama:7b | 16K | Exploit development, PoC generation |
-| **Exploit Development** | `local-coder` | Ollama | codellama:7b | 16K | ROP chain construction, shellcode |
-| **Classification** | `local-fast` | Ollama | llama3.2:3b | 4K | Quick categorization, routing decisions |
-| **Summarization** | `local-fast` | Ollama | llama3.2:3b | 4K | Report summaries, briefings |
-| **Tool Selection** | `local-fast` | Ollama | llama3.2:3b | 4K | Adapter selection for tasks |
-| **Web Research** | `research-model` | Ollama | qwen2.5:7b | 32K | OSINT, vulnerability research |
-| **CVE Analysis** | `research-model` | Ollama | qwen2.5:7b | 32K | CVE analysis, exploitability assessment |
-| **Report Generation** | `local-fast` | Ollama | llama3.2:3b | 4K | Final report synthesis |
-| **Sensitive Source** | `local-coder` | Ollama | codellama:7b | 16K | Always local for sensitive data |
-| **Complex Reasoning** | `cloud-reasoner` | OpenAI | gpt-4o | 128K | Complex analysis (requires API key) |
-| **Fast Analysis** | `cloud-fast` | Anthropic | claude-3-5-haiku | 200K | Quick triage (requires API key) |
-| **Embeddings** | `embeddings` | Ollama | nomic-embed-text | 8K | Semantic memory retrieval |
+| Task type | Model alias | Provider | Model | Best for |
+|-----------|-------------|----------|-------|----------|
+| **Planning** | `local-reasoner` | Ollama | llama3.1:8b | Strategic planning, step decomposition |
+| **Reasoning** | `local-reasoner` | Ollama | llama3.1:8b | Complex analysis, vulnerability correlation |
+| **Verification** | `local-reasoner` | Ollama | llama3.1:8b | Evidence evaluation, finding validation |
+| **Code analysis** | `local-coder` | Ollama | codellama:7b | Code review, vulnerability identification |
+| **Code generation** | `local-coder` | Ollama | codellama:7b | Exploit development, PoC generation |
+| **Exploit development** | `local-coder` | Ollama | codellama:7b | ROP chain construction, shellcode |
+| **Classification** | `local-fast` | Ollama | llama3.2:3b | Quick categorization, routing decisions |
+| **Summarization** | `local-fast` | Ollama | llama3.2:3b | Report summaries, briefings |
+| **Tool selection** | `local-fast` | Ollama | llama3.2:3b | Adapter selection for tasks |
+| **Web research** | `research-model` | Ollama | qwen2.5:7b | OSINT, vulnerability research |
+| **CVE analysis** | `research-model` | Ollama | qwen2.5:7b | CVE analysis, exploitability assessment |
+| **Report generation** | `local-fast` | Ollama | llama3.2:3b | Final report synthesis |
+| **Sensitive source** | `local-coder` | Ollama | codellama:7b | Always local for sensitive data |
+| **Complex reasoning** | `cloud-reasoner` | OpenAI | gpt-4o | Complex analysis (requires API key) |
+| **Fast analysis** | `cloud-fast` | Anthropic | claude-3-5-haiku | Quick triage (requires API key) |
+| **Embeddings** | `embeddings` | Ollama | nomic-embed-text | Semantic memory retrieval |
 
-**Fallback Strategy:**
-1. Try `local-*` alias (Ollama)
-2. If Ollama unavailable, try `cloud-*` alias (if API key set)
-3. If both fail, return error message to agent
+**Fallback strategy (implemented in `cyberai/llm_gateway/`):**
+1. Try LiteLLM proxy (`http://localhost:4000`)
+2. Fall back to direct Ollama (`http://localhost:11434`)
+3. Fall back to direct provider API (if API key set)
+4. If `local_only` is true, cloud routes are blocked at the gateway level (tested).
 
 ---
 
 ## Data Flow Specifications
 
-### Assessment Flow
+### Assessment flow
 
 ```
-User CLI: cyberai assess juice-shop --objective "Find SQL injection"
+User CLI: cyberai task juice-shop --objective "Find SQL injection"
     │
     ▼
-Orchestrator.assess(target_id, objective)
+CyberAIOrchestrator.run(objective)
     │
     ├── 1. PolicyEngine.is_authorized(target_id)
-    │   └── Check lab/targets/targets.yaml
+    │   └── Reads lab/targets/targets.yaml via resolve_path()
     │
     ├── 2. MemoryManager.create_session(target_id)
     │   └── Insert session record, return session_id
@@ -915,25 +428,19 @@ Orchestrator.assess(target_id, objective)
     ├── 4. For each plan step:
     │   ├── ToolRegistry.get_tools_by_capability(action)
     │   ├── Adapter.execute(task)
-    │   │   ├── Adapter.health_check()
-    │   │   ├── Execute via API/MCP/CLI/Docker
-    │   │   └── Return AdapterResult
     │   ├── EvidenceManager.store_evidence()
     │   └── MemoryManager.store_experience()
     │
     ├── 5. VerifierAgent.verify_finding(finding)
-    │   ├── Check evidence quality
-    │   ├── Update finding status (UNVERIFIED/LIKELY/VERIFIED/REJECTED)
-    │   └── MemoryManager.store_finding()
+    │   └── Update finding status (UNVERIFIED/LIKELY/VERIFIED/REJECTED)
     │
     ├── 6. ReporterAgent.run(task)
     │   └── Generate structured report
     │
     └── 7. Orchestrator.end_session(session_id, summary)
-        └── MemoryManager.end_session()
 ```
 
-### LLM Call Flow
+### LLM call flow
 
 ```
 Agent._llm_call(prompt, task_type="planning")
@@ -946,54 +453,37 @@ ModelRouter.route("planning")
 LLMGateway.complete("local-reasoner", prompt)
     │
     ├── resolve_model("local-reasoner")
-    │   └── {provider: "ollama", default_model: "llama3.1:8b", status: "REQUIRES_MODEL_DOWNLOAD"}
+    │   └── {provider: "ollama", default_model: "llama3.1:8b"}
     │
     ├── Try LiteLLM proxy (http://localhost:4000)
-    │   └── POST /chat/completions {model: "local-reasoner", messages: [...]}
+    │   └── POST /chat/completions
     │
     ├── Fallback: Direct Ollama (http://localhost:11434)
-    │   └── POST /api/generate {model: "llama3.1:8b", prompt: "..."}
+    │   └── POST /api/generate
     │
-    └── Return response text
+    └── Fallback: Direct provider API (if API key configured)
 ```
 
-### Tool Execution Flow
+### Tool execution flow
 
 ```
 Orchestrator.execute_task(session_id, target_id, tool_name, action, parameters)
     │
     ├── 1. PolicyEngine.is_authorized(target_id)
-    │   └── If False: raise PermissionError
-    │
     ├── 2. PolicyEngine.check_action_allowed(target_id, action)
-    │   └── If False: raise PermissionError
-    │
     ├── 3. ToolRegistry.get_tool(tool_name)
-    │   └── Return tool config (adapter path, capabilities)
-    │
-    ├── 4. Load adapter module
-    │   └── importlib.import_module(adapter_path)
-    │
+    ├── 4. Load adapter module via registry
     ├── 5. Adapter.health_check()
-    │   └── Return {status: "OK"/"WARN"/"ERROR", ...}
-    │
     ├── 6. Adapter.execute(task)
-    │   ├── Check health
-    │   ├── Route to appropriate method (API/MCP/CLI/Docker)
-    │   └── Return AdapterResult
-    │
-    ├── 7. Store experience
-    │   └── MemoryManager.store_experience({...})
-    │
-    └── 8. Collect evidence
-        └── EvidenceManager.store_evidence(session_id, ...)
+    ├── 7. MemoryManager.store_experience()
+    └── 8. EvidenceManager.store_evidence(session_id, ...)
 ```
 
 ---
 
 ## Security Boundaries
 
-### Target Authorization Model
+### Target authorization model
 
 ```
                     ┌──────────────────┐
@@ -1003,7 +493,7 @@ Orchestrator.execute_task(session_id, target_id, tool_name, action, parameters)
                              │
                     ┌────────▼─────────┐
                     │  POLICY ENGINE   │
-                    │                  │
+                    │  (cyberai/security/) │
                     │  Check:          │
                     │  1. Target in    │
                     │     targets.yaml │
@@ -1015,7 +505,6 @@ Orchestrator.execute_task(session_id, target_id, tool_name, action, parameters)
                     ┌────────▼─────────┐
                     │   LAB NETWORK    │
                     │   (Isolated)     │
-                    │                  │
                     │  ┌────────────┐ │
                     │  │   Docker   │ │
                     │  │   Targets  │ │
@@ -1029,18 +518,18 @@ Orchestrator.execute_task(session_id, target_id, tool_name, action, parameters)
                     └──────────────────┘
 ```
 
-### Evidence Chain
+### Evidence chain
 
-Every action produces audit trail:
-1. **Timestamp** - ISO 8601 with timezone
-2. **Source** - Tool/adapter name
-3. **Action** - What was executed
-4. **Parameters** - Input parameters (secrets redacted)
-5. **Output** - Tool response
-6. **Hash** - SHA256 of output for integrity
-7. **Verification** - UNVERIFIED → LIKELY → VERIFIED → REJECTED
+Every action produces an audit trail:
+1. **Timestamp** — ISO 8601 with timezone
+2. **Source** — tool/adapter name
+3. **Action** — what was executed
+4. **Parameters** — input parameters (secrets redacted)
+5. **Output** — tool response
+6. **Hash** — SHA256 of output for integrity
+7. **Verification** — `UNVERIFIED → LIKELY → VERIFIED → REJECTED`
 
-### Secret Handling
+### Secret handling
 
 - API keys never logged
 - Credentials redacted from tool output
@@ -1051,113 +540,62 @@ Every action produces audit trail:
 
 ## Configuration Reference
 
-### Environment Variables (`.env`)
+### Workspace-root resolution (`cyberai/config.py`)
+
+The single source of truth for paths:
+
+1. `CERBERUS_HOME` env var (when set, must be an existing directory)
+2. Repository root: parent of the `cyberai/` package
+
+Use `from cyberai.config import resolve_path` everywhere; the only `Path(__file__)` sites are the bootstrap fallback in `config.py` itself and a handful of intentionally package-relative registry data files (`routing.yaml`, `tools.yaml`, `mcp_config.json`, `ui/static`) — each annotated in-code. See [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) Phase A path audit table.
+
+### Environment variables (`.env`)
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
+| `CERBERUS_HOME` | Workspace root override | (repo root) |
 | `OLLAMA_HOST` | Ollama API endpoint | `http://localhost:11434` |
 | `OLLAMA_MODEL` | Default Ollama model | `llama3.1:8b` |
 | `LITELLM_MASTER_KEY` | LiteLLM proxy auth | (empty) |
 | `LITELLM_PORT` | LiteLLM proxy port | `4000` |
 | `OPENAI_API_KEY` | OpenAI API key | (empty) |
 | `ANTHROPIC_API_KEY` | Anthropic API key | (empty) |
-| `GEMINI_API_KEY` | Google AI API key | (empty) |
+| `GEMINI_API_KEY` | Google AI key | (empty) |
 | `LAB_TARGETS_PATH` | Targets file path | `lab/targets/targets.yaml` |
 | `REQUIRE_TARGET_AUTHORIZATION` | Enforce lab boundary | `true` |
 
-### Model Registry (`platform/llm-gateway/models/models.yaml`)
+### Model registry
 
-Defines all available model aliases with provider, model name, purpose, and status.
+`cyberai/llm_gateway/models/models.yaml` — defines every alias with provider, model name, purpose, status.
 
-### Routing Rules (`platform/orchestrator/routing/routing.yaml`)
+### Routing rules
 
-Maps task types to model aliases. Override defaults here.
+`cyberai/orchestrator/routing/routing.yaml` — maps task types to model aliases. Override defaults here.
+
+### Targets
+
+`lab/targets/targets.yaml` — registered authorized targets. Resolved through `resolve_path()`.
 
 ---
 
 ## Extension Points
 
-### Adding a New Adapter
+### Adding a new adapter
 
 1. Place repository in `adapters/<name>/`
 2. Create `INTEGRATION.md` with attribution and integration details
 3. Implement `SecurityToolAdapter` in `adapter.py`
-4. Add capabilities to `tool_registry.py` `DEFAULT_TOOLS`
-5. Run `python scripts/generate_platform.py` to regenerate wrapper
+4. Add capabilities to `cyberai/orchestrator/adapters/registry.yaml`
 
-### Adding a New Agent Type
+### Adding a new agent type
 
-1. Create `platform/orchestrator/agents/<type>/<type>.py`
+1. Create `cyberai/orchestrator/agents/<type>/<type>.py`
 2. Inherit from `BaseAgent`
 3. Implement `run(task)` method
 4. Export in `agents/__init__.py`
 
-### Adding a New Model Provider
+### Adding a new model provider
 
-1. Add to `platform/llm-gateway/models/models.yaml`
-2. Configure in `platform/llm-gateway/config/config.yaml`
+1. Add to `cyberai/llm_gateway/models/models.yaml`
+2. Configure in `cyberai/llm_gateway/config/config.yaml`
 3. Set API key in `.env`
-
----
-
-## Troubleshooting
-
-### Import Error: `'platform' is not a package`
-
-Python stdlib `platform` module conflicts with local `platform/` directory.
-
-**Workaround:** Use direct path imports:
-```python
-import importlib.util
-spec = importlib.util.spec_from_file_location("module", "platform/orchestrator/orchestrator.py")
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-```
-
-**Permanent Fix:** Rename `platform/` to `cyber_platform/` and update all imports.
-
-### Docker Not Installed
-
-Most adapters and infrastructure services require Docker Desktop.
-
-**Install:** https://www.docker.com/products/docker-desktop/
-
-### Ollama Not Running
-
-Start Ollama service:
-```bash
-ollama serve
-```
-
-Pull required models:
-```bash
-ollama pull llama3.1:8b
-ollama pull codellama:7b
-```
-
-### No Models Available
-
-Check model registry:
-```bash
-python -m platform.orchestrator.cli models
-```
-
-Ensure models are pulled and Ollama is running.
-
----
-
-## References
-
-- **LiteLLM Documentation**: https://docs.litellm.ai
-- **Ollama Documentation**: https://ollama.com/docs
-- **Open WebUI Documentation**: https://docs.openwebui.com
-- **MCP Protocol**: https://modelcontextprotocol.io
-- **PentAGI**: https://github.com/vxcontrol/pentagi
-- **Strix**: https://github.com/usestrix/strix
-- **HexStrike AI**: https://github.com/0x4m4/hexstrike-ai
-
----
-
-**Document Version**: 1.0  
-**Last Updated**: 2026-08-11  
-**Platform Version**: 0.1.0
