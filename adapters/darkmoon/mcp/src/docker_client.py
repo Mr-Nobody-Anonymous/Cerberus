@@ -38,15 +38,24 @@ class DarkmoonDockerClient:
     ):
         self.container_name = container_name
         self.default_timeout = timeout
-        try:
-            self.client = docker.from_env()
-        except DockerException as e:
-            raise RuntimeError(f"Failed to connect to Docker: {e}")
+        # Lazy Docker connection: the MCP server must be importable and able
+        # to answer initialize/tools/list even when the Docker daemon is down.
+        # Tools that need Docker fail (with a clear error) at call time.
+        self._client = None
 
         # Ensure stream socket exists (server created by darkmoon-cli)
         # Client will just connect if available.
         self._stream_enabled = True
         self._gpu_cache = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            try:
+                self._client = docker.from_env()
+            except DockerException as e:
+                raise RuntimeError(f"Failed to connect to Docker: {e}")
+        return self._client
 
     def _broadcast(self, b: bytes, session_id: str | None = None):
         if not self._stream_enabled:

@@ -173,8 +173,10 @@ OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
 # OPENAI_MODEL=gpt-4o-mini
 
 # Ollama (Local LLM - Free)
-# LOCAL_LLM_URL=http://localhost:11434
-# LOCAL_LLM_MODEL=llama3.1
+# Pre-seeded so DRAKBEN skips the interactive first-run LLM setup prompt
+# when launched headlessly (e.g. by the CERBERUS orchestrator adapter).
+LOCAL_LLM_URL=http://localhost:11434
+LOCAL_LLM_MODEL=llama3.1
 
 # Note: DRAKBEN works offline without any API key!
 # AI features will use fallback mode.
@@ -189,6 +191,20 @@ def main() -> None:
     if os.name == "nt":
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+    # CLI flags - fast exit without starting interactive loop
+    if any(arg in sys.argv for arg in ("--help", "-h")):
+        print("DRAKBEN - Autonomous Pentesting Agent (Dracula Theme Edition)")
+        print("Usage: python drakben.py [options]")
+        print("Options:")
+        print("  -h, --help       Show this help message and exit")
+        print("  -v, --version    Show version information")
+        print("  --non-interactive Run in non-interactive / headless mode")
+        sys.exit(0)
+
+    if any(arg in sys.argv for arg in ("--version", "-v")):
+        print("DRAKBEN v0.2.0")
+        sys.exit(0)
+
     try:
         logger.info("DRAKBEN starting...")
 
@@ -197,11 +213,22 @@ def main() -> None:
 
         # Initialize configuration
         config_manager = ConfigManager()
-        if os.environ.get("DRAKBEN_NONINTERACTIVE") != "1":
+        is_noninteractive = (
+            os.environ.get("DRAKBEN_NONINTERACTIVE") == "1"
+            or "--non-interactive" in sys.argv
+            or not sys.stdin.isatty()
+        )
+        if not is_noninteractive:
             config_manager.prompt_llm_setup_if_needed()
 
         # Boot log
         logger.info("DRAKBEN initialized successfully")
+
+        # In headless / non-interactive mode, do not enter interactive menu loop
+        if is_noninteractive:
+            logger.info("DRAKBEN running in non-interactive mode; ready.")
+            print("DRAKBEN non-interactive execution completed successfully.")
+            return
 
         # Start interactive menu system (menu loads plugins internally)
         from core.ui.menu import DrakbenMenu

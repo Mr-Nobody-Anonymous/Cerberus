@@ -153,6 +153,27 @@ class CyberAIOrchestrator:
         self._agents: Dict[str, Any] = {}
         self._session_logger_instance = None
 
+        # Cooperative cancellation flag — set via stop(), honored at
+        # pipeline step boundaries (see AgentPipeline.run).
+        self._stop_requested = False
+
+    # ------------------------------------------------------------------
+    # Cancellation
+    # ------------------------------------------------------------------
+    def stop(self) -> None:
+        """Request cooperative cancellation of the running task.
+
+        The stop takes effect at the next pipeline step boundary; an
+        in-flight agent/LLM call is allowed to finish. Idempotent.
+        """
+        self._stop_requested = True
+        logger.info("Stop requested by operator")
+
+    @property
+    def stop_requested(self) -> bool:
+        """True if stop() has been called since the last run()."""
+        return self._stop_requested
+
     # ------------------------------------------------------------------
     # Agent management
     # ------------------------------------------------------------------
@@ -203,6 +224,8 @@ class CyberAIOrchestrator:
         Dry-run: shows plan without executing.
         Simulation: uses deterministic mock results.
         """
+        # A new run clears any stale stop request from a previous run.
+        self._stop_requested = False
         task_id = str(uuid.uuid4())
         self._emit(event_callback, "task_started", {
             "task_id": task_id,
@@ -269,6 +292,16 @@ class CyberAIOrchestrator:
         })
         execution_result = await self._execute_pipeline(task, plan_result, event_callback)
 
+        # --- 5b. Cancellation point ---
+        if self._stop_requested:
+            task.set_status(TaskStatus.CANCELLED)
+            self._emit(event_callback, "task_error", {
+                "task_id": task_id,
+                "error": "Task cancelled by operator",
+                "cancelled": True,
+            })
+            return task.to_dict()
+
         # --- 6. Verification ---
         task.set_status(TaskStatus.WAITING_VERIFICATION)
         self._emit(event_callback, "phase", {
@@ -302,6 +335,29 @@ class CyberAIOrchestrator:
             "tools_used": task.tools_used,
             "models_used": task.models_used,
         })
+
+        # --- 9. Persist session + findings to memory DB ---
+        # Makes hunts visible in timeline / scorecard / findings / replay.
+        try:
+            session_id = self.memory.create_session(target_id or "simulation", objective)
+            for finding in task.findings:
+                self.memory.store_finding({
+                    "session_id": session_id,
+                    "target_id": target_id or "",
+                    "observation": finding.get("description", ""),
+                    "evidence": finding.get("evidence_ids", []),
+                    "status": finding.get("verification", "UNVERIFIED"),
+                    "confidence": finding.get("confidence", 0.0),
+                    "source": finding.get("source", "hunt"),
+                })
+            summary = (task.final_report or {}).get("content", "")[:500] or objective
+            self.memory.end_session(
+                session_id, summary,
+                findings_count=len(task.findings),
+                evidence_count=len(task.evidence),
+            )
+        except Exception as e:
+            logger.debug(f"Failed to persist hunt session: {e}")
 
         return task.to_dict()
 
@@ -402,6 +458,8 @@ class CyberAIOrchestrator:
         """Execute the plan through the agent collaboration pipeline."""
 
         pipeline = AgentPipeline(task=task)
+        # Cooperative stop: the pipeline checks this flag between steps.
+        pipeline.should_cancel = lambda: self._stop_requested
         pipeline.add_step("researcher", "research", "Research target",
                           output_key="research")
         pipeline.add_step("recon", "reconnaissance", "Perform reconnaissance",

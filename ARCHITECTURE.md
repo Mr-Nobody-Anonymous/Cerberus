@@ -46,9 +46,10 @@ C:\Users\hp\Desktop\Cerberus/
 │   ├── orchestrator/                     # Master orchestrator + subsystems
 │   │   ├── master.py                     # CyberAIOrchestrator facade (top-level entry point)
 │   │   ├── orchestrator.py               # Core session/task/assessment flow
+│   │   ├── pipeline.py                   # Multi-agent execution pipeline (CyberAIPipeline)
 │   │   ├── tool_registry.py              # Machine-readable tool catalog
 │   │   ├── tools.yaml                    # Tool definitions and capabilities
-│   │   ├── adapters/                     # Adapter framework (base, registry, registry.yaml)
+│   │   ├── adapters/                     # Adapter framework (base.py, adapter_manager.py)
 │   │   ├── agents/                       # AI agent implementations (planner, researcher, ...)
 │   │   ├── api/                          # FastAPI REST server
 │   │   ├── cli/                          # Click-based CLI (15 commands)
@@ -134,6 +135,7 @@ Coordinates agents, routes tasks, manages memory, enforces policies. The top-lev
 |------|---------|
 | `master.py` | `CyberAIOrchestrator` — unified AI entry point |
 | `orchestrator.py` | Core session/task/assessment flow |
+| `pipeline.py` | `CyberAIPipeline` — multi-agent collaborative pipeline |
 | `tool_registry.py` | `ToolRegistry` — 17 tools registered with capabilities |
 | `tools.yaml` | Tool definitions (intentionally package-relative) |
 
@@ -193,7 +195,7 @@ FastAPI server. Endpoints: `GET /status`, `GET /targets`, `GET /targets/authoriz
 
 #### Adapter framework (`cyberai/orchestrator/adapters/`)
 
-The internal `SecurityToolAdapter` base class, registry loader, and `registry.yaml`. Adapters in `adapters/` at the repo root are the actual wrapped tools.
+The internal `SecurityToolAdapter` base class (`base.py`) and dynamic loader `AdapterManager` (`adapter_manager.py`), which maintains the `KNOWN_ADAPTERS` metadata and discovers wrappers in `adapters/` at the repo root.
 
 ### `cyberai/llm_gateway/` — Unified LLM interface
 
@@ -230,7 +232,7 @@ Specialized subsystems supporting capability-based routing, multi-agent collabor
 
 ## Integration Methodologies
 
-The orchestrator integrates external tools through adapters using multiple methods. The `cyberai/orchestrator/adapters/registry.yaml` records which method each adapter uses.
+The orchestrator integrates external tools through adapters using multiple methods. The `KNOWN_ADAPTERS` registry in `cyberai/orchestrator/adapters/adapter_manager.py` records which method each adapter uses.
 
 ### 1. REST API (HTTP)
 

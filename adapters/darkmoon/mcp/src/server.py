@@ -727,14 +727,21 @@ def main():
     print(f"Default timeout: {docker_client.default_timeout}s")
     print()
 
-    # Perform initial health check
+    # Perform initial health check (tolerant: server must still start when
+    # the Docker daemon is unavailable — tools report the failure instead)
     print("Performing initial health check...")
-    health = health_checker.check()
-    print(f"Status: {'[OK] Healthy' if health.healthy else '[!] Unhealthy'}")
-    print(f"Message: {health.message}")
-    print()
+    try:
+        health = health_checker.check()
+        print(f"Status: {'[OK] Healthy' if health.healthy else '[!] Unhealthy'}")
+        print(f"Message: {health.message}")
+        print()
+    except Exception as e:
+        health = None
+        print(f"Status: [!] Docker unavailable ({e})")
+        print("Tools requiring Docker will report errors until it is running.")
+        print()
 
-    if not health.healthy:
+    if health is not None and not health.healthy:
         print("[WARNING] Some tools are not available. Check health status.")
         print()
 

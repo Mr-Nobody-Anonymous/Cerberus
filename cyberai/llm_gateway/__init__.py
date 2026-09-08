@@ -24,6 +24,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from cyberai.config import config, load_required_yaml
+from cyberai.llm_gateway import openai_compat
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,12 @@ def _load_registry() -> Dict[str, Dict[str, Any]]:
             if not isinstance(entry, dict) or "provider" not in entry:
                 logger.warning("Skipping invalid model registry entry %r", alias)
                 continue
+            if entry.get("provider") == "openai_compatible":
+                problems = openai_compat.validate_entry(alias, entry)
+                if problems:
+                    for p in problems:
+                        logger.error("Registry entry rejected: %s", p)
+                    continue
             registry[alias] = dict(entry)
         if not registry:
             raise ValueError("model registry is empty")
@@ -256,6 +263,19 @@ class LLMGateway:
                 else:
                     aliases[alias] = {"status": "AVAILABLE", "provider": provider,
                                       "model": model, "reason": "ok"}
+            elif provider == "openai_compatible":
+                endpoint = str(entry.get("endpoint", ""))
+                is_local = openai_compat.is_local_endpoint(endpoint)
+                if self.local_only and not is_local:
+                    aliases[alias] = {
+                        "status": "BLOCKED_LOCAL_ONLY", "provider": provider,
+                        "model": model,
+                        "reason": "PRIVACY_MODE=local_only blocks remote "
+                                  "endpoints",
+                    }
+                else:
+                    probe = await self._probe_openai_compat(alias, entry)
+                    aliases[alias] = probe
             else:  # cloud providers
                 key = os.environ.get(f"{provider.upper()}_API_KEY", "")
                 if self.local_only:
@@ -280,6 +300,45 @@ class LLMGateway:
     async def health_check(self) -> Dict[str, Any]:
         """Alias of :meth:`health` (kept for backward compatibility)."""
         return await self.health()
+
+    async def _probe_openai_compat(
+        self, alias: str, entry: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Probe an OpenAI-compatible endpoint's /v1/models for health()."""
+        endpoint = str(entry.get("endpoint", ""))
+        url = openai_compat.models_url(endpoint)
+        api_key = openai_compat.resolve_api_key(entry)
+        try:
+            async with self._client_factory(self.hop_timeouts["health"]) as client:
+                resp = await client.get(url, headers=openai_compat.headers_for(entry, api_key))
+            if resp.status_code == 200:
+                model = entry.get("default_model", "")
+                served = []
+                try:
+                    served = [m.get("id", "") for m in resp.json().get("data", [])]
+                except Exception:  # noqa: BLE001 — models list is advisory
+                    pass
+                if model and served and model not in served:
+                    return {
+                        "status": "UNAVAILABLE", "provider": "openai_compatible",
+                        "model": model,
+                        "reason": f"Model '{model}' not served by {endpoint}",
+                    }
+                return {
+                    "status": "AVAILABLE", "provider": "openai_compatible",
+                    "model": model, "reason": f"endpoint {endpoint} reachable",
+                }
+            return {
+                "status": "ERROR", "provider": "openai_compatible",
+                "model": entry.get("default_model", ""),
+                "reason": f"endpoint returned {resp.status_code}",
+            }
+        except Exception as e:  # noqa: BLE001
+            return {
+                "status": "OFFLINE", "provider": "openai_compatible",
+                "model": entry.get("default_model", ""),
+                "reason": f"{type(e).__name__}: {e}",
+            }
 
 
     # ------------------------------------------------------------------
@@ -311,6 +370,11 @@ class LLMGateway:
             if self._ollama_models and model_name not in self._ollama_models:
                 return False
             return True
+        if provider == "openai_compatible":
+            endpoint = str(entry.get("endpoint", ""))
+            if self.local_only and not openai_compat.is_local_endpoint(endpoint):
+                return False
+            return True  # reachability is checked per-call via the chain
         if provider in ("openai", "anthropic"):
             if self.local_only:
                 return False
@@ -424,6 +488,25 @@ class LLMGateway:
             return data["content"][0]["text"]
 
 
+    async def _call_openai_compat(
+        self, entry: Dict[str, Any], messages: List[Dict[str, str]],
+        max_tokens: int, temperature: float,
+    ) -> str:
+        """Hop — call any OpenAI-compatible endpoint (vLLM, llama.cpp,
+        LM Studio, OpenRouter, remote GPU servers, ...)."""
+        endpoint = str(entry.get("endpoint", ""))
+        url = openai_compat.chat_url(endpoint)
+        api_key = openai_compat.resolve_api_key(entry)
+        payload = openai_compat.build_chat_payload(
+            entry.get("default_model", ""), messages, max_tokens, temperature)
+        async with self._client_factory(self.hop_timeouts["provider"]) as client:
+            resp = await client.post(
+                url, headers=openai_compat.headers_for(entry, api_key),
+                json=payload)
+            resp.raise_for_status()
+            return openai_compat.parse_chat_response(resp.json())
+
+
     # ------------------------------------------------------------------
     # Completion entry point with transport fallback chain
     # ------------------------------------------------------------------
@@ -441,6 +524,11 @@ class LLMGateway:
 
         if provider == "ollama":
             return ["litellm", "ollama"]
+        if provider == "openai_compatible":
+            endpoint = str((entry or {}).get("endpoint", ""))
+            if self.local_only and not openai_compat.is_local_endpoint(endpoint):
+                return []  # remote endpoint blocked at gateway level
+            return ["openai_compat"]
         if provider in ("openai", "anthropic"):
             if self.local_only:
                 return []  # cloud blocked at gateway level
@@ -487,10 +575,19 @@ class LLMGateway:
 
         # local_only enforcement — at the gateway, before any network attempt
         if self.local_only and provider != "ollama":
-            msg = (f"Blocked cloud route to {provider}/{concrete_model} "
-                   "(PRIVACY_MODE=local_only)")
-            blocked.append(msg)
-            logger.warning("LOCAL_ONLY BLOCK: %s", msg)
+            if provider == "openai_compatible":
+                endpoint = str(entry.get("endpoint", ""))
+                if not openai_compat.is_local_endpoint(endpoint):
+                    msg = (f"Blocked remote openai_compatible route to "
+                           f"{concrete_model} at {endpoint} "
+                           "(PRIVACY_MODE=local_only)")
+                    blocked.append(msg)
+                    logger.warning("LOCAL_ONLY BLOCK: %s", msg)
+            else:
+                msg = (f"Blocked cloud route to {provider}/{concrete_model} "
+                       "(PRIVACY_MODE=local_only)")
+                blocked.append(msg)
+                logger.warning("LOCAL_ONLY BLOCK: %s", msg)
 
         for hop in self._transport_chain(resolved_alias):
             hop_label = f"{hop}:{resolved_alias}"
@@ -505,6 +602,9 @@ class LLMGateway:
                     content = await self._call_provider(
                         provider, concrete_model, messages, max_tokens,
                         temperature)
+                elif hop == "openai_compat":
+                    content = await self._call_openai_compat(
+                        entry, messages, max_tokens, temperature)
                 else:
                     errors.append(f"{hop_label}: unknown transport")
                     continue
@@ -612,16 +712,19 @@ class LLMGateway:
 
     def list_registry(self) -> List[Dict[str, Any]]:
         """List all models in the registry with concrete names."""
-        return [
-            {
+        out = []
+        for alias, entry in self._model_registry.items():
+            provider = entry.get("provider", "")
+            out.append({
                 "alias": alias,
-                "provider": entry.get("provider", ""),
+                "provider": provider,
                 "model": entry.get("default_model", ""),
                 "status": entry.get("status", ""),
                 "purpose": entry.get("purpose", []),
-            }
-            for alias, entry in self._model_registry.items()
-        ]
+                "capabilities": entry.get("capabilities", {}),
+                "locality": "LOCAL" if provider in ("ollama",) else "CLOUD",
+            })
+        return out
 
 
 __all__ = ["LLMGateway", "ROLE_MODEL_MAP", "DEFAULT_MODEL_REGISTRY"]

@@ -1,6 +1,6 @@
 # Final Status Report — Phase A + B
 
-**Last updated:** 2026-09-04
+**Last updated:** 2026-09-06
 **Branch:** `phase-cd-adapters-sandbox`
 **Workspace:** `C:\Users\hp\Desktop\Cerberus`
 
@@ -12,7 +12,7 @@
 
 The CERBERUS Cyber AI Orchestrator has been moved from a skeleton with broken imports to a fully working, self-improving multi-agent platform. The `platform/` package was renamed to `cyberai/` (no more stdlib shadowing), all workspace paths resolve through one central config loader, dependencies are pinned and verified in a clean venv, and the LLM gateway now performs a real transport fallback chain. Doctor exits 0 in both the dev environment and a fresh venv; all 7 agent packages and 18 tracked adapters import cleanly.
 
-## What's Working (verified 2026-09-04 by `python -m cyberai.orchestrator.cli doctor`)
+## What's Working (verified 2026-09-06 by `python -m cyberai.orchestrator.cli doctor`)
 
 | Component | Status | Verified value |
 |-----------|--------|----------------|
@@ -111,6 +111,8 @@ python -m cyberai.orchestrator.cli evolve
 python -m cyberai.orchestrator.cli lab list
 python -m cyberai.orchestrator.cli session list
 python -m cyberai.orchestrator.cli assess <target>
+python -m cyberai.orchestrator.cli task <target>
+python -m cyberai.orchestrator.cli ui --help
 ```
 
 ## Next Steps

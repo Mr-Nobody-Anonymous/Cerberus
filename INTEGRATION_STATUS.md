@@ -1,8 +1,31 @@
 # Integration Status
 
-Generated: 2026-08-12
+**Generated:** 2026-08-12
+**Last updated:** 2026-09-07
+**Branch:** `phase-cd-adapters-sandbox`
+**Source of truth** for component status, Phase A/B verification, the path audit, and resolved issues. [ARCHITECTURE.md](./ARCHITECTURE.md), [README.md](./README.md), and [FINAL_STATUS.md](./FINAL_STATUS.md) cross-link back here whenever they reference a number or status.
 
 This file tracks the integration status of all components in the CERBERUS Cyber AI Orchestrator platform.
+
+## Redesign Session 2026-09-07 (see REDESIGN_GAP_ANALYSIS.md)
+
+- **9 frontend↔backend/CLI contract bugs fixed** (console 400, STOP 404,
+  KPI zeros ×2, roster mismatch, stray tag, SSE envelope unwrap, plan count,
+  REPL cp1252 crash).
+- **Cooperative task cancellation** added end-to-end:
+  `CyberAIOrchestrator.stop()` → `AgentPipeline.should_cancel` →
+  `POST /api/tasks/stop` → CLI REPL `/stop`.
+- **CLI output modes (spec §14):** global `--json` / `--quiet` / `--verbose`
+  flags on read commands (status, models, tools, agents, findings, memory,
+  session list/show, scorecard).
+- **Tests:** 73 → **98 passed** (`tests/test_ui_api.py` added — 25 regression
+  tests locking the fixed API contracts + cancellation).
+- **Live-verified in browser:** console, STOP, KPIs, roster, SSE transcript,
+  full simulated hunt end-to-end (simulate mode; infra down).
+- **Docs:** `docs/UI_GUIDE.md` added; `REDESIGN_GAP_ANALYSIS.md` supersedes the
+  stale `REDESIGN_AUDIT.md`.
+- **Still open:** approvals queue demo-seeded (§15), `--verbose` detail on
+  more commands, infra (Docker/Ollama/LiteLLM) down in this environment.
 
 ## Core Platform
 
@@ -21,8 +44,8 @@ This file tracks the integration status of all components in the CERBERUS Cyber 
 | Policy Engine | ✅ WORKING | Target authorization functional |
 | Model Router | ✅ WORKING | Configurable routing rules with fallback chains |
 | Agent Pipeline | ✅ WORKING | Sequential agent collaboration with context filtering |
-| CLI | ✅ WORKING | 14 commands: task, simulate, status, models, adapters, tools, agents, evolve, findings, memory, lab, session, doctor, assess |
-| REST API | ✅ WORKING | FastAPI server with 8 endpoints |
+| CLI | ✅ WORKING | **40+ commands** incl. interactive REPL with background tasks (`/task`, `/stop`, `/result`); global `--json/--quiet/--verbose` output modes |
+| REST API | ✅ WORKING | FastAPI Command Center (~40 endpoints) — contracts locked by `tests/test_ui_api.py` |
 | Doctor/Health | ✅ WORKING | All checks operational |
 | A-Evolve Integration | ✅ WORKING | Universal self-improving agent infrastructure at `cyberai/evolution/a-evolve/` |
 
@@ -70,7 +93,7 @@ All adapters implement the `SecurityToolAdapter` interface with health checks, c
 
 1. ~~**Import conflict**: Python stdlib `platform` module conflicts with local `platform/` directory~~ → **RESOLVED**: Directory renamed to `cyberai/`. `import platform` correctly resolves to stdlib.
 2. ~~**Missing core files**: orchestrator.py, tool_registry.py, tools.yaml missing~~ → **RESOLVED**: All core files exist and are operational.
-3. ~~**CLI not functional**~~ → **RESOLVED**: Full Click-based CLI with 14 commands at `cyberai/orchestrator/cli/cli.py`.
+3. ~~**CLI not functional**~~ → **RESOLVED**: Full Click-based CLI with 15 commands at `cyberai/orchestrator/cli/cli.py`.
 4. ~~**No Task state object**~~ → **RESOLVED**: Canonical `Task` class at `cyberai/task.py`.
 5. ~~**No capability system**~~ → **RESOLVED**: `CapabilityRegistry` at `cyberai/capabilities/registry.py`.
 6. ~~**No evolution engine**~~ → **RESOLVED**: Full evolution engine at `cyberai/evolution/` with A-Evolve integration.
@@ -108,6 +131,18 @@ All adapters implement the `SecurityToolAdapter` interface with health checks, c
 | `infrastructure/open-webui/docker-compose.yaml` | container-internal volumes/ports via `${VAR-default}` env substitution | (c) Intentionally left: upstream compose file, already env-driven. |
 | `cyberai/llm-gateway/` (empty dir) | leftover after `llm-gateway`→`llm_gateway` rename | Removed in this pass (empty, untracked). |
 
+## Phase C & D — Adapters Hardening & Sandbox Isolation (Active Branch: `phase-cd-adapters-sandbox`)
+
+This active branch targets operational adapter execution and laboratory sandboxing:
+
+- **Phase C (Adapter Hardening & Execution)**:
+  - Validate and harden execution for the 15 `SecurityToolAdapter` wrappers across Docker, CLI, MCP, and library modes.
+  - Resolve first-run interactive blockers (e.g. pre-seeding config for `adapters/drakben` to prevent the interactive `Configure LLM now?` terminal prompt).
+  - Implement robust timeout enforcement, non-zero exit handling, and graceful degradation when external services (e.g. Docker daemon) are offline.
+- **Phase D (Lab Isolation & Sandboxed Execution)**:
+  - Enforce strict container-level and network-level isolation for adapter actions.
+  - Policy boundary enforcement: execution is strictly rejected unless the target is explicitly declared in `lab/targets/targets.yaml` with `allowed: true`.
+  - Process sandboxing: prevent any command execution on the host outside designated lab containers and mock environments.
 
 ## Known Issues
 
@@ -120,32 +155,47 @@ All adapters implement the `SecurityToolAdapter` interface with health checks, c
 ## Verified Commands
 
 ```bash
-# Health check — ALL PASSING
+# Health check — exits 0 (all checks operational)
 python -m cyberai.orchestrator.cli doctor
 
 # Platform status — WORKING
 python -m cyberai.orchestrator.cli status
 
-# End-to-end simulation — WORKING
+# End-to-end simulation — WORKING (no external dependencies required)
 python -m cyberai.orchestrator.cli simulate "Analyze authorized lab target"
 
-# CLI tools — WORKING
+# Component listings — WORKING
 python -m cyberai.orchestrator.cli tools
 python -m cyberai.orchestrator.cli agents
 python -m cyberai.orchestrator.cli models
+python -m cyberai.orchestrator.cli adapters
+
+# Memory & findings — WORKING
+python -m cyberai.orchestrator.cli findings
+python -m cyberai.orchestrator.cli memory "search query"
+
+# Evolution & sessions — WORKING
+python -m cyberai.orchestrator.cli evolve
+python -m cyberai.orchestrator.cli lab list
+python -m cyberai.orchestrator.cli session list
+python -m cyberai.orchestrator.cli assess lab-web-01
+
+# Command Deck Web UI — WORKING
+python -m cyberai.orchestrator.cli ui --help
 ```
 
-## Next Steps
+## Next Steps (for `phase-cd-adapters-sandbox`)
 
-1. Install Docker Desktop and start the daemon
-2. Install Ollama and pull required models:
-   ```bash
-   ollama pull llama3.1:8b
-   ollama pull codellama:7b
-   ollama pull llama3.2:3b
-   ollama pull qwen2.5:7b
-   ollama pull nomic-embed-text
-   ```
-3. Configure `.env` with API keys
-4. Test adapter integrations
-5. Add lab targets to `lab/targets/targets.yaml`
+1. **Start Local Services**:
+   - Start Docker Desktop (activates the Docker daemon for containerized adapters).
+   - Start Ollama (`ollama serve`) and pull local models:
+     ```bash
+     ollama pull llama3.1:8b
+     ollama pull codellama:7b
+     ollama pull llama3.2:3b
+     ollama pull qwen2.5:7b
+     ollama pull nomic-embed-text
+     ```
+2. **Configure Secrets**: Set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY` in `.env` if cloud model testing is desired.
+3. **Execute Phase C**: Address drakben first-run configuration and run live adapter health checks.
+4. **Execute Phase D**: Validate container sandboxing boundaries against lab targets in `lab/targets/targets.yaml`.

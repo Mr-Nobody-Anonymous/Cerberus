@@ -72,6 +72,27 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     Status is one of: ok, warn, error, info
     """
 
+    # ---- Hardware / execution profile ----
+    try:
+        from cyberai.llm_gateway.hardware import detect_hardware
+        hp = detect_hardware()
+        gpu_desc = (
+            f"{len(hp.gpus)} GPU(s), {hp.total_vram_gb:.0f} GB VRAM"
+            if hp.gpus else "none"
+        )
+        yield (
+            "Hardware",
+            "ok",
+            f"{hp.ram_gb:.0f} GB RAM, {hp.cpu_count} cores, GPU: {gpu_desc}",
+        )
+        yield (
+            "Execution profile",
+            "ok" if hp.profile_source == "env" else "info",
+            f"{hp.profile} ({hp.profile_source})",
+        )
+    except Exception as e:  # noqa: BLE001 — probe must never fail doctor
+        yield ("Hardware", "warn", f"detection failed: {e}")
+
     # ---- Python ----
     yield (
         "Python",
@@ -144,7 +165,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     repo_dirty = 0
     if _ADAPTERS.exists():
         for repo_dir in _ADAPTERS.iterdir():
-            if repo_dir.is_dir():
+            if repo_dir.is_dir() and not repo_dir.name.startswith(("_", ".")):
                 ok, msg = _check_git_repo(repo_dir)
                 repo_count += 1
                 if ok and "clean" in msg:
@@ -161,7 +182,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
     adapter_ok = 0
     adapter_total = 0
     for repo_dir in sorted(_ADAPTERS.iterdir()):
-        if repo_dir.is_dir():
+        if repo_dir.is_dir() and not repo_dir.name.startswith(("_", ".")):
             adapter_total += 1
             init_file = repo_dir / "__init__.py"
             if init_file.exists():

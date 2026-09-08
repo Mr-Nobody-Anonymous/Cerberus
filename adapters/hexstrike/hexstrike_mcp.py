@@ -26,7 +26,10 @@ import requests
 import time
 from datetime import datetime
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP  # mcp v1 SDK
+except ModuleNotFoundError:  # mcp 2.x renamed FastMCP → MCPServer
+    from fastmcp import FastMCP  # standalone fastmcp package
 
 class HexStrikeColors:
     """Enhanced color palette matching the server's ModernVisualEngine.COLORS"""

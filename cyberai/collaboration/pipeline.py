@@ -37,6 +37,8 @@ class AgentPipeline:
         self.task = task
         self.steps: List[PipelineStep] = []
         self._context: Dict[str, Any] = {}
+        # Optional cooperative-cancellation probe, checked between steps.
+        self.should_cancel: Optional[Callable[[], bool]] = None
 
     def add_step(
         self,
@@ -105,6 +107,29 @@ class AgentPipeline:
         """
         results = {}
         for step in self.steps:
+            # Cooperative cancellation point — checked between steps so an
+            # in-flight agent call is allowed to finish, but no new step starts.
+            if self.should_cancel is not None:
+                try:
+                    if self.should_cancel():
+                        for s in self.steps:
+                            if s.status == "pending":
+                                s.status = "cancelled"
+                        logger.info("Pipeline cancelled by operator between steps")
+                        return {
+                            "steps": [
+                                {
+                                    "agent": s.agent_name,
+                                    "capability": s.capability,
+                                    "status": s.status,
+                                }
+                                for s in self.steps
+                            ],
+                            "results": results,
+                            "cancelled": True,
+                        }
+                except Exception as e:  # noqa: BLE001 — probe must never kill the run
+                    logger.debug(f"Cancellation probe failed: {e}")
             step.status = "running"
             context = self._build_context_for_step(step)
             try:

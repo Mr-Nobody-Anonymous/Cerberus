@@ -1,7 +1,8 @@
 # Cyber AI Orchestrator — Workspace Inventory
 
 **Generated:** 2026-08-10  
-**Workspace:** `C:\Users\hp\Desktop\cyber`
+**Last updated:** 2026-09-06  
+**Workspace:** `C:\Users\hp\Desktop\Cerberus`
 
 This document inventories every repository present in the workspace, documenting its original identity, capabilities, and potential role in the Cyber AI Orchestrator platform.
 
@@ -16,7 +17,7 @@ This document inventories every repository present in the workspace, documenting
 | Git | 2.49.0.windows.1 |
 | Python | 3.10.11 |
 | Node.js | 24.18.0 |
-| Docker | **NOT INSTALLED** |
+| Docker | **INSTALLED** (daemon status unknown / requires starting Docker Desktop) |
 | Ollama | **NOT RUNNING** (no response on localhost:11434) |
 | GPU | Not detected |
 
@@ -114,7 +115,7 @@ This document inventories every repository present in the workspace, documenting
 | Potential role | Security agent framework adapter |
 | Git remote | https://github.com/aliasrobotics/CAI |
 | License | Dual MIT + Proprietary |
-| Current status | **HAS UNCOMMITTED DELETIONS** (2 files deleted) |
+| Current status | Clean, on main branch (resolved) |
 
 ### 5. CyberStrikeAI
 
@@ -137,7 +138,7 @@ This document inventories every repository present in the workspace, documenting
 | Potential role | MCP tool gateway / security agent |
 | Git remote | https://github.com/Ed1s0nZ/CyberStrikeAI |
 | License | (LICENSE present) |
-| Current status | **HAS UNCOMMITTED DELETION** (1 file deleted) |
+| Current status | Clean, on main branch (resolved) |
 
 ### 6. Dark-Moon
 
@@ -514,6 +515,7 @@ This document inventories every repository present in the workspace, documenting
 | Category | Count |
 |----------|-------|
 | Total repositories | 21 |
+| Tracked adapters in platform | 18 (15 wrappers, 3 knowledge/docs) |
 | Python-based | 14 |
 | Go-based | 4 |
 | TypeScript/Node-based | 2 |
@@ -521,14 +523,14 @@ This document inventories every repository present in the workspace, documenting
 | Docker support | 15 |
 | MCP support | 8 |
 | .env.example present | 10 |
-| Clean git status | 19 |
-| Uncommitted changes | 2 (CAI, CyberStrikeAI) |
+| Clean git status | 21 |
+| Uncommitted changes | 0 |
 
 ## Key Findings
 
-1. **Docker is NOT installed** — many repos require Docker for full functionality
-2. **Ollama is NOT running** — no local models currently available
-3. **CAI and CyberStrikeAI have uncommitted deletions** — must preserve before any changes
+1. **Docker is INSTALLED** — Docker Desktop daemon needs to be running for containerized adapters (10 adapters require Docker)
+2. **Ollama is NOT RUNNING** — start via `ollama serve` and pull required models (`llama3.1:8b`, etc.)
+3. **CAI and CyberStrikeAI deletions are RESOLVED** — all 21 repositories (18 tracked adapters) are clean with 0 uncommitted changes
 4. **litellm** is on `litellm_internal_staging` branch (not main)
-5. **h4cker** is a knowledge base, not a tool
-6. **kali-pentest** is a skill definition, not a standalone tool
+5. **h4cker** is a knowledge base reference, not an executable adapter
+6. **kali-pentest** is a skill definition reference, not an executable adapter

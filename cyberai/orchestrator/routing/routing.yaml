@@ -1,63 +1,64 @@
-# CERBERUS — Model Routing Configuration
-# Maps task types to model aliases with fallback chains.
+# Task-type -> model-alias routing rules.
+#
+# Rich entries carry a fallback chain:
+#   preferred -> fallback -> local_fallback
+#
+# profile_overrides (optional): per-execution-profile route replacements,
+# keyed by profile (MINIMAL / CLOUD / HYBRID / LOCAL / SERVER). When the
+# hardware detector selects a profile, its overrides take precedence over
+# the routes above for the listed task types. Use this to steer a weak
+# machine away from heavy local models, or a strong one away from paid
+# cloud APIs. Example:
+#
+#   profile_overrides:
+#     MINIMAL:
+#       planning: cloud_reasoner
+#     SERVER:
+#       planning: local_reasoner
 
 routes:
-  planning:
-    preferred: local_reasoner
-    fallback: local_fast
-    local_fallback: local_fast
-
-  reasoning:
-    preferred: local_reasoner
-    fallback: local_fast
-    local_fallback: local_fast
-
-  vulnerability_research:
-    preferred: research_model
-    fallback: local_reasoner
-    local_fallback: local_fast
-
-  web_research:
-    preferred: research_model
-    fallback: local_reasoner
-    local_fallback: local_fast
-
-  code_analysis:
-    preferred: local_coder
-    fallback: local_reasoner
-    local_fallback: local_fast
-
-  code_generation:
-    preferred: local_coder
-    fallback: local_reasoner
-    local_fallback: local_fast
-
   classification:
-    preferred: local_fast
     fallback: local_reasoner
     local_fallback: local_fast
-
-  summarization:
     preferred: local_fast
+  code_analysis:
     fallback: local_reasoner
     local_fallback: local_fast
-
-  verification:
-    preferred: local_reasoner
-    fallback: local_fast
-    local_fallback: local_fast
-
-  report_generation:
-    preferred: local_fast
+    preferred: local_coder
+  code_generation:
     fallback: local_reasoner
     local_fallback: local_fast
-
-  tool_selection:
-    preferred: local_fast
-    fallback: local_reasoner
-    local_fallback: local_fast
-
+    preferred: local_coder
   default:
-    preferred: local_reasoner
     fallback: local_fast
     local_fallback: local_fast
+    preferred: local_reasoner
+  planning:
+    fallback: local_fast
+    local_fallback: local_fast
+    preferred: local_reasoner
+  reasoning:
+    fallback: local_fast
+    local_fallback: local_fast
+    preferred: local_reasoner
+  report_generation:
+    fallback: local_reasoner
+    local_fallback: local_fast
+    preferred: local_fast
+  summarization: local_reasoner
+  tool_selection:
+    fallback: local_reasoner
+    local_fallback: local_fast
+    preferred: local_fast
+  verification:
+    fallback: local_fast
+    local_fallback: local_fast
+    preferred: local_reasoner
+  vulnerability_research:
+    fallback: local_reasoner
+    local_fallback: local_fast
+    preferred: research_model
+  web_research:
+    fallback: local_reasoner
+    local_fallback: local_fast
+    preferred: research_model

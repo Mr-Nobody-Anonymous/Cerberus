@@ -18,6 +18,7 @@ from .evaluation import EvaluationEngine
 from .fitness import FitnessFunction
 from .archive import EliteArchive
 from .engine import EvolutionEngine
+from .wargame import GhostWargame
 
 __all__ = [
     "Strategy",
@@ -29,4 +30,5 @@ __all__ = [
     "FitnessFunction",
     "EliteArchive",
     "EvolutionEngine",
+    "GhostWargame",
 ]

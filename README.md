@@ -507,6 +507,10 @@ CERBERUS/
 
 ## 🛠️ Quick Start & Setup Guide
 
+> [!NOTE]
+> **Current Integration Status (Phase A & B Verified):**
+> Platform health checks pass with exit code 0 (`python -m cyberai.orchestrator.cli doctor`). The system coordinates **18 tracked adapters** (15 with `SecurityToolAdapter` wrappers), **7 specialized AI agents**, **4 persistent SQLite memory tables** (70 experiences), and **15 CLI commands**. All paths resolve cleanly via `cyberai/config.py` without stdlib conflicts.
+
 ### Prerequisites
 - Windows 11 / Linux / macOS
 - Docker Desktop (for containerized services)
@@ -519,15 +523,15 @@ CERBERUS/
 ```bash
 # 1. Set up Python environment
 python -m venv .venv
-.\.venv\Scripts\activate        # Windows
+.\.venv\Scripts\activate        # Windows (or: source .venv/bin/activate on Linux)
 
 # 2. Install core dependencies
 pip install -r requirements.txt
-# OR install as editable package with all extras:
-pip install -e ".[all]"
+# OR install as editable package:
+pip install -e .
 
 # 3. Configure environment
-copy .env.example .env          # Windows
+copy .env.example .env          # Windows (or: cp .env.example .env on Linux)
 # Edit .env with your API keys and preferences
 
 # 4. Install Ollama and pull models
@@ -538,17 +542,27 @@ ollama pull llama3.2:3b
 ollama pull qwen2.5:7b
 ollama pull nomic-embed-text
 
-# 5. Start infrastructure services
+# 5. Start infrastructure services (optional / when Docker is running)
 docker compose up -d
 
-# 6. Run health check
+# 6. Run health check (exits 0)
 python -m cyberai.orchestrator.cli doctor
 ```
 
 ### Configuration
 
+#### Workspace Path Resolution (`CERBERUS_HOME`)
+CERBERUS centralizes all file resolution through `cyberai.config.resolve_path()` to avoid hardcoded paths. By default, the workspace root is auto-detected as the repository root. If running outside the repo directory or within custom container mount paths, set:
+```env
+# Workspace Root Override (defaults to auto-detected repository root)
+CERBERUS_HOME=C:\Users\hp\Desktop\Cerberus
+```
+
 #### Gateway Configuration (`.env`)
 ```env
+# Workspace root override
+# CERBERUS_HOME=C:\Users\hp\Desktop\Cerberus
+
 # Ollama Local Models
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=llama3.1:8b
@@ -556,7 +570,7 @@ OLLAMA_MODEL=llama3.1:8b
 # LiteLLM Gateway
 LITELLM_MASTER_KEY=sk-your-master-key-here
 LITELLM_PORT=4000
-LITELLM_CONFIG_PATH=cyberai/llm-gateway/config/config.yaml
+LITELLM_CONFIG_PATH=cyberai/llm_gateway/config/config.yaml
 
 # Cloud Providers (Optional)
 OPENAI_API_KEY=sk-...
@@ -604,24 +618,41 @@ asyncio.run(main())
 
 ### Using the CLI
 
+The CLI provides 15 operational commands via `python -m cyberai.orchestrator.cli <command>`:
+
 ```bash
-# Check status
+# 1. Health check — full diagnostic suite (exits 0)
+python -m cyberai.orchestrator.cli doctor
+
+# 2. Platform status — subsystem availability & metrics
 python -m cyberai.orchestrator.cli status
 
-# List available tools
-python -m cyberai.orchestrator.cli tools
+# 3. End-to-end simulation — complete autonomous multi-agent run (zero external deps)
+python -m cyberai.orchestrator.cli simulate "Analyze authorized lab target"
 
-# List lab targets
+# 4. Capability, agent, model, and adapter catalogs
+python -m cyberai.orchestrator.cli tools        # 17 registered tools
+python -m cyberai.orchestrator.cli agents       # 7 AI specialist agents
+python -m cyberai.orchestrator.cli models       # LLM aliases & transport status
+python -m cyberai.orchestrator.cli adapters     # 18 tracked security tool adapters
+
+# 5. Persistent memory & findings
+python -m cyberai.orchestrator.cli findings
+python -m cyberai.orchestrator.cli memory "SQL injection"
+
+# 6. Evolutionary strategy engine
+python -m cyberai.orchestrator.cli evolve
+
+# 7. Lab targets & session management
 python -m cyberai.orchestrator.cli lab list
+python -m cyberai.orchestrator.cli session list
 
-# Run assessment (requires authorized target)
-python -m cyberai.orchestrator.cli assess lab-web-01 --objective "Find SQL injection vulnerabilities"
+# 8. Target assessment (requires authorized target in lab/targets/targets.yaml)
+python -m cyberai.orchestrator.cli task lab-web-01 --objective "Find SQL injection"
+# (or legacy alias: python -m cyberai.orchestrator.cli assess lab-web-01)
 
-# Search memory for past experiences
-python -m cyberai.orchestrator.cli memory search "SQL injection"
-
-# Run health check
-python -m cyberai.orchestrator.cli doctor
+# 9. CERBERUS Command Deck Web UI
+python -m cyberai.orchestrator.cli ui
 ```
 
 ### Using the REST API

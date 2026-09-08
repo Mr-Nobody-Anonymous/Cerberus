@@ -78,10 +78,18 @@ class MemoryManager:
                 CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
                     target_id TEXT,
+                    objective TEXT,
+                    environment TEXT DEFAULT 'authorized_lab',
+                    status TEXT DEFAULT 'created',
+                    agents_used TEXT,
+                    tools_used TEXT,
+                    models_used TEXT,
+                    findings_count INTEGER DEFAULT 0,
+                    evidence_count INTEGER DEFAULT 0,
                     started_at TEXT,
-                    ended_at TEXT,
-                    status TEXT,
-                    summary TEXT
+                    completed_at TEXT,
+                    summary TEXT,
+                    metadata TEXT
                 )
             """)
 
@@ -239,24 +247,34 @@ class MemoryManager:
                 ).fetchall()
         return [dict(row) for row in rows]
 
-    def create_session(self, target_id: str) -> str:
+    def create_session(self, target_id: str, objective: str = "") -> str:
         """Create a new session record."""
         session_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         with self._conn:
             self._conn.execute(
-                "INSERT INTO sessions (id, target_id, started_at, status) VALUES (?, ?, ?, ?)",
-                (session_id, target_id, now, "active"),
+                """
+                INSERT INTO sessions (
+                    id, target_id, objective, status, started_at
+                ) VALUES (?, ?, ?, ?, ?)
+                """,
+                (session_id, target_id, objective, "active", now),
             )
         return session_id
 
-    def end_session(self, session_id: str, summary: str = "") -> None:
+    def end_session(self, session_id: str, summary: str = "",
+                    findings_count: int = 0, evidence_count: int = 0) -> None:
         """End a session and record its summary."""
         now = datetime.now(timezone.utc).isoformat()
         with self._conn:
             self._conn.execute(
-                "UPDATE sessions SET ended_at = ?, status = ?, summary = ? WHERE id = ?",
-                (now, "completed", summary, session_id),
+                """
+                UPDATE sessions
+                SET completed_at = ?, status = ?, summary = ?,
+                    findings_count = ?, evidence_count = ?
+                WHERE id = ?
+                """,
+                (now, "completed", summary, findings_count, evidence_count, session_id),
             )
 
     def list_sessions(self) -> List[Dict[str, Any]]:

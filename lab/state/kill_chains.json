@@ -1,0 +1,77 @@
+{
+  "chains": [
+    {
+      "chain_id": "4fce9617",
+      "target": "lab-web-01",
+      "created_at": 1788773754.345343,
+      "updated_at": 1788775252.7545445,
+      "current_phase": "TRACK",
+      "phase_status": {
+        "FIND": "COMPLETE",
+        "FIX": "COMPLETE",
+        "TRACK": "ACTIVE",
+        "TARGET": "PENDING",
+        "ENGAGE": "PENDING",
+        "ASSESS": "PENDING"
+      },
+      "phase_started": {
+        "FIND": 1788773754.345343,
+        "FIX": 1788773754.3491347,
+        "TRACK": 1788775252.7545445
+      },
+      "phase_ended": {
+        "FIND": 1788773754.3491347,
+        "FIX": 1788775252.7545445
+      },
+      "phase_notes": {
+        "FIND": "recon done",
+        "FIX": "vuln confirmed"
+      },
+      "verification": "UNVERIFIED",
+      "findings": [
+        {
+          "verification": "LIKELY",
+          "title": "open port",
+          "phase": "FIND",
+          "ts": 1788773754.3491347
+        },
+        {
+          "verification": "LIKELY",
+          "phase": "FIX",
+          "ts": 1788775252.7545445
+        }
+      ],
+      "status": "ACTIVE",
+      "error": null
+    },
+    {
+      "chain_id": "cfd549d1",
+      "target": "ui-test-target",
+      "created_at": 1788778526.536682,
+      "updated_at": 1788778526.580833,
+      "current_phase": "FIX",
+      "phase_status": {
+        "FIND": "COMPLETE",
+        "FIX": "ACTIVE",
+        "TRACK": "PENDING",
+        "TARGET": "PENDING",
+        "ENGAGE": "PENDING",
+        "ASSESS": "PENDING"
+      },
+      "phase_started": {
+        "FIND": 1788778526.536682,
+        "FIX": 1788778526.580833
+      },
+      "phase_ended": {
+        "FIND": 1788778526.580833
+      },
+      "phase_notes": {
+        "FIND": "ui test"
+      },
+      "verification": "UNVERIFIED",
+      "findings": [],
+      "status": "ACTIVE",
+      "error": null
+    }
+  ]
+}

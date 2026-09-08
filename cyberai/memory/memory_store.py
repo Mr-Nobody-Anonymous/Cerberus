@@ -16,12 +16,15 @@ recency, environment, tool, target type, and confidence.
 
 import json
 import logging
+import math
+import re
 import sqlite3
 import uuid
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from cyberai.config import config
 
@@ -30,6 +33,27 @@ logger = logging.getLogger(__name__)
 MEMORY_TYPES = {
     "episodic", "semantic", "procedural", "tool", "failure", "experiment"
 }
+
+# Tokenizer for semantic search: lowercase words, 2+ chars, no punctuation.
+_TOKEN_RE = re.compile(r"[a-z0-9]{2,}")
+
+_STOPWORDS = {
+    "the", "a", "an", "and", "or", "but", "if", "then", "else", "when",
+    "at", "by", "for", "with", "about", "into", "through", "during",
+    "before", "after", "to", "from", "up", "down", "in", "out", "on",
+    "off", "over", "under", "again", "further", "once", "here", "there",
+    "all", "any", "both", "each", "few", "more", "most", "other", "some",
+    "such", "no", "nor", "not", "only", "own", "same", "so", "than",
+    "too", "very", "can", "will", "just", "is", "are", "was", "were",
+    "be", "been", "being", "have", "has", "had", "do", "does", "did",
+    "of", "it", "its", "this", "that", "these", "those", "i", "you",
+    "he", "she", "we", "they", "what", "which", "who", "whom", "how",
+}
+
+
+def _tokenize(text: str) -> List[str]:
+    """Tokenize text for TF-IDF (lowercase, strip stopwords)."""
+    return [t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS]
 
 
 @dataclass
@@ -249,6 +273,87 @@ class MemoryStore:
         with self._conn:
             rows = self._conn.execute(sql, params).fetchall()
         return [self._parse_row(r) for r in rows]
+
+    def semantic_search(
+        self,
+        query: str,
+        memory_type: Optional[str] = None,
+        limit: int = 10,
+        min_similarity: float = 0.05,
+    ) -> List[Dict[str, Any]]:
+        """Semantic (TF-IDF cosine similarity) memory search.
+
+        Unlike keyword `search()` (exact substring LIKE), this ranks
+        memories by vector similarity between the query and each
+        memory's content — so 'SQL injection authentication bypass'
+        matches memories about 'sqli auth bypass' even with no shared
+        keywords. Falls back to keyword search when nothing is similar.
+
+        Args:
+            query: Natural-language query
+            memory_type: Optional memory type filter
+            limit: Max results
+            min_similarity: Minimum cosine similarity (0-1)
+
+        Returns:
+            Ranked list of memory entries with a `similarity` score.
+        """
+        query_tokens = _tokenize(query)
+        if not query_tokens:
+            return self.search(query, memory_type=memory_type, limit=limit)
+
+        # Candidate pool: all memories of the type (or a recent mixed sample)
+        if memory_type:
+            pool = self.get_by_type(memory_type, limit=500)
+        else:
+            pool = []
+            for t in MEMORY_TYPES:
+                pool.extend(self.get_by_type(t, limit=200))
+
+        if not pool:
+            return []
+
+        # Build the corpus: query + all candidate contents
+        docs = [query_tokens] + [_tokenize(m["content"]) for m in pool]
+        doc_freq: Counter = Counter()
+        for tokens in docs:
+            doc_freq.update(set(tokens))
+        n_docs = len(docs)
+
+        def tfidf(tokens: List[str]) -> Dict[str, float]:
+            counts = Counter(tokens)
+            total = max(len(tokens), 1)
+            vec: Dict[str, float] = {}
+            for term, cnt in counts.items():
+                if term in doc_freq and doc_freq[term] > 0:
+                    idf = math.log(n_docs / doc_freq[term]) + 1.0
+                    vec[term] = (cnt / total) * idf
+            return vec
+
+        def cosine(a: Dict[str, float], b: Dict[str, float]) -> float:
+            if not a or not b:
+                return 0.0
+            dot = sum(w * b.get(t, 0.0) for t, w in a.items())
+            na = math.sqrt(sum(w * w for w in a.values()))
+            nb = math.sqrt(sum(w * w for w in b.values()))
+            if na == 0 or nb == 0:
+                return 0.0
+            return dot / (na * nb)
+
+        query_vec = tfidf(query_tokens)
+        scored: List[Tuple[float, Dict[str, Any]]] = []
+        for i, m in enumerate(pool):
+            sim = cosine(query_vec, tfidf(docs[i + 1]))
+            if sim >= min_similarity:
+                m["similarity"] = round(sim, 4)
+                scored.append((sim, m))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        results = [m for _, m in scored[:limit]]
+        if not results:
+            # Fallback: keyword search so callers always get something
+            return self.search(query, memory_type=memory_type, limit=limit)
+        return results
 
     def retrieve_for_planning(
         self,

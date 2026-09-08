@@ -57,20 +57,26 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 # Live event bus — bridges orchestrator callbacks to SSE subscribers
 # ---------------------------------------------------------------------------
 class LiveEventBus:
-    """Fan-out event bus for Server-Sent-Events to browser clients."""
+    """Fan-out event bus for Server-Sent-Events to browser clients.
+
+    Thin facade over the persistent EventStore (spec §24): every publish
+    is normalized to the canonical event shape, persisted to SQLite, and
+    fanned out to SSE subscribers. History therefore survives restarts
+    and the CLI /watch sees the same stream as the Web UI.
+    """
 
     def __init__(self, max_history: int = 500):
-        self._subscribers: Dict[str, asyncio.Queue] = {}
-        self._history: List[Dict[str, Any]] = []
+        from cyberai.orchestrator.event_store import get_event_store
+        self._store = get_event_store()
         self._max_history = max_history
-        self._lock = threading.Lock()
+        self._subscribers: Dict[str, asyncio.Queue] = {}
 
     def subscribe(self) -> str:
         subscriber_id = f"sub-{time.time_ns()}"
         self._subscribers[subscriber_id] = asyncio.Queue(maxsize=300)
-        for event in self._history[-60:]:
+        for event in self._store.history(limit=60):
             try:
-                self._subscribers[subscriber_id].put_nowait(event)
+                self._subscribers[subscriber_id].put_nowait(event.sse_payload())
             except asyncio.QueueFull:
                 break
         return subscriber_id
@@ -79,31 +85,32 @@ class LiveEventBus:
         self._subscribers.pop(subscriber_id, None)
 
     def publish(self, event_type: str, data: Dict[str, Any]) -> None:
-        event = {"type": event_type, "data": data, "ts": time.time()}
-        with self._lock:
-            self._history.append(event)
-            if len(self._history) > self._max_history:
-                self._history = self._history[-self._max_history:]
+        """Publish a (possibly legacy-shaped) event; canonicalized on ingest."""
+        from cyberai.orchestrator.events import normalize
+        ev = normalize({"type": event_type, "data": data, "ts": time.time()})
+        self._store.append(ev)
+        payload = ev.sse_payload()
         for subscriber_id in list(self._subscribers):
             q = self._subscribers.get(subscriber_id)
             if q is None:
                 continue
             try:
-                q.put_nowait(event)
+                q.put_nowait(payload)
             except asyncio.QueueFull:
                 try:
                     q.get_nowait()
-                    q.put_nowait(event)
+                    q.put_nowait(payload)
                 except Exception:
                     pass
 
     def history(self, limit: int = 200) -> List[Dict[str, Any]]:
-        with self._lock:
-            return self._history[-limit:]
+        """Legacy-shape history (SSE envelope) for older consumers."""
+        return [e.sse_payload() for e in self._store.history(limit=limit)]
 
 
 EVENT_BUS = LiveEventBus()
 APPROVAL_QUEUE: List[Dict[str, Any]] = []  # in-memory approval requests
+_SERVER_START = time.time()  # for /api/scorecard uptime KPI
 
 
 def _seed_approvals() -> None:
@@ -545,6 +552,17 @@ def create_app():
                 })
             except PermissionError as e:
                 EVENT_BUS.publish("task_error", {"error": str(e)})
+                EVENT_BUS.publish("policy.blocked", {
+                    "reason": str(e),
+                    "policy": "LAB_ONLY",
+                    "action": "task run",
+                    "target": target_id or "-",
+                    "human_readable": (
+                        f"Target '{target_id or 'unspecified'}' is not authorized "
+                        "for active testing. Register it in lab/targets/targets.yaml "
+                        "with allowed: true, or run in simulate mode."
+                    ),
+                })
                 EVENT_BUS.publish("audit", {"actor": "CERBERUS", "agent": "-", "tool": "policy",
                                             "target": target_id or "-", "action": "task run",
                                             "result": "BLOCKED", "session": "-"})
@@ -557,11 +575,36 @@ def create_app():
         asyncio.create_task(runner())
         return {"status": "accepted", "objective": objective, "simulate": simulate}
 
+    # ---------------------------------------------------------- tasks/stop
+    @app.post("/api/tasks/stop")
+    async def stop_task():
+        """Request cooperative cancellation of the running task.
+
+        Takes effect at the next pipeline step boundary (an in-flight agent
+        call finishes). Returns 200 even when nothing is running so the UI
+        STOP button never errors.
+        """
+        orch = holder.get("orchestrator")
+        if orch is None:
+            return {"status": "no_active_task"}
+        try:
+            orch.stop()
+            EVENT_BUS.publish("audit", {
+                "actor": "OPERATOR", "agent": "-", "tool": "console",
+                "target": "-", "action": "stop task", "result": "ISSUED",
+                "session": "-",
+            })
+            return {"status": "stop_requested"}
+        except Exception as e:
+            return {"status": "error", "detail": str(e)}
+
     # -------------------------------------------------------------- command
     @app.post("/api/command")
     async def command(request: Request):
         body = await request.json()
-        message = str(body.get("message", "")).strip()
+        # Accept both the documented "message" key and the "command" key the
+        # SPA console sends (contract fix — see REDESIGN_GAP_ANALYSIS.md BUG-1).
+        message = str(body.get("message") or body.get("command") or "").strip()
         if not message:
             raise HTTPException(status_code=400, detail="message is required")
         EVENT_BUS.publish("audit", {"actor": "OPERATOR", "agent": "-", "tool": "console",
@@ -635,6 +678,50 @@ def create_app():
             ctx["llm_health"] = await _gateway().health_check()
         except Exception as e:
             ctx["llm_health"] = {"error": str(e)}
+
+        # ---- Flat KPI mirrors (additive) --------------------------------
+        # The SPA's loadContext() reads these flat fields (see
+        # REDESIGN_GAP_ANALYSIS.md BUG-3). Nested fields above stay for
+        # any other consumers.
+        try:
+            sessions = ctx.get("sessions") or []
+            ctx["total_sessions"] = len(sessions)
+        except Exception:
+            ctx["total_sessions"] = 0
+        try:
+            mm = _memory_manager()
+            findings = mm.get_findings()
+            mm.close()
+            ctx["total_findings"] = len(findings)
+        except Exception:
+            ctx["total_findings"] = 0
+        try:
+            store = _memory_store()
+            stats = store.get_stats()
+            store.close()
+            ctx["total_memories"] = stats.get("total", 0)
+        except Exception:
+            ctx["total_memories"] = 0
+        try:
+            ctx["total_tools"] = len(_tools().to_dict().get("tools", {}))
+        except Exception:
+            ctx["total_tools"] = 0
+        try:
+            ctx["total_models"] = len(_gateway().list_registry())
+        except Exception:
+            ctx["total_models"] = 0
+        try:
+            ctx["total_capabilities"] = len(ctx.get("capabilities", {}).get("tools", {}))
+        except Exception:
+            ctx["total_capabilities"] = 0
+        try:
+            ctx["capability_routing"] = ctx.get("performance", {}).get("tools", {})
+        except Exception:
+            ctx["capability_routing"] = {}
+        try:
+            ctx["agent_performance"] = ctx.get("performance", {}).get("agents", {})
+        except Exception:
+            ctx["agent_performance"] = {}
         return ctx
 
     # ---------------------------------------------------------- engagements
@@ -720,12 +807,14 @@ def create_app():
             store.close()
             return {"results": [], "stats": stats}
         try:
-            mm = _memory_manager()
-            results = mm.search_experiences(q.strip(), limit=limit)
-            mm.close()
+            # Semantic (TF-IDF) search first — falls back to keyword
+            # search internally when nothing is similar enough.
             store = _memory_store()
-            stats = store.get_stats()
+            results = store.semantic_search(q.strip(), limit=limit)
             store.close()
+            stats_store = _memory_store()
+            stats = stats_store.get_stats()
+            stats_store.close()
             return {"results": results, "stats": stats}
         except Exception as e:
             return {"results": [], "stats": {}, "error": str(e)}
@@ -742,6 +831,22 @@ def create_app():
             return {"models": models_list}
         except Exception as e:
             return {"models": [], "error": str(e)}
+
+    # ------------------------------------------------------------ hardware
+    @app.get("/api/hardware")
+    async def hardware():
+        """System Capability page (spec §10): CPU/RAM/GPU + execution profile."""
+        try:
+            from cyberai.llm_gateway.hardware import detect_hardware, format_report
+            hw = detect_hardware()
+            return {
+                "hardware": hw.as_dict(),
+                "report": format_report(hw),
+                "profile": hw.profile,
+            }
+        except Exception as e:
+            return {"hardware": None, "report": "", "profile": "unknown",
+                    "error": str(e)}
 
     # ---------------------------------------------------------------- tools
     @app.get("/api/tools")
@@ -965,7 +1070,538 @@ def create_app():
                           "detail": "High-risk action awaiting operator approval"}, "ts": time.time()})
         return {"notifications": notes[:30]}
 
+    # ------------------------------------------------------------- scorecard
+    @app.get("/api/scorecard")
+    async def scorecard():
+        """Platform-wide scorecard: sessions, findings, targets, tools, perf."""
+        out: Dict[str, Any] = {"generated_at": _now_iso()}
+        try:
+            mm = _memory_manager()
+            sessions = mm.list_sessions()
+            findings = mm.get_findings()
+            mm.close()
+            by_status: Dict[str, int] = {}
+            for f in findings:
+                st = f.get("status", "UNKNOWN")
+                by_status[st] = by_status.get(st, 0) + 1
+            out["sessions"] = {
+                "total": len(sessions),
+                "completed": sum(1 for s in sessions if s.get("status") == "completed"),
+                "active": sum(1 for s in sessions if s.get("status") == "active"),
+            }
+            out["findings"] = {"total": len(findings), "by_status": by_status}
+        except Exception as e:
+            out["sessions"] = {"error": str(e)}
+            out["findings"] = {"error": str(e)}
+        try:
+            pe = _policy()
+            targets = pe.list_targets()
+            pe.close()
+            out["targets"] = {
+                "total": len(targets),
+                "authorized": sum(1 for t in targets if t.get("allowed")),
+            }
+        except Exception as e:
+            out["targets"] = {"error": str(e)}
+        try:
+            out["tools"] = {"total": len(_tools().list_tools())}
+        except Exception as e:
+            out["tools"] = {"error": str(e)}
+        try:
+            tracker = _tracker()
+            out["performance"] = {
+                "models": len(tracker.get_all_stats("model")),
+                "agents": len(tracker.get_all_stats("agent")),
+                "tools": len(tracker.get_all_stats("tool")),
+            }
+            tracker.close()
+        except Exception as e:
+            out["performance"] = {"error": str(e)}
+
+        # ---- Flat mirrors (additive) ------------------------------------
+        # The SPA's loadScorecard() reads these flat fields (see
+        # REDESIGN_GAP_ANALYSIS.md BUG-4). Nested fields above stay.
+        try:
+            out["total_sessions"] = out["sessions"].get("total", 0)
+            out["total_findings"] = out["findings"].get("total", 0)
+            out["verified_findings"] = out["findings"].get("by_status", {}).get("VERIFIED", 0)
+        except Exception:
+            out["total_sessions"] = 0
+            out["total_findings"] = 0
+            out["verified_findings"] = 0
+        try:
+            tracker = _tracker()
+            tool_stats = tracker.get_all_stats("tool")
+            tracker.close()
+            calls = sum(v.get("calls", 0) for v in tool_stats.values())
+            successes = sum(v.get("successes", 0) for v in tool_stats.values())
+            out["total_tool_calls"] = calls
+            out["success_rate"] = round(successes / calls, 4) if calls else 0.0
+        except Exception:
+            out["total_tool_calls"] = 0
+            out["success_rate"] = 0.0
+        try:
+            import time as _time
+            out["uptime"] = round(_time.time() - _SERVER_START, 1)
+        except Exception:
+            out["uptime"] = 0.0
+        return out
+
+    # ----------------------------------------------------------------- mcp
+    @app.get("/api/mcp")
+    async def mcp_overview():
+        """MCP gateway overview: servers discovered + configured."""
+        try:
+            import importlib
+            mod = importlib.import_module("cyberai.tool-gateway.mcp.mcp_server")
+            gw = mod.MCPGateway()
+            discovered = gw.discover_mcp_servers()
+            return {
+                "servers": [
+                    {
+                        "name": s.get("name"),
+                        "type": s.get("type"),
+                        "capabilities": s.get("capabilities", []),
+                        "cwd": s.get("cwd"),
+                    }
+                    for s in discovered
+                ],
+                "configured": list(gw._servers.keys()),
+                "tools": gw.list_tools(),
+            }
+        except Exception as e:
+            return {"servers": [], "configured": [], "tools": [], "error": str(e)}
+
+    @app.post("/api/mcp/call")
+    async def mcp_call(request: Request):
+        """Invoke a tool on an MCP server (structured error envelope)."""
+        body = await request.json()
+        server = str(body.get("server", "")).strip()
+        tool = str(body.get("tool", "")).strip()
+        arguments = body.get("arguments") or {}
+        if not server or not tool:
+            raise HTTPException(status_code=400, detail="server and tool are required")
+        try:
+            import importlib
+            mod = importlib.import_module("cyberai.tool-gateway.mcp.mcp_server")
+            gw = mod.MCPGateway()
+            result = await gw.call_tool(server, tool, arguments)
+            EVENT_BUS.publish("audit", {
+                "actor": "OPERATOR", "agent": "-", "tool": f"mcp:{server}/{tool}",
+                "target": str(arguments.get("target", "-")), "action": f"mcp call {tool}",
+                "result": result.get("status", "?"), "session": "-",
+            })
+            return result
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
+
+    # ------------------------------------------------------------- timeline
+    @app.get("/api/timeline")
+    async def timeline(limit: int = 100):
+        """Unified timeline: sessions + findings + audit events, newest first."""
+        events: List[Dict[str, Any]] = []
+        try:
+            mm = _memory_manager()
+            for s in mm.list_sessions()[:limit]:
+                events.append({
+                    "kind": "session",
+                    "ts": s.get("started_at", ""),
+                    "title": f"Session on {s.get('target_id', '?')}",
+                    "detail": s.get("summary") or f"status={s.get('status', '?')}",
+                    "id": s.get("id", ""),
+                })
+            for f in mm.get_findings()[:limit]:
+                events.append({
+                    "kind": "finding",
+                    "ts": f.get("timestamp", ""),
+                    "title": str(f.get("observation", ""))[:120],
+                    "detail": f"status={f.get('status', '?')} confidence={f.get('confidence', 0):.2f}",
+                    "id": f.get("id", ""),
+                })
+            mm.close()
+        except Exception:
+            pass
+        for ev in EVENT_BUS.history(limit):
+            etype = ev["type"]
+            d = ev.get("data", {})
+            if etype == "audit":
+                events.append({
+                    "kind": "audit",
+                    "ts": _now_iso(),
+                    "title": f"{d.get('action', '')} → {d.get('result', '')}",
+                    "detail": f"actor={d.get('actor', '')} tool={d.get('tool', '')}",
+                    "id": "",
+                })
+            elif etype in ("task_result", "task_completed"):
+                events.append({
+                    "kind": "task",
+                    "ts": _now_iso(),
+                    "title": f"Hunt finished: {d.get('status', d.get('findings_count', '?'))}",
+                    "detail": f"findings={d.get('findings_count', '?')} objective={str(d.get('summary', d.get('objective', '')))[:80]}",
+                    "id": str(d.get("task_id", "")),
+                })
+            elif etype == "task_error":
+                events.append({
+                    "kind": "error",
+                    "ts": _now_iso(),
+                    "title": "Hunt failed",
+                    "detail": str(d.get("error", ""))[:160],
+                    "id": "",
+                })
+        events.sort(key=lambda e: e.get("ts", ""), reverse=True)
+        return {"events": events[:limit]}
+
+    # ---------------------------------------------------------- hunt launch
+    @app.post("/api/hunt")
+    async def hunt(request: Request):
+        """Launch a guided hunt (policy-checked) against an authorized target."""
+        body = await request.json()
+        target_id = str(body.get("target_id", "")).strip()
+        objective = str(body.get("objective", "")).strip() or "Full reconnaissance and enumeration"
+        simulate = bool(body.get("simulate", True))
+        if not target_id:
+            raise HTTPException(status_code=400, detail="target_id is required")
+        try:
+            target = _policy().get_target(target_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        if not target:
+            raise HTTPException(status_code=404, detail=f"unknown target: {target_id}")
+        if not target.get("allowed"):
+            raise HTTPException(status_code=403, detail=f"target not authorized: {target_id}")
+
+        async def runner():
+            from cyberai import CyberAIOrchestrator
+            orch = CyberAIOrchestrator(simulate=simulate, local_only=True)
+            holder["orchestrator"] = orch
+            try:
+                result = await orch.run(
+                    objective,
+                    target_id=target_id,
+                    event_callback=lambda etype, edata: EVENT_BUS.publish(etype, edata),
+                    scope="authorized_lab",
+                )
+                EVENT_BUS.publish("task_result", {
+                    "task_id": result.get("id"),
+                    "status": result.get("status"),
+                    "findings_count": len(result.get("findings", [])),
+                    "summary": _summarize_task(result),
+                })
+            except Exception as e:
+                EVENT_BUS.publish("task_error", {"error": str(e)})
+            finally:
+                orch.close()
+                holder["orchestrator"] = None
+
+        asyncio.create_task(runner())
+        return {"status": "accepted", "target_id": target_id, "objective": objective, "simulate": simulate}
+
+    # ------------------------------------------------------ kill-chain panel
+    @app.get("/api/killchain")
+    async def killchain(target: str = ""):
+        """F2T2EA kill-chain status (all chains, or one target)."""
+        try:
+            from cyberai.orchestrator.workflows.kill_chain import KillChainEngine
+            engine = KillChainEngine()
+            if target.strip():
+                chain = engine.get_chain(target.strip())
+                if not chain:
+                    return {"chain": None, "status": engine.status()}
+                return {"chain": chain.to_dict(), "status": engine.status()}
+            return {"chains": engine.list_chains(), "status": engine.status()}
+        except Exception as e:
+            return {"chains": [], "status": {}, "error": str(e)}
+
+    @app.post("/api/killchain/start")
+    async def killchain_start(request: Request):
+        body = await request.json()
+        target = str(body.get("target", "")).strip()
+        if not target:
+            raise HTTPException(status_code=400, detail="target is required")
+        try:
+            from cyberai.orchestrator.workflows.kill_chain import KillChainEngine
+            engine = KillChainEngine()
+            chain = engine.start_chain(target)
+            return {"chain": chain.to_dict()}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/killchain/advance")
+    async def killchain_advance(request: Request):
+        body = await request.json()
+        target = str(body.get("target", "")).strip()
+        note = str(body.get("note", "")).strip()
+        finding = body.get("finding") or None
+        if not target:
+            raise HTTPException(status_code=400, detail="target is required")
+        try:
+            from cyberai.orchestrator.workflows.kill_chain import KillChainEngine
+            engine = KillChainEngine()
+            result = engine.advance(target, note=note, finding=finding)
+            return {"chain": result}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/killchain/fail")
+    async def killchain_fail(request: Request):
+        body = await request.json()
+        target = str(body.get("target", "")).strip()
+        reason = str(body.get("reason", "")).strip() or "manual fail"
+        category = str(body.get("category", "execution")).strip() or "execution"
+        if not target:
+            raise HTTPException(status_code=400, detail="target is required")
+        try:
+            from cyberai.orchestrator.workflows.kill_chain import KillChainEngine
+            engine = KillChainEngine()
+            result = engine.fail(target, reason=reason, category=category)
+            return {"chain": result}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # ------------------------------------------------------ wargame panel
+    @app.get("/api/wargame")
+    async def wargame():
+        """Ghost-wargaming failure analytics."""
+        try:
+            from cyberai.evolution import GhostWargame
+            gw = GhostWargame()
+            analytics = gw.analytics()
+            recent = gw.recent_failures(limit=10)
+            return {"analytics": analytics, "recent_failures": recent}
+        except Exception as e:
+            return {"analytics": {}, "recent_failures": [], "error": str(e)}
+
+    @app.post("/api/wargame/fast-forward")
+    async def wargame_fast_forward(request: Request):
+        """Run a simulated evolution generation (no live execution)."""
+        body = await request.json()
+        task_type = str(body.get("task_type", "vulnerability_research")).strip()
+        num_strategies = int(body.get("num_strategies", 3))
+        try:
+            from cyberai.evolution import GhostWargame
+            gw = GhostWargame()
+            result = await gw.fast_forward(task_type, num_strategies=num_strategies)
+            return {"result": result}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # ------------------------------------------- semantic memory search
+    @app.get("/api/memory/semantic")
+    async def memory_semantic(q: str = "", limit: int = 10, type: str = ""):
+        """TF-IDF semantic memory search."""
+        if not q.strip():
+            return {"results": []}
+        try:
+            store = _memory_store()
+            results = store.semantic_search(
+                q.strip(),
+                memory_type=(type.strip() or None),
+                limit=limit,
+            )
+            store.close()
+            return {"results": results}
+        except Exception as e:
+            return {"results": [], "error": str(e)}
+
+    # =====================================================================
+    # NEW ENDPOINTS — product redesign (spec §24/§25)
+    # Additive only: every endpoint above is unchanged.
+    # =====================================================================
+
+    # ------------------------------------------------ sessions (spec §8)
+    @app.get("/api/sessions")
+    async def sessions(q: str = "", status: str = "", limit: int = 100):
+        """Session browser: search, filter by status, newest first."""
+        try:
+            mm = _memory_manager()
+            rows = mm.list_sessions()
+            mm.close()
+        except Exception as e:
+            return {"sessions": [], "error": str(e)}
+        if q:
+            ql = q.lower()
+            rows = [s for s in rows
+                    if ql in (s.get("objective") or "").lower()
+                    or ql in (s.get("target_id") or "").lower()
+                    or ql in (s.get("id") or "").lower()]
+        if status:
+            rows = [s for s in rows if s.get("status") == status]
+        return {"sessions": rows[:limit], "total": len(rows)}
+
+    @app.get("/api/sessions/{session_id}")
+    async def session_detail(session_id: str):
+        """Session detail: metadata + findings + replay timeline."""
+        try:
+            mm = _memory_manager()
+            s = mm.get_session(session_id)
+            if not s:
+                mm.close()
+                raise HTTPException(status_code=404, detail="session not found")
+            findings = [f for f in mm.get_findings()
+                        if f.get("session_id") == session_id]
+            mm.close()
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        timeline = _session_timeline(session_id, s, findings)
+        return {"session": s, "findings": findings, "timeline": timeline}
+
+    # ----------------------------------------------- findings (spec §10)
+    @app.get("/api/findings")
+    async def findings(status: str = "", q: str = "", limit: int = 200):
+        """Findings explorer: filter by verification status, search text."""
+        try:
+            mm = _memory_manager()
+            rows = mm.get_findings(status=(status.strip() or None))
+            mm.close()
+        except Exception as e:
+            return {"findings": [], "error": str(e)}
+        if q:
+            ql = q.lower()
+            rows = [f for f in rows
+                    if ql in str(f.get("observation", "")).lower()
+                    or ql in str(f.get("source", "")).lower()]
+        return {"findings": rows[:limit], "total": len(rows)}
+
+    # ------------------------------------------------ targets (spec §12)
+    @app.get("/api/targets")
+    async def targets():
+        """Target registry with explicit authorization + reachability state."""
+        try:
+            pe = _policy()
+            rows = pe.list_targets()
+            pe.close()
+        except Exception as e:
+            return {"targets": [], "error": str(e)}
+        out = []
+        for t in rows:
+            host = t.get("host", "")
+            port = int(t.get("port") or 0)
+            reachable = _port_open(port, host) if (host and port) else False
+            if not t.get("allowed"):
+                state = "UNAUTHORIZED"
+            elif not reachable:
+                state = "OFFLINE"
+            else:
+                state = "ACTIVE"
+            out.append({**t, "state": state, "reachable": reachable})
+        return {"targets": out}
+
+    # ------------------------------------------- security center (§13)
+    @app.get("/api/security")
+    async def security():
+        """Security center: policy state, blocked actions, approvals."""
+        blocked = []
+        for ev in EVENT_BUS.history(300):
+            if ev.get("type") == "policy.blocked":
+                blocked.append(ev.get("data", {}))
+        try:
+            pe = _policy()
+            all_targets = pe.list_targets()
+            pe.close()
+            authorized = [t for t in all_targets if t.get("allowed")]
+        except Exception:
+            all_targets, authorized = [], []
+        pending = [a for a in APPROVAL_QUEUE if a.get("status") == "PENDING"]
+        return {
+            "policy": {
+                "mode": "LAB_ONLY",
+                "description": "Active testing restricted to explicitly authorized lab targets",
+                "targets_registered": len(all_targets),
+                "targets_authorized": len(authorized),
+            },
+            "blocked_actions": blocked,
+            "approvals_pending": len(pending),
+            "recent_events": [
+                {"type": ev.get("type"), "data": ev.get("data", {}), "ts": ev.get("ts")}
+                for ev in EVENT_BUS.history(50)
+                if ev.get("type") in ("policy.blocked", "approval.required",
+                                      "approval.granted", "approval.denied")
+            ],
+        }
+
+    # --------------------------------------- model routing (spec §7/§24)
+    @app.get("/api/models/routing")
+    async def model_routing():
+        """Read the task-type → model-alias routing table."""
+        try:
+            from cyberai.orchestrator.routing.model_router import ModelRouter
+            mr = ModelRouter()
+            routes = mr.get_all_routes()
+            return {"routes": routes}
+        except Exception as e:
+            return {"routes": {}, "error": str(e)}
+
+    @app.post("/api/models/routing")
+    async def update_model_routing(request: Request):
+        """Update routing without editing YAML: {task_type, model_alias}."""
+        body = await request.json()
+        task_type = str(body.get("task_type", "")).strip()
+        model_alias = str(body.get("model_alias", "")).strip()
+        if not task_type or not model_alias:
+            raise HTTPException(status_code=400,
+                                detail="task_type and model_alias are required")
+        try:
+            from cyberai.orchestrator.routing.model_router import ModelRouter
+            mr = ModelRouter()
+            mr.update_route(task_type, model_alias)
+            import yaml as _yaml
+            _yaml.dump({"routes": mr.get_all_routes()})
+            with open(mr.config_path, "w", encoding="utf-8") as f:
+                f.write(_yaml.dump({"routes": mr.get_all_routes()},
+                                   default_flow_style=False))
+            EVENT_BUS.publish("audit", {
+                "actor": "OPERATOR", "agent": "-", "tool": "model_router",
+                "target": "-", "action": f"route {task_type} -> {model_alias}",
+                "result": "SUCCESS", "session": "-",
+            })
+            return {"ok": True, "routes": mr.get_all_routes()}
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # ------------------------------------------- events feed (spec §25)
+    @app.get("/api/events")
+    async def events(since: str = "", limit: int = 200):
+        """Pollable canonical event feed (CLI parity with the SSE stream).
+
+        Backed by the persistent EventStore — history survives restarts.
+        """
+        from cyberai.orchestrator.event_store import get_event_store
+        store = get_event_store()
+        out = [ev.to_dict() for ev in store.history(limit=limit, since=since)]
+        return {"events": out, "stats": store.stats()}
+
     return app
+
+
+def _session_timeline(session_id: str, session: Dict[str, Any],
+                      findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Build a replay timeline (spec §9) from session + findings + logs."""
+    timeline: List[Dict[str, Any]] = []
+    started = session.get("started_at")
+    if started:
+        timeline.append({"t": started, "kind": "session.started",
+                         "label": "Session started", "detail": session.get("objective", "")})
+    for f in findings:
+        ts = f.get("timestamp") or f.get("created_at") or started
+        timeline.append({"t": ts, "kind": "finding.created",
+                         "label": f"Finding: {str(f.get('observation', ''))[:60]}",
+                         "detail": f"status={f.get('status', '?')} confidence={f.get('confidence', '?')}"})
+    for entry in _read_session_logs():
+        if entry.get("session") == session_id or entry.get("session_id") == session_id:
+            timeline.append({"t": entry.get("timestamp", ""),
+                             "kind": "tool.completed",
+                             "label": f"{entry.get('agent', '-')} / {entry.get('tool', '-')}",
+                             "detail": entry.get("action", "")})
+    completed = session.get("completed_at") or session.get("ended_at")
+    if completed:
+        timeline.append({"t": completed, "kind": "session.completed",
+                         "label": "Session completed", "detail": session.get("summary", "")})
+    timeline.sort(key=lambda x: x.get("t") or "")
+    return timeline
 
 
 def _summarize_task(task: Dict[str, Any]) -> str:

@@ -15,6 +15,15 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
+def _event_store():
+    """Lazily fetch the shared EventStore (spec §24) — never fatal."""
+    try:
+        from cyberai.orchestrator.event_store import get_event_store
+        return get_event_store()
+    except Exception:  # noqa: BLE001 — events are advisory
+        return None
+
+
 class BaseAgent:
     """
     Base class for all orchestrator agents.
@@ -89,7 +98,23 @@ class BaseAgent:
 
         try:
             gateway = await self._get_gateway()
+            store = _event_store()
+            if store is not None:
+                store.publish("model.started", {
+                    "agent": self.name, "task_type": task_type,
+                }, agent=self.name)
             response = await gateway.complete(role=task_type, prompt=prompt, **kwargs)
+            if store is not None:
+                ok = bool(response.get("success"))
+                store.publish(
+                    "model.completed" if ok else "model.failed", {
+                        "agent": self.name,
+                        "task_type": task_type,
+                        "model": response.get("model", ""),
+                        "transport": response.get("transport", ""),
+                        "latency_ms": response.get("latency_ms"),
+                        "error": response.get("message", "") if not ok else "",
+                    }, agent=self.name)
             if not response.get("success"):
                 logger.error(
                     "LLM call failed in %s (task_type=%s): errors=%s blocked=%s",

@@ -76,7 +76,25 @@ class ReconAgent(BaseAgent):
             used_tool = recon_tools[0]
             adapter_path = self.tool_registry.get_adapter_path(used_tool)
             if adapter_path:
+                _store = None
+                try:
+                    from cyberai.orchestrator.event_store import get_event_store
+                    _store = get_event_store()
+                    _store.publish("tool.started", {
+                        "tool": used_tool, "agent": self.name,
+                        "target": target, "action": "recon",
+                    }, agent=self.name)
+                except Exception:  # noqa: BLE001 — advisory only
+                    _store = None
                 adapter_result = await self._try_adapter(adapter_path, tool_task)
+                if _store is not None:
+                    _store.publish(
+                        "tool.completed" if (adapter_result or {}).get("success")
+                        else "tool.failed", {
+                            "tool": used_tool, "agent": self.name,
+                            "target": target,
+                            "summary": str((adapter_result or {}).get("output", ""))[:200],
+                        }, agent=self.name)
 
         tool_output = (
             adapter_result.get("output", "") if adapter_result else ""

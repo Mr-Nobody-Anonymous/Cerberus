@@ -1,0 +1,17 @@
+﻿.pytest_cache
+.vscode
+adapters
+backups
+config
+cyberai
+infrastructure
+knowledge
+lab
+logs
+memory
+plugins
+projects
+scripts
+tests
+_cerberus-clean-check
+__pycache__

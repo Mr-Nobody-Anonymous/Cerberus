@@ -7,39 +7,81 @@ models:
     default_model: llama3.1:8b
     purpose: [reasoning, planning, verification]
     status: REQUIRES_MODEL_DOWNLOAD
+    capabilities: {reasoning: 7, coding: 5, context: 6, speed: 5, cost: 9}
 
   local_coder:
     provider: ollama
     default_model: codellama:7b
     purpose: [code_analysis, code_generation, exploit_development]
     status: REQUIRES_MODEL_DOWNLOAD
+    capabilities: {reasoning: 5, coding: 9, context: 5, speed: 5, cost: 9}
 
   local_fast:
     provider: ollama
     default_model: llama3.2:3b
     purpose: [classification, summarization, tool_selection]
     status: REQUIRES_MODEL_DOWNLOAD
+    capabilities: {reasoning: 4, coding: 3, context: 4, speed: 9, cost: 10}
 
   research_model:
     provider: ollama
     default_model: qwen2.5:7b
     purpose: [web_research, vulnerability_research, cve_analysis]
     status: REQUIRES_MODEL_DOWNLOAD
+    capabilities: {reasoning: 6, coding: 4, context: 7, speed: 6, cost: 9}
 
   embeddings:
     provider: ollama
     default_model: nomic-embed-text
     purpose: [semantic_memory_retrieval, knowledge_embedding]
     status: REQUIRES_MODEL_DOWNLOAD
+    capabilities: {reasoning: 2, coding: 1, context: 8, speed: 8, cost: 10}
 
   cloud_reasoner:
     provider: openai
     default_model: gpt-4o
     purpose: [complex_reasoning, advanced_planning]
     status: DISABLED_NO_API_KEY
+    capabilities: {reasoning: 9, coding: 8, context: 9, speed: 6, cost: 3}
 
   cloud_fast:
     provider: anthropic
     default_model: claude-3-5-haiku-latest
     purpose: [fast_analysis, classification]
     status: DISABLED_NO_API_KEY
+    capabilities: {reasoning: 7, coding: 6, context: 8, speed: 9, cost: 5}
+
+  # ------------------------------------------------------------------
+  # OpenAI-compatible endpoints (provider: openai_compatible)
+  #
+  # One transport covers vLLM, llama.cpp server, LM Studio, OpenRouter,
+  # LiteLLM-fronted clusters, and any custom OpenAI-dialect server.
+  #   endpoint:    base URL (with or without /v1 — normalized)
+  #   api_key_env: optional env var holding the bearer token (local
+  #                servers often run unauthenticated — omit it)
+  #
+  # Privacy: endpoints on loopback/private networks are LOCAL and allowed
+  # under PRIVACY_MODE=local_only; public endpoints are treated as CLOUD
+  # and blocked by it.
+  #
+  # Uncomment and adapt as needed:
+  #
+  # gpu_server:
+  #   provider: openai_compatible
+  #   endpoint: http://gpu-server:8000
+  #   default_model: Qwen/Qwen3-32B
+  #   purpose: [reasoning, coding, planning]
+  #
+  # lm_studio:
+  #   provider: openai_compatible
+  #   endpoint: http://localhost:1234
+  #   default_model: local-model
+  #   purpose: [classification, summarization]
+  #
+  # openrouter:
+  #   provider: openai_compatible
+  #   endpoint: https://openrouter.ai/api
+  #   api_key_env: OPENROUTER_API_KEY
+  #   default_model: meta-llama/llama-3.1-8b-instruct:free
+  #   purpose: [web_research, vulnerability_research]
+  # ------------------------------------------------------------------

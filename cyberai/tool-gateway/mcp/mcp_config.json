@@ -1,0 +1,40 @@
+{
+  "mcp_servers": {
+    "hexstrike-mcp": {
+      "name": "hexstrike-mcp",
+      "type": "stdio",
+      "command": "python",
+      "args": ["hexstrike_mcp.py"],
+      "cwd": "ADAPTERS_DIR/hexstrike",
+      "capabilities": ["tool_execution", "mcp_servers"],
+      "description": "HexStrike MCP — offensive security tool execution"
+    },
+    "mcpstrike-mcp": {
+      "name": "mcpstrike-mcp",
+      "type": "stdio",
+      "command": "python",
+      "args": ["stdio_server.py"],
+      "cwd": "ADAPTERS_DIR/mcpstrike",
+      "capabilities": ["tool_execution", "mcp_servers"],
+      "description": "MCPStrike — MCP tool server framework"
+    },
+    "darkmoon-mcp": {
+      "name": "darkmoon-mcp",
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "src.server"],
+      "cwd": "ADAPTERS_DIR/darkmoon/mcp",
+      "capabilities": ["research", "analysis"],
+      "description": "Dark-Moon MCP — research and analysis tools"
+    },
+    "cerberus-mcp": {
+      "name": "cerberus-mcp",
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "cyberai.tool-gateway.mcp.cerberus_mcp"],
+      "cwd": "WORKSPACE_ROOT",
+      "capabilities": ["orchestration", "memory", "kill_chain", "wargame"],
+      "description": "Cerberus Orchestrator MCP — status, findings, semantic memory search, F2T2EA kill chain, wargame analytics, hunts"
+    }
+  }
+}

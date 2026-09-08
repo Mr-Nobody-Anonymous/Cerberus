@@ -71,6 +71,10 @@ class AdapterManager:
         """Load metadata for all known adapters."""
         for name, info in KNOWN_ADAPTERS.items():
             adapter_dir = ADAPTERS_DIR / name
+            if not adapter_dir.exists():
+                alt_dir = ADAPTERS_DIR / name.replace("_", "-")
+                if alt_dir.exists():
+                    adapter_dir = alt_dir
             self._adapter_info[name] = {
                 **info,
                 "source_dir": adapter_dir,
@@ -82,7 +86,7 @@ class AdapterManager:
         Discover available adapter modules on disk.
 
         Returns:
-            List of adapter names that have source code present.
+            List of adapter names that have source code present and loadable.
         """
         available = []
         for name, info in self._adapter_info.items():
@@ -99,7 +103,7 @@ class AdapterManager:
         Load and instantiate an adapter by name.
 
         Args:
-            name: The adapter/tool name (e.g. "strix", "hexstrike")
+            name: The adapter/tool name (e.g. "strix", "hexstrike", "guardian_cli", "guardian-cli")
 
         Returns:
             Adapter instance or None if not available
@@ -107,28 +111,32 @@ class AdapterManager:
         if name in self._adapters:
             return self._adapters[name]
 
-        info = self._adapter_info.get(name)
-        if not info or not info["source_present"]:
+        # Candidates to check in adapter_info and module imports
+        candidates = [name, name.replace("-", "_"), name.replace("_", "-")]
+        info = None
+        for c in candidates:
+            if c in self._adapter_info and self._adapter_info[c]["source_present"]:
+                info = self._adapter_info[c]
+                break
+
+        if not info or not info.get("source_present"):
             return None
 
         # Try to import the adapter module
-        # The import path may be "adapters.strix" or "adapters.guardian-cli"
-        try:
-            # Normalize hyphens in directory names to underscores for Python import
-            import_name = name.replace("-", "_")
-            module = importlib.import_module(f"adapters.{import_name}")
-            adapter_cls = getattr(module, "Adapter", None)
-            if adapter_cls:
-                instance = adapter_cls()
-                # Wire policy + evidence into SandboxedAdapter instances so the
-                # gate has everything it needs. No-op for plain stubs.
-                self._wire(instance)
-                self._adapters[name] = instance
-                return instance
-        except ImportError as e:
-            logger.debug(f"Adapter {name} import failed: {e}")
-        except Exception as e:
-            logger.warning(f"Adapter {name} instantiation failed: {e}")
+        for candidate in candidates:
+            import_name = candidate.replace("-", "_")
+            try:
+                module = importlib.import_module(f"adapters.{import_name}")
+                adapter_cls = getattr(module, "Adapter", None)
+                if adapter_cls:
+                    instance = adapter_cls()
+                    self._wire(instance)
+                    self._adapters[name] = instance
+                    return instance
+            except ImportError as e:
+                logger.debug(f"Adapter candidate {import_name} import failed: {e}")
+            except Exception as e:
+                logger.warning(f"Adapter candidate {import_name} instantiation failed: {e}")
 
         return None
 

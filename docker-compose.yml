@@ -1,10 +1,25 @@
-version: '3.8'
+# Cerberus Docker Compose — execution-profile aware.
+#
+# Usage:
+#   docker compose --profile minimal up -d   # core only (no model services)
+#   docker compose --profile cloud up -d     # core + LiteLLM (cloud APIs)
+#   docker compose --profile local up -d     # core + LiteLLM + Ollama (CPU)
+#   docker compose --profile gpu up -d        # core + LiteLLM + Ollama (GPU)
+#   docker compose --profile server up -d    # everything incl. vLLM
+#
+# Profiles stack: `--profile local --profile cloud` runs both groups.
+# The `minimal` profile intentionally starts nothing beyond the core
+# services — inference comes from cloud APIs or an already-running local
+# runtime, per the "orchestration layer, not model host" philosophy.
+#
+# Pick a profile with:  python -m cyberai.orchestrator.cli profile
 
 services:
   # LiteLLM Gateway - LLM proxy for all agents
   litellm:
     image: ghcr.io/berriai/litellm:main
     container_name: cyberai-litellm
+    profiles: ["cloud", "local", "gpu", "server"]
     ports:
       - "4000:4000"
     volumes:
@@ -22,6 +37,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: cyberai-open-webui
+    profiles: ["cloud", "local", "gpu", "server"]
     ports:
       - "3000:3000"
     environment:
@@ -33,13 +49,13 @@ services:
     networks:
       - cyberai-net
     depends_on:
-      - ollama
       - litellm
 
-  # Ollama - Local model service
+  # Ollama - Local model service (CPU-only profile)
   ollama:
     image: ollama/ollama:latest
     container_name: cyberai-ollama
+    profiles: ["local"]
     ports:
       - "11434:11434"
     volumes:
@@ -48,10 +64,50 @@ services:
     networks:
       - cyberai-net
 
+  # Ollama with GPU passthrough (NVIDIA container runtime required)
+  ollama-gpu:
+    image: ollama/ollama:latest
+    container_name: cyberai-ollama-gpu
+    profiles: ["gpu", "server"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./infrastructure/ollama/models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - cyberai-net
+
+  # vLLM - High-throughput local serving (GPU server profile)
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: cyberai-vllm
+    profiles: ["server"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./infrastructure/other-inference/vllm:/root/.cache/huggingface
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+    command: >
+      --model ${VLLM_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      --served-model-name cerberus-local
+      --max-model-len 8192
+    restart: unless-stopped
+    networks:
+      - cyberai-net
+
   # Optional: PentAGI - Primary security agent (requires GPU for best performance)
   # pentagi:
   #   image: vxcontrol/pentagi:latest
   #   container_name: cyberai-pentagi
+  #   profiles: ["server"]
   #   ports:
   #     - "8443:8443"
   #   environment:

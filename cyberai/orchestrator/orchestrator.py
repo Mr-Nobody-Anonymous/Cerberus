@@ -50,6 +50,26 @@ class Orchestrator:
         self.tool_registry = tool_registry or ToolRegistry()
         self._sessions: Dict[str, Dict[str, Any]] = {}
         self._active_tasks: Dict[str, asyncio.Task] = {}
+        self._attach_hardware_profile()
+
+    def _attach_hardware_profile(self) -> None:
+        """
+        Attach the machine's execution profile to the model router (H3).
+
+        Best-effort: hardware detection failures never block startup —
+        routing simply stays profile-agnostic. The serving-check is
+        deliberately omitted here (it needs an async gateway health probe);
+        per-call transport fallback in the gateway already covers
+        availability, and profile_overrides in routing.yaml steer by
+        profile alone.
+        """
+        try:
+            from cyberai.llm_gateway.hardware import detect_hardware
+
+            hp = detect_hardware()
+            self.model_router.attach_profile(hp.profile)
+        except Exception as e:  # noqa: BLE001 — advisory, never fatal
+            logger.warning("Hardware profile detection failed: %s", e)
 
     async def start_session(self, target_id: str) -> Dict[str, Any]:
         """
