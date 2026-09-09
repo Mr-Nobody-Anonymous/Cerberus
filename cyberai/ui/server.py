@@ -603,7 +603,7 @@ def create_app():
     async def command(request: Request):
         body = await request.json()
         # Accept both the documented "message" key and the "command" key the
-        # SPA console sends (contract fix — see REDESIGN_GAP_ANALYSIS.md BUG-1).
+        # SPA console sends (contract fix — see git history, BUG-1).
         message = str(body.get("message") or body.get("command") or "").strip()
         if not message:
             raise HTTPException(status_code=400, detail="message is required")
@@ -681,7 +681,7 @@ def create_app():
 
         # ---- Flat KPI mirrors (additive) --------------------------------
         # The SPA's loadContext() reads these flat fields (see
-        # REDESIGN_GAP_ANALYSIS.md BUG-3). Nested fields above stay for
+        # git history, BUG-3). Nested fields above stay for
         # any other consumers.
         try:
             sessions = ctx.get("sessions") or []
@@ -1120,7 +1120,7 @@ def create_app():
 
         # ---- Flat mirrors (additive) ------------------------------------
         # The SPA's loadScorecard() reads these flat fields (see
-        # REDESIGN_GAP_ANALYSIS.md BUG-4). Nested fields above stay.
+        # git history, BUG-4). Nested fields above stay.
         try:
             out["total_sessions"] = out["sessions"].get("total", 0)
             out["total_findings"] = out["findings"].get("total", 0)

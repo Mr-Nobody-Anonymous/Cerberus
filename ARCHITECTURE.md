@@ -3,7 +3,7 @@
 **Local Autonomous Multi-Agent Security Research Platform**
 Technical deep-dive into directory layout, component map, data flow, and integration methodologies.
 
-> **Status:** This document reflects the post-Phase A layout (`platform/` → `cyberai/` rename) verified on 2026-09-03 against `python -m cyberai.orchestrator.cli doctor` (exit 0, 17 tracked adapters, 4 memory tables). For phase history and resolved issues see [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md). For the pre-rename skeleton see [PHASE2_AUDIT.md](./PHASE2_AUDIT.md).
+> **Status:** This document reflects the post-Phase A layout (`platform/` → `cyberai/` rename) verified on 2026-09-03 against `python -m cyberai.orchestrator.cli doctor` (exit 0, 17 tracked adapters, 4 memory tables).
 
 ---
 
@@ -30,11 +30,7 @@ C:\Users\hp\Desktop\Cerberus/
 ├── docker-compose.yml                    # Infrastructure services (LiteLLM, Ollama, Open WebUI)
 ├── README.md                             # Platform overview and quick start
 ├── ARCHITECTURE.md                       # This file - technical reference
-├── WORKSPACE_INVENTORY.md                # Detailed repository inventory
 ├── REPOSITORY_MAP.yaml                   # Repository-to-role mapping
-├── INTEGRATION_STATUS.md                 # Component status tracking (source of truth)
-├── FINAL_STATUS.md                       # 2026-08-11 baseline report (historical)
-├── PHASE2_AUDIT.md                       # Pre-Phase-A audit (historical)
 ├── pyproject.toml                        # Build metadata + pinned deps
 ├── requirements.txt                      # Runtime pinned deps
 │
@@ -119,7 +115,7 @@ C:\Users\hp\Desktop\Cerberus/
 └── tests/                                # Test suite
 ```
 
-> **Note on path layout:** The pre-Phase-A package was named `platform/`, which shadowed Python's stdlib `platform` module. Phase A renamed it to `cyberai/` — see [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) "Resolved Issues" #1. Two empty legacy directories (`cyberai/llm-gateway/`, `cyberai/tool-gateway/`) remain after the kebab→snake rename; they are reserved and not part of the active code.
+> **Note on path layout:** The pre-Phase-A package was named `platform/`, which shadowed Python's stdlib `platform` module. Phase A renamed it to `cyberai/`. Two empty legacy directories (`cyberai/llm-gateway/`, `cyberai/tool-gateway/`) remain after the kebab→snake rename; they are reserved and not part of the active code.
 
 ---
 
@@ -191,7 +187,7 @@ Click-based command-line interface with **15 commands**:
 
 #### REST API (`cyberai/orchestrator/api/`)
 
-FastAPI server. Endpoints: `GET /status`, `GET /targets`, `GET /targets/authorized`, `GET /sessions`, `GET /findings`, `GET /memory/search`, `GET /tools`, `GET /models`. See also [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) "Core Platform" row "REST API".
+FastAPI server. Endpoints: `GET /status`, `GET /targets`, `GET /targets/authorized`, `GET /sessions`, `GET /findings`, `GET /memory/search`, `GET /tools`, `GET /models`.
 
 #### Adapter framework (`cyberai/orchestrator/adapters/`)
 
@@ -213,8 +209,6 @@ MCP server discovery and management. `mcp_config.json` is intentionally package-
 ### `adapters/` — Vendor wrappers
 
 18 vendored adapter directories; all 17 tracked adapters expose `SecurityToolAdapter` wrappers implementing `health_check`, `capabilities`, `execute`, `collect_results`, and `shutdown`. The remaining non-wrapped directories are reference material only.
-
-See [WORKSPACE_INVENTORY.md](./WORKSPACE_INVENTORY.md) for per-repository detail.
 
 ### `cyberai/evolution/` — Evolution engine
 
@@ -549,7 +543,7 @@ The single source of truth for paths:
 1. `CERBERUS_HOME` env var (when set, must be an existing directory)
 2. Repository root: parent of the `cyberai/` package
 
-Use `from cyberai.config import resolve_path` everywhere; the only `Path(__file__)` sites are the bootstrap fallback in `config.py` itself and a handful of intentionally package-relative registry data files (`routing.yaml`, `tools.yaml`, `mcp_config.json`, `ui/static`) — each annotated in-code. See [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) Phase A path audit table.
+Use `from cyberai.config import resolve_path` everywhere; the only `Path(__file__)` sites are the bootstrap fallback in `config.py` itself and a handful of intentionally package-relative registry data files (`routing.yaml`, `tools.yaml`, `mcp_config.json`, `ui/static`) — each annotated in-code.
 
 ### Environment variables (`.env`)
 

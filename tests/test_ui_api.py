@@ -1,4 +1,4 @@
-"""Regression tests for the UI API contract fixes (REDESIGN_GAP_ANALYSIS.md BUG-1..4).
+"""Regression tests for the UI API contract fixes (BUG-1..4).
 
 Covers:
   - POST /api/command accepts BOTH {"message": ...} and {"command": ...} (BUG-1)

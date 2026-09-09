@@ -308,11 +308,7 @@ Hypothesis → Execution → Sandbox Verification → Memory Storage
 CERBERUS/
 ├── README.md                    # This file
 ├── ARCHITECTURE.md              # Deep-dive technical reference
-├── WORKSPACE_INVENTORY.md       # Detailed repository inventory
 ├── REPOSITORY_MAP.yaml          # Repository-to-role mapping
-├── INTEGRATION_STATUS.md        # Component status tracking
-├── FINAL_STATUS.md              # Final delivery report
-├── PHASE2_AUDIT.md              # Phase 2 audit report
 ├── .env.example                 # Environment configuration template
 ├── .gitignore                   # Git ignore rules
 ├── docker-compose.yml           # Infrastructure services
@@ -778,11 +774,7 @@ If you discover vulnerabilities during authorized testing:
 |----------|---------|
 | `README.md` | This file - platform overview and quick start |
 | `ARCHITECTURE.md` | Deep-dive technical reference |
-| `WORKSPACE_INVENTORY.md` | Detailed repository inventory |
 | `REPOSITORY_MAP.yaml` | Repository-to-role mapping |
-| `INTEGRATION_STATUS.md` | Component status tracking |
-| `FINAL_STATUS.md` | Final delivery report |
-| `PHASE2_AUDIT.md` | Phase 2 audit report |
 | `cyberai/evolution/a-evolve/README.md` | A-Evolve full documentation |
 | `.env.example` | Environment configuration template |
 
@@ -835,7 +827,7 @@ This platform integrates the following open-source security research projects:
 - **Ollama** by ollama — Local model serving
 - **Open WebUI** by open-webui — Web interface
 
-And many more. See `WORKSPACE_INVENTORY.md` for complete list.
+And many more. See `REPOSITORY_MAP.yaml` for the complete list.
 
 ---
 

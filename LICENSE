@@ -26,7 +26,7 @@ NOTE: This MIT license applies to the Cerberus orchestrator platform code
 (the `cyberai/` package, `adapters/` wrappers, `tests/`, and workspace
 configuration). Individual vendored components under `adapters/`,
 `infrastructure/`, and `cyberai/evolution/a-evolve/` retain their original
-licenses as documented in REPOSITORY_MAP.yaml and WORKSPACE_INVENTORY.md:
+licenses as documented in REPOSITORY_MAP.yaml:
 
 - MIT: litellm, hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix,
   drakben, a-evolve

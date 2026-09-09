@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Coverage configuration** (`[tool.coverage.*]` in `pyproject.toml`) — `pytest --cov` works out of the box
 - **Pre-commit hooks** (`.pre-commit-config.yaml`) — trailing whitespace, EOF newlines, YAML/JSON validity, large-file guard
 
+### Removed
+- **Internal session/audit artifacts:** `FINAL_STATUS.md`, `INTEGRATION_STATUS.md`, `PHASE2_AUDIT.md`, `REDESIGN_AUDIT.md`, `REDESIGN_GAP_ANALYSIS.md`, `WORKSPACE_INVENTORY.md`, and `logs/darkmoon_probe.txt` — historical working documents superseded by README/ARCHITECTURE/CHANGELOG; all cross-references updated.
+
 ### Fixed
 - **Adapters were never wired to the policy engine** — every real adapter execution failed with `Policy denied: 'NoneType' object has no attribute 'is_authorized'`. The orchestrator now injects `policy_engine`, `evidence_manager`, and `session_id` into each adapter before execution.
 - **CLI `task` command crash** — click option `--target-id` was bound to a mismatched parameter name.
