@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="images.jfif" alt="ULTRONE Battlefield AI" width="600"/>
+  <img src="ult.jpg" alt="ULTRONE Battlefield AI" width="600"/>
 </div>
 
 # ⚡ CERBERUS - Self-Evolving Multi-Agent Cyber AI Orchestrator
@@ -315,7 +315,7 @@ CERBERUS/
 ├── .env.example                 # Environment configuration template
 ├── .gitignore                   # Git ignore rules
 ├── docker-compose.yml           # Infrastructure services
-├── images.jfif                  # Platform banner image
+├── ult.jpg                      # Platform banner image
 │
 ├── cyberai/                     # Core platform package
 │   ├── __init__.py
