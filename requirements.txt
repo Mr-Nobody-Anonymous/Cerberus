@@ -26,4 +26,5 @@ uvicorn==0.27.0
 # asyncio_mode=auto in pyproject.toml)
 pytest==7.4.4
 pytest-asyncio==0.23.3
+pytest-cov==6.2.1
 
