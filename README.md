@@ -493,8 +493,6 @@ CERBERUS/
 │   └── legacy/                  # Legacy integrations
 │
 ├── scripts/                     # ⚡ Utility scripts
-│   └── generate_platform.py     # Platform generator
-│
 ├── backups/                     # 💾 Backup storage
 └── tests/                       # 🧪 Test suite
 ```

@@ -10,6 +10,14 @@ __pycache__/
 venv/
 env/
 .pytest_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Project virtual environments (never commit)
+_cerberus-clean-check/
+_ci_check/
 
 # OS / Editor
 .DS_Store
@@ -26,6 +34,7 @@ out/
 *.so
 *.dylib
 .gradle/
+*.egg-info/
 
 # Logs
 *.log
@@ -77,3 +86,14 @@ cyberai/llm-gateway/logs/*
 
 # Local model data
 infrastructure/ollama/models/
+
+# Dev scratch / one-off debug files (underscore-prefixed probes)
+_*.py
+_*.txt
+!_*.example.py
+
+# Doctor / probe output artifacts
+doctor_output.txt
+hex_err2.txt
+pip_mcp_log.txt
+.phase-a-doctor-baseline.txt

@@ -29,6 +29,11 @@ dependencies = [
     "click>=8.1.0,<9",
     "PyYAML>=6.0,<7",
     "httpx>=0.24.0,<1",
+    # Adapter runtime deps — drakben.py and guardian-cli's cli/ import these
+    # at module level; without them the real adapters crash on subprocess exec.
+    "python-dotenv>=1.0,<2",
+    "rich>=13,<16",
+    "typer>=0.9,<1",
 ]
 
 [project.optional-dependencies]
@@ -64,3 +69,20 @@ include = ["cyberai*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["cyberai"]
+omit = [
+    # Vendored third-party code — not ours to measure
+    "cyberai/llm_gateway/litellm/*",
+    # UI static assets
+    "cyberai/ui/static/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
