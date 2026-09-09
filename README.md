@@ -7,6 +7,7 @@
 > **An autonomous, self-improving security research platform coordinating specialized AI agents across local labs**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/Mr-Nobody-Anonymous/Cerberus/actions/workflows/ci.yml/badge.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
