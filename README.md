@@ -429,15 +429,13 @@ CERBERUS/
 │   └── ui/                      # 🖥️ UI package
 │       └── __init__.py
 │
-├── adapters/                    # 🔌 Security tool adapters (20+)
+├── adapters/                    # 🔌 Security tool adapters (17 tracked)
 │   ├── pentagi/                 # Primary pentesting agent
 │   ├── strix/                   # Assessment agent
 │   ├── darkmoon/                # MCP pentesting agent
 │   ├── hexstrike/               # MCP tool gateway (150+ tools)
-│   ├── mcpstrike/               # Ollama MCP gateway
 │   ├── cai/                     # Agent framework
 │   ├── pentestgpt/              # Research/planning
-│   ├── pentestagent/            # LiteLLM-based agent
 │   ├── cyberstrikeai/           # Gin REST + MCP
 │   ├── autopentest/             # LangChain research
 │   ├── penclaw/                 # Static/dynamic analysis
@@ -446,9 +444,7 @@ CERBERUS/
 │   ├── guardian-cli/            # CLI pentesting
 │   ├── drakben/                 # Autonomous pentesting
 │   ├── h4cker/                  # Knowledge base (reference)
-│   ├── kali-pentest/            # Skill definitions (reference)
-│   ├── mcpstrike/               # MCP server
-│   └── pentestagent/            # Agent wrapper
+│   └── kali-pentest/            # Skill definitions (reference)
 │
 ├── infrastructure/              # ⚙️ Infrastructure services
 │   ├── ollama/                  # Ollama models and config
@@ -509,7 +505,7 @@ CERBERUS/
 
 > [!NOTE]
 > **Current Integration Status (Phase A & B Verified):**
-> Platform health checks pass with exit code 0 (`python -m cyberai.orchestrator.cli doctor`). The system coordinates **18 tracked adapters** (15 with `SecurityToolAdapter` wrappers), **7 specialized AI agents**, **4 persistent SQLite memory tables** (70 experiences), and **15 CLI commands**. All paths resolve cleanly via `cyberai/config.py` without stdlib conflicts.
+> Platform health checks pass with exit code 0 (`python -m cyberai.orchestrator.cli doctor`). The system coordinates **17 tracked adapters** (all 17 with `SecurityToolAdapter` wrappers), **7 specialized AI agents**, **4 persistent SQLite memory tables** (230+ experiences, 135+ findings), and **40+ CLI commands**. All paths resolve cleanly via `cyberai/config.py` without stdlib conflicts.
 
 ### Prerequisites
 - Windows 11 / Linux / macOS
@@ -618,7 +614,7 @@ asyncio.run(main())
 
 ### Using the CLI
 
-The CLI provides 15 operational commands via `python -m cyberai.orchestrator.cli <command>`:
+The CLI provides 40+ operational commands via `python -m cyberai.orchestrator.cli <command>` (run with no arguments for the full list, or enter the interactive REPL with `python -m cyberai.orchestrator.cli`):
 
 ```bash
 # 1. Health check — full diagnostic suite (exits 0)
@@ -634,7 +630,7 @@ python -m cyberai.orchestrator.cli simulate "Analyze authorized lab target"
 python -m cyberai.orchestrator.cli tools        # 17 registered tools
 python -m cyberai.orchestrator.cli agents       # 7 AI specialist agents
 python -m cyberai.orchestrator.cli models       # LLM aliases & transport status
-python -m cyberai.orchestrator.cli adapters     # 18 tracked security tool adapters
+python -m cyberai.orchestrator.cli adapters     # 17 tracked security tool adapters
 
 # 5. Persistent memory & findings
 python -m cyberai.orchestrator.cli findings
@@ -717,7 +713,7 @@ results = evolver.run(cycles=10)
 
 ---
 
-## 🧩 Tool Registry — 20+ Integrated Adapters
+## 🧩 Tool Registry — 17 Integrated Adapters
 
 | Tool | Type | API | Capabilities |
 |------|------|-----|--------------|

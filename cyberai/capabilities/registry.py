@@ -52,15 +52,24 @@ class CapabilityRegistry:
         "tool_execution": [
             {"name": "hexstrike", "type": "tool", "priority": 10},
             {"name": "mcpstrike", "type": "tool", "priority": 20},
+            {"name": "cyberstrikeai", "type": "tool", "priority": 30},
         ],
         "research": [
             {"name": "pentestgpt", "type": "tool", "priority": 10},
             {"name": "researcher", "type": "agent", "priority": 20},
             {"name": "research_model", "type": "model", "priority": 30},
+            {"name": "autopentest", "type": "tool", "priority": 40},
+            {"name": "luan1aoagent", "type": "tool", "priority": 50},
+            {"name": "guardian_cli", "type": "tool", "priority": 60},
+            {"name": "h4cker", "type": "tool", "priority": 70},
+            {"name": "kali_pentest", "type": "tool", "priority": 80},
         ],
         "planning": [
             {"name": "planner", "type": "agent", "priority": 10},
             {"name": "local_reasoner", "type": "model", "priority": 20},
+            {"name": "autopentest", "type": "tool", "priority": 30},
+            {"name": "pentestgpt", "type": "tool", "priority": 40},
+            {"name": "luan1aoagent", "type": "tool", "priority": 50},
         ],
         "verification": [
             {"name": "verifier", "type": "agent", "priority": 10},
@@ -74,14 +83,21 @@ class CapabilityRegistry:
             {"name": "analyst", "type": "agent", "priority": 10},
             {"name": "pentagi", "type": "tool", "priority": 20},
             {"name": "local_reasoner", "type": "model", "priority": 30},
+            {"name": "drakben", "type": "tool", "priority": 40},
+            {"name": "luan1aoagent", "type": "tool", "priority": 50},
+            {"name": "guardian_cli", "type": "tool", "priority": 60},
         ],
         "reporting": [
             {"name": "reporter", "type": "agent", "priority": 10},
             {"name": "local_fast", "type": "model", "priority": 20},
+            {"name": "guardian_cli", "type": "tool", "priority": 30},
         ],
         "exploitation": [
             {"name": "pentagi", "type": "tool", "priority": 10},
             {"name": "darkmoon", "type": "tool", "priority": 20},
+            {"name": "pentestagent", "type": "tool", "priority": 30},
+            {"name": "aracne", "type": "tool", "priority": 40},
+            {"name": "drakben", "type": "tool", "priority": 50},
         ],
         "vulnerability_scanning": [
             {"name": "strix", "type": "tool", "priority": 10},

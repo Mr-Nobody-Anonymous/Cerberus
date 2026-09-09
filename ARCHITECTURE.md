@@ -3,7 +3,7 @@
 **Local Autonomous Multi-Agent Security Research Platform**
 Technical deep-dive into directory layout, component map, data flow, and integration methodologies.
 
-> **Status:** This document reflects the post-Phase A layout (`platform/` → `cyberai/` rename) verified on 2026-09-03 against `python -m cyberai.orchestrator.cli doctor` (exit 0, 18 tracked adapters, 4 memory tables). For phase history and resolved issues see [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md). For the pre-rename skeleton see [PHASE2_AUDIT.md](./PHASE2_AUDIT.md).
+> **Status:** This document reflects the post-Phase A layout (`platform/` → `cyberai/` rename) verified on 2026-09-03 against `python -m cyberai.orchestrator.cli doctor` (exit 0, 17 tracked adapters, 4 memory tables). For phase history and resolved issues see [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md). For the pre-rename skeleton see [PHASE2_AUDIT.md](./PHASE2_AUDIT.md).
 
 ---
 
@@ -212,7 +212,7 @@ MCP server discovery and management. `mcp_config.json` is intentionally package-
 
 ### `adapters/` — Vendor wrappers
 
-18 vendored adapter directories; 15 of them expose `SecurityToolAdapter` wrappers implementing `health_check`, `capabilities`, `execute`, `collect_results`, and `shutdown`. The 3 non-wrapped directories (`h4cker`, `kali-pentest`, plus knowledge-only refs) are reference material only.
+18 vendored adapter directories; all 17 tracked adapters expose `SecurityToolAdapter` wrappers implementing `health_check`, `capabilities`, `execute`, `collect_results`, and `shutdown`. The remaining non-wrapped directories are reference material only.
 
 See [WORKSPACE_INVENTORY.md](./WORKSPACE_INVENTORY.md) for per-repository detail.
 

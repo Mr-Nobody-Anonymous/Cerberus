@@ -515,7 +515,7 @@ This document inventories every repository present in the workspace, documenting
 | Category | Count |
 |----------|-------|
 | Total repositories | 21 |
-| Tracked adapters in platform | 18 (15 wrappers, 3 knowledge/docs) |
+| Tracked adapters in platform | 17 (17 wrappers, 0 knowledge/docs) |
 | Python-based | 14 |
 | Go-based | 4 |
 | TypeScript/Node-based | 2 |
@@ -530,7 +530,7 @@ This document inventories every repository present in the workspace, documenting
 
 1. **Docker is INSTALLED** — Docker Desktop daemon needs to be running for containerized adapters (10 adapters require Docker)
 2. **Ollama is NOT RUNNING** — start via `ollama serve` and pull required models (`llama3.1:8b`, etc.)
-3. **CAI and CyberStrikeAI deletions are RESOLVED** — all 21 repositories (18 tracked adapters) are clean with 0 uncommitted changes
+3. **CAI and CyberStrikeAI deletions are RESOLVED** — all 21 repositories (17 tracked adapters) are clean with 0 uncommitted changes
 4. **litellm** is on `litellm_internal_staging` branch (not main)
 5. **h4cker** is a knowledge base reference, not an executable adapter
 6. **kali-pentest** is a skill definition reference, not an executable adapter

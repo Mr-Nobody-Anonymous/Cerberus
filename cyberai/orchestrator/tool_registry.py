@@ -205,7 +205,7 @@ class ToolRegistry:
             try:
                 import yaml
 
-                with open(self.registry_path, "r") as f:
+                with open(self.registry_path, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f)
                 self._tools = data.get("tools", {})
                 logger.info(f"Loaded {len(self._tools)} tools from {self.registry_path}")

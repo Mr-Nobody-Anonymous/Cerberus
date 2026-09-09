@@ -1,6 +1,6 @@
 # Final Status Report — Phase A + B
 
-**Last updated:** 2026-09-06
+**Last updated:** 2026-09-09
 **Branch:** `phase-cd-adapters-sandbox`
 **Workspace:** `C:\Users\hp\Desktop\Cerberus`
 
@@ -10,38 +10,38 @@
 
 ## Executive Summary
 
-The CERBERUS Cyber AI Orchestrator has been moved from a skeleton with broken imports to a fully working, self-improving multi-agent platform. The `platform/` package was renamed to `cyberai/` (no more stdlib shadowing), all workspace paths resolve through one central config loader, dependencies are pinned and verified in a clean venv, and the LLM gateway now performs a real transport fallback chain. Doctor exits 0 in both the dev environment and a fresh venv; all 7 agent packages and 18 tracked adapters import cleanly.
+The CERBERUS Cyber AI Orchestrator has been moved from a skeleton with broken imports to a fully working, self-improving multi-agent platform. The `platform/` package was renamed to `cyberai/` (no more stdlib shadowing), all workspace paths resolve through one central config loader, dependencies are pinned and verified in a clean venv, and the LLM gateway now performs a real transport fallback chain. Doctor exits 0 in both the dev environment and a fresh venv; all 7 agent packages and 17 tracked adapters import cleanly.
 
-## What's Working (verified 2026-09-06 by `python -m cyberai.orchestrator.cli doctor`)
+## What's Working (verified 2026-09-09 by `python -m cyberai.orchestrator.cli doctor`)
 
 | Component | Status | Verified value |
 |-----------|--------|----------------|
 | Python | OK | 3.10.11 |
 | Git | OK | 2.49.0.windows.1 |
-| Repositories | OK | **18 tracked adapters (18 clean, 0 with uncommitted changes)** |
-| Adapters | WARN | **15/18 have Python adapter wrappers** (3 are knowledge-only) |
-| MCP Gateway | OK | tool-gateway/mcp configured |
+| Repositories | OK | **17 tracked adapters (17 clean, 0 with uncommitted changes)** |
+| Adapters | OK | **17/17 have Python adapter wrappers** (all 17 executable) |
+| MCP Gateway | OK | tool-gateway/mcp configured — 4 servers respond to MCP initialize |
 | Orchestrator | OK | all core modules importable (including `CyberAIOrchestrator`) |
 | Agents | OK | all **7** agent packages importable |
-| Memory system | OK | DB ready: **4 tables**, 70 experiences, 0 findings |
+| Memory system | OK | DB ready: **4 tables**, 230+ experiences, 135+ findings |
 | Policy engine | OK | **4 targets registered, 4 authorized** |
-| CLI | OK | **15 commands** |
-| REST API | OK | FastAPI server with 8 endpoints |
+| CLI | OK | **40+ commands** incl. interactive REPL |
+| REST API | OK | FastAPI server with ~47 endpoints |
 | Doctor/Health | OK | All checks operational |
 | A-Evolve Integration | OK | `cyberai/evolution/a-evolve/` |
 | LLM Gateway | OK | LiteLLM → Ollama → provider transport fallback |
+| Test Suite | OK | **155 passed** (`python -m pytest tests -q`) |
 
 ## Repositories
 
-**Total: 18 tracked adapters** (down from the historical 21 — 3 of the 21 vendored trees are knowledge-only refs that aren't tracked by the adapter registry).
+**Total: 17 tracked adapters** (down from the historical 21 — 4 of the 21 vendored trees are knowledge-only refs that aren't tracked by the adapter registry).
 
-Of the 18 tracked:
-- **15** expose `SecurityToolAdapter` Python wrappers (pentagi, strix, darkmoon, hexstrike, mcpstrike, cai, pentestgpt, pentestagent, cyberstrikeai, autopentest, penclaw, luan1aoagent, aracne, guardian-cli, drakben)
-- **3** are knowledge/skill references without executable adapters (h4cker, kali-pentest, …)
+Of the 17 tracked:
+- **All 17** expose `SecurityToolAdapter` Python wrappers (pentagi, strix, darkmoon, hexstrike, mcpstrike, cai, pentestgpt, pentestagent, cyberstrikeai, autopentest, penclaw, luan1aoagent, aracne, guardian-cli, drakben, h4cker, kali-pentest)
 
 ## Adapters
 
-All 15 wrapper adapters implement the `SecurityToolAdapter` interface with `health_check`, `capabilities`, `execute`, `collect_results`, and `shutdown`. They report `WARN` when underlying services are unavailable (e.g. Docker daemon not running, Ollama port closed).
+All 17 wrapper adapters implement the `SecurityToolAdapter` interface with `health_check`, `capabilities`, `execute`, `collect_results`, and `shutdown`. They report `WARN` when underlying services are unavailable (e.g. Docker daemon not running, Ollama port closed). The h4cker and kali-pentest adapters wrap their CLIs and also provide searchable reference material.
 
 | Adapter | Runtime requirement |
 |---------|---------------------|
@@ -60,6 +60,8 @@ All 15 wrapper adapters implement the `SecurityToolAdapter` interface with `heal
 | aracne | Docker / SSH |
 | guardian-cli | Python deps |
 | drakben | Docker / interactive first-run prompt (known issue) |
+| h4cker | Python CLI wrapper + reference material |
+| kali-pentest | Python CLI wrapper + reference material |
 
 ## Infrastructure
 
@@ -100,7 +102,7 @@ python -m cyberai.orchestrator.cli status
 # End-to-end simulation — WORKING (no external dependencies required)
 python -m cyberai.orchestrator.cli simulate "Analyze authorized lab target"
 
-# CLI tools — WORKING (15 commands total)
+# CLI tools — WORKING (40+ commands total)
 python -m cyberai.orchestrator.cli tools
 python -m cyberai.orchestrator.cli agents
 python -m cyberai.orchestrator.cli models

@@ -114,7 +114,7 @@ class ModelRouter:
             try:
                 import yaml
 
-                with open(self.config_path, "r") as f:
+                with open(self.config_path, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f)
                 self._routes = data.get("routes", {})
                 self._profile_overrides = data.get("profile_overrides", {}) or {}

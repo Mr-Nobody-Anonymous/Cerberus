@@ -18,8 +18,9 @@ This file tracks the integration status of all components in the CERBERUS Cyber 
 - **CLI output modes (spec §14):** global `--json` / `--quiet` / `--verbose`
   flags on read commands (status, models, tools, agents, findings, memory,
   session list/show, scorecard).
-- **Tests:** 73 → **98 passed** (`tests/test_ui_api.py` added — 25 regression
-  tests locking the fixed API contracts + cancellation).
+- **Tests:** 73 → **155 passed** (25 UI/API regression tests added in
+  `tests/test_ui_api.py`, plus adapter/registry/health coverage; full suite
+  re-verified 2026-09-09).
 - **Live-verified in browser:** console, STOP, KPIs, roster, SSE transcript,
   full simulated hunt end-to-end (simulate mode; infra down).
 - **Docs:** `docs/UI_GUIDE.md` added; `REDESIGN_GAP_ANALYSIS.md` supersedes the

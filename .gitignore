@@ -25,6 +25,7 @@ out/
 *.dll
 *.so
 *.dylib
+.gradle/
 
 # Logs
 *.log
@@ -50,6 +51,12 @@ memory/embeddings/*
 !memory/embeddings/.gitkeep
 memory/sessions/*
 !memory/sessions/.gitkeep
+memory/evolution/elite/*
+!memory/evolution/elite/.gitkeep
+memory/evolution/failures/*
+!memory/evolution/failures/.gitkeep
+memory/evolution/population/*
+!memory/evolution/population/.gitkeep
 
 # Logs
 logs/sessions/*

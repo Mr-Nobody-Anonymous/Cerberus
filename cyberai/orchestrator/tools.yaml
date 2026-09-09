@@ -6,6 +6,7 @@ tools:
   pentagi:
     type: security_agent
     adapter: adapters.pentagi
+    description: Autonomous pentesting agent by vxcontrol — REST/GraphQL API with MCP support for research, analysis, exploitation, and reporting.
     capabilities:
       - research
       - analysis
@@ -20,6 +21,7 @@ tools:
   strix:
     type: security_agent
     adapter: adapters.strix
+    description: Security assessment agent by usestrix — server API for assessment and vulnerability scanning.
     capabilities:
       - assessment
       - vulnerability_scanning
@@ -32,6 +34,7 @@ tools:
   hexstrike:
     type: tool_gateway
     adapter: adapters.hexstrike
+    description: MCP tool gateway by 0x4m4 — 150+ offensive security tools exposed via Flask REST and MCP.
     capabilities:
       - tool_execution
       - mcp_servers
@@ -45,6 +48,7 @@ tools:
   mcpstrike:
     type: tool_gateway
     adapter: adapters.mcpstrike
+    description: Ollama-driven MCP gateway by ente0 — FastAPI server exposing tool execution via MCP.
     capabilities:
       - tool_execution
       - mcp_servers
@@ -57,6 +61,7 @@ tools:
   darkmoon:
     type: security_agent
     adapter: adapters.darkmoon
+    description: Autonomous pentesting agent by ASCIT31 — MCP server for research, analysis, and exploitation.
     capabilities:
       - research
       - analysis
@@ -70,6 +75,7 @@ tools:
   cai:
     type: security_agent
     adapter: adapters.cai
+    description: Cybersecurity AI framework by aliasrobotics — Python library and agent framework for research and analysis.
     capabilities:
       - research
       - analysis
@@ -83,6 +89,7 @@ tools:
   pentestgpt:
     type: security_agent
     adapter: adapters.pentestgpt
+    description: GPT-empowered penetration testing tool — CLI for research and attack planning.
     capabilities:
       - research
       - planning
@@ -95,6 +102,7 @@ tools:
   pentestagent:
     type: security_agent
     adapter: adapters.pentestagent
+    description: LiteLLM-based autonomous pentest agent — CLI with MCP integration for research, analysis, and exploitation.
     capabilities:
       - research
       - analysis
@@ -108,6 +116,7 @@ tools:
   cyberstrikeai:
     type: security_agent
     adapter: adapters.cyberstrikeai
+    description: Go-based security agent — Gin REST API with MCP servers for tool execution and analysis.
     capabilities:
       - tool_execution
       - mcp_servers
@@ -121,6 +130,7 @@ tools:
   autopentest:
     type: security_agent
     adapter: adapters.autopentest
+    description: LangChain-powered automated pentest researcher — CLI for research and planning.
     capabilities:
       - research
       - planning
@@ -133,6 +143,7 @@ tools:
   penclaw:
     type: analysis_tool
     adapter: adapters.penclaw
+    description: Security analysis tool — CLI for static analysis, dynamic scanning, and secret detection.
     capabilities:
       - static_analysis
       - dynamic_scanning
@@ -146,6 +157,7 @@ tools:
   luan1aoagent:
     type: security_agent
     adapter: adapters.luan1aoagent
+    description: Cognitive security agent — CLI/web interface for research, analysis, and planning.
     capabilities:
       - research
       - analysis
@@ -159,6 +171,7 @@ tools:
   aracne:
     type: security_agent
     adapter: adapters.aracne
+    description: SSH-driven automated pentesting agent — CLI for research and exploitation over SSH.
     capabilities:
       - research
       - exploitation
@@ -172,6 +185,7 @@ tools:
   guardian_cli:
     type: security_agent
     adapter: adapters.guardian-cli
+    description: CLI pentesting assistant — research, analysis, and reporting from the terminal.
     capabilities:
       - research
       - analysis
@@ -185,6 +199,7 @@ tools:
   drakben:
     type: security_agent
     adapter: adapters.drakben
+    description: Autonomous pentesting agent — async CLI for research, analysis, and exploitation.
     capabilities:
       - research
       - analysis
@@ -198,6 +213,7 @@ tools:
   kali_pentest:
     type: skill_definitions
     adapter: adapters.kali-pentest
+    description: Kali Linux pentesting methodology guides — searchable tool guidance and technique documentation.
     capabilities:
       - tool_guidance
       - methodology
@@ -210,6 +226,7 @@ tools:
   h4cker:
     type: knowledge_base
     adapter: adapters.h4cker
+    description: h4cker security knowledge base — reference material, training resources, and lab exercises.
     capabilities:
       - reference
       - training

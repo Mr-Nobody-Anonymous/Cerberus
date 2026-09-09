@@ -108,7 +108,7 @@ def cli(ctx, as_json, quiet, verbose):
               help="Run in simulation mode with deterministic mock results (no Docker/Ollama/API needed)")
 @click.option("--scope", default="authorized_lab", help="Task scope boundary")
 @click.pass_context
-def task(ctx, objective, target, dry_run, simulate, scope):
+def task(ctx, objective, target_id, dry_run, simulate, scope):
     """Run an autonomous assessment.
 
     The orchestrator determines what to do, which agent/tool/model to use,
@@ -119,7 +119,7 @@ def task(ctx, objective, target, dry_run, simulate, scope):
       cyber-ai task -o "Analyze my authorized lab target" --dry-run
       cyber-ai task -o "Analyze my authorized lab target" --simulate
     """
-    asyncio.run(_run_task(objective, target, dry_run, simulate, scope))
+    asyncio.run(_run_task(objective, target_id, dry_run, simulate, scope))
 
 
 @cli.command()

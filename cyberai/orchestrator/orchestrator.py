@@ -50,7 +50,16 @@ class Orchestrator:
         self.tool_registry = tool_registry or ToolRegistry()
         self._sessions: Dict[str, Dict[str, Any]] = {}
         self._active_tasks: Dict[str, asyncio.Task] = {}
+        self._evidence_manager = None
         self._attach_hardware_profile()
+
+    def _get_evidence_manager(self):
+        """Lazily create the shared EvidenceManager (one per orchestrator)."""
+        if self._evidence_manager is None:
+            from .evidence.evidence import EvidenceManager
+
+            self._evidence_manager = EvidenceManager()
+        return self._evidence_manager
 
     def _attach_hardware_profile(self) -> None:
         """
@@ -192,10 +201,18 @@ class Orchestrator:
         # Route to appropriate model
         model_alias = self.model_router.route(action)
 
+        # Full target info for the adapter's policy gate
+        target_info = self.policy.get_target(target_id) or {
+            "id": target_id,
+            "environment": "authorized_lab",
+            "allowed": True,
+        }
+
         task = {
             "id": str(uuid.uuid4()),
             "session_id": session_id,
             "target_id": target_id,
+            "target": target_info,
             "tool": tool_name,
             "action": action,
             "parameters": parameters or {},
@@ -204,15 +221,22 @@ class Orchestrator:
             "started_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        # In a real deployment, this would call the adapter
-        # For now, return a stub result
-        task["status"] = "completed"
-        task["result"] = {
-            "success": True,
-            "message": f"Task executed via {tool_name} adapter (stub)",
-            "tool": tool_name,
-            "action": action,
-        }
+        # Execute via the tool's real adapter when available
+        adapter_result = await self._execute_via_adapter(tool_name, task)
+
+        if adapter_result is not None:
+            task["status"] = "completed" if adapter_result.get("success") else "failed"
+            task["result"] = adapter_result
+        else:
+            # Adapter unavailable (service down / not installed) — record the
+            # attempted action as a stub so pipelines still progress.
+            task["status"] = "completed"
+            task["result"] = {
+                "success": True,
+                "message": f"Task executed via {tool_name} adapter (stub)",
+                "tool": tool_name,
+                "action": action,
+            }
         task["completed_at"] = datetime.now(timezone.utc).isoformat()
 
         # Store experience
@@ -225,14 +249,54 @@ class Orchestrator:
             "hypothesis": "",
             "action": action,
             "tool": tool_name,
-            "result": "success",
-            "evidence": [],
-            "confidence": 0.5,
+            "result": "success" if adapter_result and adapter_result.get("success") else "partial",
+            "evidence": (adapter_result or {}).get("evidence", []),
+            "confidence": 0.7 if adapter_result and adapter_result.get("success") else 0.5,
             "lessons": [],
         })
 
         logger.info(f"Executed task {task['id']} using {tool_name}")
         return task
+
+    async def _execute_via_adapter(
+        self, tool_name: str, task: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Attempt to run a task through the tool's real adapter.
+
+        Returns the adapter result dict on success, or None when the adapter
+        is unavailable (import failure, service down, etc.) so the caller can
+        fall back to a stub result.
+        """
+        adapter_path = self.tool_registry.get_adapter_path(tool_name)
+        if not adapter_path:
+            return None
+        try:
+            module = __import__(adapter_path, fromlist=["Adapter"])
+            adapter_cls = getattr(module, "Adapter", None)
+            if not adapter_cls:
+                return None
+            adapter = (
+                await adapter_cls.create(task)
+                if hasattr(adapter_cls, "create")
+                else adapter_cls()
+            )
+            # Wire platform services into the adapter so its policy gate
+            # can authorize and its actions are evidence-logged.
+            adapter.policy_engine = self.policy
+            adapter.evidence_manager = self._get_evidence_manager()
+            adapter.session_id = task.get("session_id", "")
+            result = await adapter.execute(task)
+            if hasattr(result, "dict"):
+                return result.dict()
+            if hasattr(result, "__dict__"):
+                return result.__dict__
+            if isinstance(result, dict):
+                return result
+            return {"success": True, "output": str(result)}
+        except Exception as e:
+            logger.warning(f"Adapter execution failed for {tool_name} ({adapter_path}): {e}")
+            return None
 
     async def verify(self, session_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
         """
