@@ -48,6 +48,21 @@ export function TopBar() {
 
       <div style={{ flex: 1 }} />
 
+      {/* Right panel toggle */}
+      <button
+        onClick={() => dispatch({ type: "TOGGLE_RIGHT" })}
+        title={state.rightPanelCollapsed ? "Show Live Activity panel (Ctrl+J)" : "Minimize Live Activity panel (Ctrl+J)"}
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 26, height: 26, borderRadius: "var(--cb-radius-sm)",
+          border: `1px solid ${state.rightPanelCollapsed ? "var(--cb-cyan)55" : "var(--cb-border)"}`,
+          background: state.rightPanelCollapsed ? "var(--cb-bg3)" : "transparent",
+          color: state.rightPanelCollapsed ? "var(--cb-cyan)" : "var(--cb-text-dim)",
+          fontSize: 12, cursor: "pointer",
+        }}>
+        {state.rightPanelCollapsed ? "▣" : "◫"}
+      </button>
+
       {/* Status pills */}
       <Pill tone="ok" title="Local-only mode: all operations stay on this machine">
         LOCAL-ONLY

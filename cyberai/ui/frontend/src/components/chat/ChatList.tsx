@@ -1,8 +1,9 @@
 /**
- * Chat sidebar — conversation list with search, new chat, delete.
+ * Chat sidebar — conversation list with full-text search (titles AND
+ * message content), new chat, delete.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { chatsApi } from "@/lib/api";
 import type { ChatSummary } from "@/lib/api";
 import { useFetch, useToast } from "@/hooks";
@@ -13,10 +14,17 @@ export function ChatList() {
   const { state, dispatch } = useApp();
   const toast = useToast();
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [creating, setCreating] = useState(false);
 
+  // Debounce the search box so typing doesn't fire a request per keystroke.
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQ(q), 220);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
   const { data, refresh } = useFetch(
-    () => chatsApi.list(q), [q]);
+    () => chatsApi.list(debouncedQ), [debouncedQ]);
 
   const newChat = async () => {
     setCreating(true);
@@ -50,7 +58,8 @@ export function ChatList() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search conversations…"
+          placeholder="Search conversations & messages…"
+          title="Searches chat titles and message content"
           style={{ flex: 1, fontSize: 12 }}
         />
         <button onClick={newChat} disabled={creating}
@@ -63,11 +72,21 @@ export function ChatList() {
           + New
         </button>
       </div>
+      {debouncedQ && (
+        <div className="faint" style={{ fontSize: 10.5, padding: "0 12px 4px" }}>
+          {chats.length} conversation{chats.length === 1 ? "" : "s"} matching
+          “{debouncedQ}” (titles + messages)
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: "auto", padding: "4px 6px" }}>
         {chats.length === 0 && (
           <div className="faint" style={{ padding: "18px 10px", fontSize: 12,
                                           textAlign: "center" }}>
-            No conversations yet.<br />Start one to talk to CERBERUS.
+            {debouncedQ ? (
+              <>No matches for “{debouncedQ}”.<br />Try a different word.</>
+            ) : (
+              <>No conversations yet.<br />Start one to talk to CERBERUS.</>
+            )}
           </div>
         )}
         {chats.map((c: ChatSummary) => {
@@ -90,10 +109,21 @@ export function ChatList() {
                 }}>
                   {c.title || "Untitled"}
                 </div>
-                <div className="faint" style={{ fontSize: 10.5 }}>
-                  {c.message_count} msg{c.message_count === 1 ? "" : "s"}
-                  {c.mode ? ` · ${c.mode}` : ""}
-                </div>
+                {c.snippet ? (
+                  <div className="faint" style={{
+                    fontSize: 10.5, marginTop: 2,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    color: "var(--cb-cyan)",
+                  }}>
+                    {c.snippet_role === "user" ? "you: " : ""}
+                    {c.snippet}
+                  </div>
+                ) : (
+                  <div className="faint" style={{ fontSize: 10.5 }}>
+                    {c.message_count} msg{c.message_count === 1 ? "" : "s"}
+                    {c.mode ? ` · ${c.mode}` : ""}
+                  </div>
+                )}
               </div>
               <IconButton title="Delete" danger
                           onClick={() => {

@@ -60,21 +60,49 @@ def _touch(mm, session_id: str, meta: Dict[str, Any],
 # --------------------------------------------------------------------- list
 @router.get("")
 async def list_chats(q: str = "", limit: int = 100):
-    """All chat-kind sessions, newest first."""
+    """All chat-kind sessions, newest first.
+
+    ``q`` matches the chat title OR any message content — so users can
+    find a conversation by what they actually said in it, not just by
+    its name. When a message matches, a ``snippet`` (context around the
+    match) is attached to the chat summary.
+    """
     from cyberai.orchestrator import MemoryManager
     mm = MemoryManager()
+    store = _chat_store()
     try:
         rows = mm.list_sessions()
     finally:
         mm.close()
+
+    # Message-content matches: session_id -> newest matching message.
+    content_matches: Dict[str, Dict[str, Any]] = {}
+    if q:
+        for msg in store.search_messages(q, limit=200):
+            sid = msg.get("session_id")
+            if sid and sid not in content_matches:
+                content_matches[sid] = msg
+
     chats = []
     for s in rows:
         meta = parse_session_meta(s)
         if meta.get("kind", "mission") != "chat":
             continue
-        if q and q.lower() not in session_title(s, meta).lower():
+        title = session_title(s, meta)
+        msg = content_matches.get(s.get("id"))
+        if q and not msg and q.lower() not in title.lower():
             continue
-        chats.append(_chat_summary(s))
+        summary = _chat_summary(s)
+        if msg:
+            content = str(msg.get("content") or "")
+            ql = q.lower()
+            pos = content.lower().find(ql)
+            start = max(0, pos - 40)
+            snippet = content[start:pos + len(q) + 60].replace("\n", " ")
+            summary["snippet"] = ("…" if start > 0 else "") + snippet + "…"
+            summary["snippet_role"] = msg.get("role")
+        chats.append(summary)
+    store.close()
     return {"chats": chats[:limit], "total": len(chats)}
 
 

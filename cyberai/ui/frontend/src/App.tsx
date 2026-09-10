@@ -62,22 +62,23 @@ function AppShell() {
         <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
           <ActivityBar />
           <Split
-            key={state.sidebarCollapsed ? "sb-collapsed" : "sb-open"}
             first={sidebar}
             second={
               <Split
-                key={state.rightPanelCollapsed ? "rp-collapsed" : "rp-open"}
                 orientation="vertical"
-                initial={state.rightPanelCollapsed ? 0 : 260}
-                min={0}
-                max={420}
+                reverse
+                collapsed={state.rightPanelCollapsed}
+                initial={300}
+                min={180}
+                max={560}
                 first={<MainView />}
                 second={<RightPanel />}
                 onCollapse={() => dispatch({ type: "TOGGLE_RIGHT" })}
               />
             }
-            initial={state.sidebarCollapsed ? 0 : 250}
-            min={0}
+            collapsed={state.sidebarCollapsed}
+            initial={250}
+            min={180}
             max={420}
             onCollapse={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
           />

@@ -82,6 +82,25 @@ class ChatStore:
             (session_id, limit)).fetchall()
         return [self._decode(r) for r in rows]
 
+    def search_messages(self, query: str, limit: int = 50
+                        ) -> List[Dict[str, Any]]:
+        """Case-insensitive substring search across ALL chat messages.
+
+        Returns the newest-matching messages first, each with the
+        session_id so callers can group by conversation.
+        """
+        if not query:
+            return []
+        like = f"%{query}%"
+        rows = self._conn.execute(
+            """
+            SELECT * FROM chat_messages
+            WHERE LOWER(content) LIKE LOWER(?)
+            ORDER BY created_at DESC LIMIT ?
+            """,
+            (like, limit)).fetchall()
+        return [self._decode(r) for r in rows]
+
     def delete_messages(self, session_id: str) -> None:
         with self._conn:
             self._conn.execute(

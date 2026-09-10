@@ -46,6 +46,9 @@ export interface ChatSummary {
   message_count: number;
   created_at: string;
   updated_at?: string;
+  /** Message-content match snippet (present when search matched a message). */
+  snippet?: string;
+  snippet_role?: string;
 }
 
 export interface ChatMessage {
