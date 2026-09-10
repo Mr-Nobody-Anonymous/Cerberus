@@ -1,94 +1,69 @@
-# ============================================================
-# CERBERUS — Authorized Lab Targets
-# ============================================================
-# Only targets listed here with allowed: true can be actively tested.
-# All other targets are refused by the policy engine.
-#
-# Schema:
-#   id:              Unique target identifier
-#   environment:     Must be 'authorized_lab'
-#   allowed:         Must be true for active testing
-#   host:            IP or hostname
-#   port:            Service port
-#   protocol:        http, https, tcp, udp
-#   description:     Human-readable description
-#   allowed_actions: Explicit array of permitted actions
-#                    (recon, scan, analysis, exploitation, verification)
-#   metadata:        Optional key-value pairs
-
 targets:
-  # --- OWASP Juice Shop (Docker container on localhost) ---
-  - id: juice-shop
-    environment: authorized_lab
-    allowed: true
-    host: 127.0.0.1
-    port: 8080
-    protocol: http
-    description: OWASP Juice Shop — intentionally vulnerable web application
-    allowed_actions:
-      - recon
-      - scan
-      - analysis
-      - exploitation
-      - verification
-    metadata:
-      docker_image: bkimminich/juice-shop
-      docker_port: "3000:8080"
-      category: web_application
-      difficulty: medium
-
-  # --- DVWA (Damn Vulnerable Web Application) ---
-  - id: dvwa
-    environment: authorized_lab
-    allowed: true
-    host: 127.0.0.1
-    port: 8081
-    protocol: http
-    description: Damn Vulnerable Web Application — PHP/MySQL vulnerable app
-    allowed_actions:
-      - recon
-      - scan
-      - analysis
-      - exploitation
-      - verification
-    metadata:
-      docker_image: vulnerables/web-dvwa
-      docker_port: "80:8081"
-      category: web_application
-      difficulty: easy
-
-  # --- Metasploitable 2 (VM target) ---
-  - id: metasploitable2
-    environment: authorized_lab
-    allowed: true
-    host: 192.168.56.101
-    port: 22
-    protocol: tcp
-    description: Metasploitable 2 — intentionally vulnerable Linux VM
-    allowed_actions:
-      - recon
-      - scan
-      - analysis
-      - exploitation
-      - verification
-    metadata:
-      vm_image: metasploitable2
-      category: linux_vm
-      difficulty: easy
-
-  # --- Local web lab (generic authorized target) ---
-  - id: lab-web-01
-    environment: authorized_lab
-    allowed: true
-    host: 127.0.0.1
-    port: 8080
-    protocol: http
-    description: Local authorized web application lab target
-    allowed_actions:
-      - recon
-      - scan
-      - analysis
-      - verification
-    metadata:
-      category: web_application
-      difficulty: easy
+- allowed: true
+  allowed_actions:
+  - recon
+  - scan
+  - analysis
+  - exploitation
+  - verification
+  description: "OWASP Juice Shop \u2014 intentionally vulnerable web application"
+  environment: authorized_lab
+  host: 127.0.0.1
+  id: juice-shop
+  metadata:
+    category: web_application
+    difficulty: medium
+    docker_image: bkimminich/juice-shop
+    docker_port: 3000:8080
+  port: 8080
+  protocol: http
+- allowed: true
+  allowed_actions:
+  - recon
+  - scan
+  - analysis
+  - exploitation
+  - verification
+  description: "Damn Vulnerable Web Application \u2014 PHP/MySQL vulnerable app"
+  environment: authorized_lab
+  host: 127.0.0.1
+  id: dvwa
+  metadata:
+    category: web_application
+    difficulty: easy
+    docker_image: vulnerables/web-dvwa
+    docker_port: 80:8081
+  port: 8081
+  protocol: http
+- allowed: true
+  allowed_actions:
+  - recon
+  - scan
+  - analysis
+  - exploitation
+  - verification
+  description: "Metasploitable 2 \u2014 intentionally vulnerable Linux VM"
+  environment: authorized_lab
+  host: 192.168.56.101
+  id: metasploitable2
+  metadata:
+    category: linux_vm
+    difficulty: easy
+    vm_image: metasploitable2
+  port: 22
+  protocol: tcp
+- allowed: true
+  allowed_actions:
+  - recon
+  - scan
+  - analysis
+  - verification
+  description: Local authorized web application lab target
+  environment: authorized_lab
+  host: 127.0.0.1
+  id: lab-web-01
+  metadata:
+    category: web_application
+    difficulty: easy
+  port: 8080
+  protocol: http
