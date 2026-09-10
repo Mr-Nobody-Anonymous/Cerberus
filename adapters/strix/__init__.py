@@ -1,204 +1,134 @@
 """
-Adapter for Strix (strix).
+Adapter for Strix (strix) — REAL adapter.
 
-Integrates with the Security assessment agent via Server API (Docker).
-Preserves all original code; this file is a thin wrapper.
+Extends SandboxedAdapter: policy gate + sandboxed CLI execution +
+evidence logging.
+
+Strix is an autonomous pentest agent with a CLI entry point at
+``strix/interface/main.py`` (``python -m strix.interface.main``). Real
+scans require Docker (for the sandbox image) and a configured LLM, so
+this adapter health-checks those prerequisites and reports precise,
+actionable statuses. The ``--help`` probe validates the CLI is
+importable; a real scan passes the target through to the CLI.
 """
 
 import asyncio
 import logging
-import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from cyberai.orchestrator.adapters.base import (
     AdapterCapability,
     AdapterResult,
-    SecurityToolAdapter,
+    SandboxedAdapter,
 )
+from cyberai.security.sandbox import run_subprocess
 
 logger = logging.getLogger(__name__)
 
-
-# Original project metadata preserved
 ORIGINAL_NAME = "Strix"
-ORIGINAL_REPOSITORY = "https://github.com/usestrix/strix"
-LICENSE = "Apache 2.0"
-
 _ADAPTER_DIR = Path(__file__).resolve().parent
-API_URL_ENV = "STRIX_API_URL"
-API_TOKEN_ENV = "STRIX_API_TOKEN"
-DOCKER_AVAILABLE = True
-MCP_AVAILABLE = False
-LOCAL_LLM = True
+STRIX_PACKAGE_DIR = _ADAPTER_DIR / "strix"
 
 
-class Adapter(SecurityToolAdapter):
-    """Thin adapter that wraps Strix for the Cyber AI Orchestrator."""
+class Adapter(SandboxedAdapter):
+    """Real adapter that runs the Strix CLI in the sandbox."""
 
     name = "strix"
-    version = "0.1.0"
-    description = "Security assessment agent"
+    version = "0.2.0"
+    description = "Autonomous pentest agent via CLI (real adapter)"
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config=None):
         super().__init__(config)
-        self._api_url = os.environ.get(API_URL_ENV, "http://localhost:8080")
-        self._api_token = os.environ.get(API_TOKEN_ENV, "")
+        self._python = sys.executable or shutil.which("python")
 
-    async def health_check(self) -> Dict[str, Any]:
-        """Check if the Strix service or CLI is available."""
-        # Check Docker availability if Docker is used
-        if DOCKER_AVAILABLE:
-            docker_ok = shutil.which("docker") is not None
-            if not docker_ok:
-                return {
-                    "status": "WARN",
-                    "message": "Docker not installed - Strix requires Docker",
-                    "details": {"docker_available": False},
-                }
+    # ------------------------------------------------------------- health
+    async def health_check(self):
+        if not self._python:
+            return {"status": "UNAVAILABLE", "message": "Python not found",
+                    "details": {}}
+        if not (STRIX_PACKAGE_DIR / "interface" / "main.py").exists():
+            return {"status": "UNAVAILABLE",
+                    "message": "strix/interface/main.py not found",
+                    "details": {"dir": str(STRIX_PACKAGE_DIR)}}
+        docker = shutil.which("docker")
+        if not docker:
+            return {"status": "WARN",
+                    "message": "Strix CLI present but Docker not installed "
+                               "(real scans need the strix sandbox image)",
+                    "details": {"docker": False}}
+        return {"status": "AVAILABLE",
+                "message": "Strix CLI present, Docker available",
+                "details": {"python": self._python, "docker": docker}}
 
-        # Check if API port is listening (for services with APIs)
-        if self._api_url:
-            try:
-                port = 8080
-                if port > 0:
-                    import socket
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(2)
-                    try:
-                        s.connect(("127.0.0.1", port))
-                        s.close()
-                        return {
-                            "status": "OK",
-                            "message": "Service is running",
-                            "details": {"url": self._api_url},
-                            }
-                    except (ConnectionRefusedError, socket.timeout):
-                        return {
-                            "status": "WARN",
-                            "message": "Service not running (port not listening)",
-                            "details": {"url": self._api_url, "docker_available": DOCKER_AVAILABLE},
-                        }
-            except Exception as e:
-                return {"status": "WARN", "message": str(e), "details": {}}
+    async def capabilities(self):
+        return [
+            AdapterCapability("recon", "Recon via Strix agent"),
+            AdapterCapability("scan", "Vulnerability scan via Strix agent"),
+            AdapterCapability("analysis", "Analyze findings via Strix agent"),
+            AdapterCapability("exploitation", "Exploit via Strix agent (authorized lab only)"),
+        ]
 
-        # Check if CLI tool is available
-        cli_name = "strix"
-        # Try common CLI entry points
-        for candidate in ["Strix", "strix", "python"]:
-            path = shutil.which(candidate)
-            if path:
-                return {
-                    "status": "OK",
-                    "message": f"CLI tool available at {path}",
-                    "details": {"cli": candidate, "path": path},
-                }
-
-        # Check if source code is present
-        if _ADAPTER_DIR.exists():
-            return {
-                "status": "WARN",
-                "message": "Source code present but service/CLI not started",
-                "details": {"source_dir": str(_ADAPTER_DIR), "integration": "Server API (Docker)"},
-            }
-
-        return {
-            "status": "ERROR",
-            "message": "Strix not found",
-            "details": {},
-        }
-
-    async def capabilities(self) -> List[AdapterCapability]:
-        """Return the list of capabilities this adapter provides."""
-        caps = []
-        # Capabilities derived from the tool registry
-        registry_caps = ['assessment', 'vulnerability_scanning']
-        for cap in registry_caps:
-            caps.append(AdapterCapability(
-                name=cap,
-                description=f"Capability: {cap} via Strix",
-            ))
-        return caps
-
-    async def execute(self, task: Dict[str, Any]) -> AdapterResult:
-        """
-        Execute a task using Strix.
-
-        Args:
-            task: Task spec with action, target, parameters
-
-        Returns:
-            AdapterResult with success/failure and output
-        """
+    # ----------------------------------------------------------- execution
+    async def _do_execute(self, task):
         action = task.get("action", "unknown")
         target = task.get("target", {})
-        parameters = task.get("parameters", {})
+        host = target.get("host") or target.get("id", "")
+        params = task.get("parameters", {})
+        if not host:
+            return AdapterResult(False, error="No target host specified",
+                                 metadata={"tool": self.name, "action": action})
 
-        # Check if the tool is actually available
         health = await self.health_check()
-        if health["status"] == "ERROR":
-            return AdapterResult(
-                success=False,
-                error=f"Tool not available: {health['message']}",
-            )
+        if health["status"] == "UNAVAILABLE":
+            return AdapterResult(False, error=health["message"],
+                                 metadata={"tool": self.name, "action": action,
+                                           "target_host": host})
 
-        # Delegate to the appropriate method based on integration type
-        if DOCKER_AVAILABLE and shutil.which("docker"):
-            # Could start Docker container and execute
-            output = await self._execute_via_docker(action, target, parameters, health)
-        elif self._api_url and health["status"] == "OK":
-            output = await self._execute_via_api(action, target, parameters, health)
+        # Real invocation: the Strix CLI. `--help` validates importability
+        # and prints usage; a real scan passes the target through.
+        cmd = [self._python, "-m", "strix.interface.main"]
+        if action in ("scan", "recon", "exploitation", "analysis"):
+            cmd.extend(["--target", host])
         else:
-            # Source code present but service not running
-            output = await self._execute_stub(action, target, parameters, health)
+            cmd.append("--help")
 
+        exec_result = await asyncio.to_thread(
+            run_subprocess, cmd,
+            timeout=params.get("timeout", 120),
+            network_allowed=self._net_allowed(target),
+            cwd=str(_ADAPTER_DIR))
+        findings, evidence = self._normalize(host, action, exec_result)
         return AdapterResult(
-            success=bool(output.get("success", False)),
-            output=output.get("output", ""),
-            error=output.get("error"),
-            evidence=output.get("evidence", []),
-            metadata={
-                "tool": self.name,
-                "original": ORIGINAL_NAME,
-                "action": action,
-            },
-        )
+            exec_result.success, output=exec_result.stdout,
+            error=exec_result.error, evidence=evidence,
+            metadata={"tool": self.name, "original": ORIGINAL_NAME,
+                      "action": action, "target_host": host,
+                      "command": cmd, "returncode": exec_result.returncode,
+                      "timed_out": exec_result.timed_out, "findings": findings})
 
-    async def _execute_via_docker(self, action, target, parameters, health):
-        """Execute via Docker container."""
-        return {
-            "success": False,
-            "output": "",
-            "error": "Strix Docker execution requires Docker daemon (not available)",
-        }
+    async def collect_results(self):
+        return AdapterResult(True, metadata={"tool": self.name})
 
-    async def _execute_via_api(self, action, target, parameters, health):
-        """Execute via HTTP API."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"API call to {self._api_url} for action '{action}' - not implemented",
-        }
+    async def shutdown(self):
+        logger.info("Shutting down %s adapter", self.name)
 
-    async def _execute_stub(self, action, target, parameters, health):
-        """Return a stub result when the tool is not executable."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"Strix source present but service not started. "
-                     f"Status: {health['status']}. "
-                     f"Integration: Server API (Docker). "
-                     f"See INTEGRATION.md for instructions.",
-        }
+    # ------------------------------------------------------------- helpers
+    def _net_allowed(self, target):
+        return any(a in target.get("allowed_actions", [])
+                   for a in ("exploitation", "verification", "scan", "recon"))
 
-    async def collect_results(self) -> AdapterResult:
-        """Collect results from a previously executed task."""
-        return AdapterResult(
-            success=True,
-            output="No async results to collect (stub implementation)",
-        )
-
-    async def shutdown(self) -> None:
-        """Clean up any resources used by the adapter."""
-        logger.info(f"Shutting down {self.name} adapter")
+    def _normalize(self, host, action, r):
+        evidence = {"type": "tool_response", "tool": self.name,
+                    "target_host": host, "action": action,
+                    "stdout": r.stdout[:2000], "stderr": r.stderr[:1000],
+                    "returncode": r.returncode, "timed_out": r.timed_out}
+        if r.success:
+            findings = [{"description": f"Strix {action} ok vs {host}",
+                         "confidence": 0.6, "source": self.name}]
+        else:
+            findings = [{"description": f"Strix {action} failed vs {host}",
+                         "confidence": 0.0, "source": self.name}]
+        return findings, evidence

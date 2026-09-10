@@ -1,204 +1,163 @@
 """
-Adapter for CyberStrikeAI (cyberstrikeai).
+Adapter for CyberStrikeAI (cyberstrikeai) — REAL adapter.
 
-Integrates with the Security agent with MCP tools via Gin REST API + MCP.
-Preserves all original code; this file is a thin wrapper.
+Extends SandboxedAdapter: policy gate + real HTTP invocation + evidence.
+
+CyberStrikeAI is a Go-based security agent exposing a Gin REST
+API on port 8080 with MCP servers for tool execution.
+This adapter POSTs requests to that API when the service is
+up, and reports a precise WARN when it is not.
 """
 
 import asyncio
 import logging
 import os
-import shutil
+import socket
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib import request as urlrequest
+from urllib.error import URLError
 
 from cyberai.orchestrator.adapters.base import (
     AdapterCapability,
     AdapterResult,
-    SecurityToolAdapter,
+    SandboxedAdapter,
 )
 
 logger = logging.getLogger(__name__)
 
-
-# Original project metadata preserved
 ORIGINAL_NAME = "CyberStrikeAI"
-ORIGINAL_REPOSITORY = "https://github.com/Ed1s0nZ/CyberStrikeAI"
-LICENSE = "See LICENSE"
-
 _ADAPTER_DIR = Path(__file__).resolve().parent
 API_URL_ENV = "CYBERSTRIKEAI_API_URL"
 API_TOKEN_ENV = "CYBERSTRIKEAI_API_TOKEN"
-DOCKER_AVAILABLE = False
-MCP_AVAILABLE = True
-LOCAL_LLM = True
+DEFAULT_API_URL = "http://localhost:8080"
+DEFAULT_PORT = 8080
+HTTP_TIMEOUT_SECONDS = 30
 
 
-class Adapter(SecurityToolAdapter):
-    """Thin adapter that wraps CyberStrikeAI for the Cyber AI Orchestrator."""
+class Adapter(SandboxedAdapter):
+    """Real adapter that drives CyberStrikeAI over HTTP."""
 
     name = "cyberstrikeai"
-    version = "0.1.0"
-    description = "Security agent with MCP tools"
+    version = "0.2.0"
+    description = "Go-based security agent via Gin REST (real adapter)"
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__(config)
-        self._api_url = os.environ.get("CYBERSTRIKEAI_API_URL", "http://localhost:8080")
-        self._api_token = os.environ.get("CYBERSTRIKEAI_API_TOKEN", "")
+        self._api_url = os.environ.get(API_URL_ENV, DEFAULT_API_URL).rstrip("/")
+        self._api_token = os.environ.get(API_TOKEN_ENV, "")
 
+    # ------------------------------------------------------------- health
     async def health_check(self) -> Dict[str, Any]:
-        """Check if the CyberStrikeAI service or CLI is available."""
-        # Check Docker availability if Docker is used
-        if DOCKER_AVAILABLE:
-            docker_ok = shutil.which("docker") is not None
-            if not docker_ok:
-                return {
-                    "status": "WARN",
-                    "message": "Docker not installed - CyberStrikeAI requires Docker",
-                    "details": {"docker_available": False},
-                }
-
-        # Check if API port is listening (for services with APIs)
-        if self._api_url:
-            try:
-                port = 8080
-                if port > 0:
-                    import socket
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(2)
-                    try:
-                        s.connect(("127.0.0.1", port))
-                        s.close()
-                        return {
-                            "status": "OK",
-                            "message": "Service is running",
-                            "details": {"url": self._api_url},
-                            }
-                    except (ConnectionRefusedError, socket.timeout):
-                        return {
-                            "status": "WARN",
-                            "message": "Service not running (port not listening)",
-                            "details": {"url": self._api_url, "docker_available": DOCKER_AVAILABLE},
-                        }
-            except Exception as e:
-                return {"status": "WARN", "message": str(e), "details": {}}
-
-        # Check if CLI tool is available
-        cli_name = "cyberstrikeai"
-        # Try common CLI entry points
-        for candidate in ["CyberStrikeAI", "cyberstrikeai", "python"]:
-            path = shutil.which(candidate)
-            if path:
-                return {
-                    "status": "OK",
-                    "message": f"CLI tool available at {path}",
-                    "details": {"cli": candidate, "path": path},
-                }
-
-        # Check if source code is present
-        if _ADAPTER_DIR.exists():
+        port = self._port_from_url()
+        listening = await asyncio.to_thread(self._port_listening, port)
+        if listening:
             return {
-                "status": "WARN",
-                "message": "Source code present but service/CLI not started",
-                "details": {"source_dir": str(_ADAPTER_DIR), "integration": "Gin REST API + MCP"},
+                "status": "AVAILABLE",
+                "message": "CyberStrikeAI API reachable at {self._api_url}",
+                "details": {"url": self._api_url, "port": port},
             }
-
         return {
-            "status": "ERROR",
-            "message": "CyberStrikeAI not found",
-            "details": {},
+            "status": "WARN",
+            "message": "CyberStrikeAI service not running (port not listening). Build and run the Go server from adapters/cyberstrikeai (see INTEGRATION.md)",
+            "details": {
+                "url": self._api_url,
+                "port": port,
+                "source_present": _ADAPTER_DIR.exists(),
+                "integration": "Gin REST + MCP",
+            },
         }
 
     async def capabilities(self) -> List[AdapterCapability]:
-        """Return the list of capabilities this adapter provides."""
-        caps = []
-        # Capabilities derived from the tool registry
-        registry_caps = ['tool_execution', 'mcp_servers', 'analysis']
-        for cap in registry_caps:
-            caps.append(AdapterCapability(
-                name=cap,
-                description=f"Capability: {cap} via CyberStrikeAI",
-            ))
-        return caps
+        return [
+            AdapterCapability("tool_execution", "Execute security tools via CyberStrikeAI"),
+            AdapterCapability("mcp_servers", "Drive CyberStrikeAI MCP servers"),
+            AdapterCapability("analysis", "Analyze target findings"),
+        ]
 
-    async def execute(self, task: Dict[str, Any]) -> AdapterResult:
-        """
-        Execute a task using CyberStrikeAI.
-
-        Args:
-            task: Task spec with action, target, parameters
-
-        Returns:
-            AdapterResult with success/failure and output
-        """
+    # ----------------------------------------------------------- execution
+    async def _do_execute(self, task: Dict[str, Any]) -> AdapterResult:
         action = task.get("action", "unknown")
         target = task.get("target", {})
-        parameters = task.get("parameters", {})
-
-        # Check if the tool is actually available
-        health = await self.health_check()
-        if health["status"] == "ERROR":
+        host = target.get("host") or target.get("id", "")
+        params = task.get("parameters", {})
+        if not host:
             return AdapterResult(
-                success=False,
-                error=f"Tool not available: {health['message']}",
+                False, error="No target host specified",
+                metadata={"tool": self.name, "action": action})
+
+        health = await self.health_check()
+        if health["status"] != "AVAILABLE":
+            return AdapterResult(
+                False,
+                error=f"CyberStrikeAI service unavailable: {health['message']}",
+                metadata={"tool": self.name, "original": ORIGINAL_NAME,
+                          "action": action, "target_host": host,
+                          "health": health["status"]},
             )
 
-        # Delegate to the appropriate method based on integration type
-        if DOCKER_AVAILABLE and shutil.which("docker"):
-            # Could start Docker container and execute
-            output = await self._execute_via_docker(action, target, parameters, health)
-        elif self._api_url and health["status"] == "OK":
-            output = await self._execute_via_api(action, target, parameters, health)
-        else:
-            # Source code present but service not running
-            output = await self._execute_stub(action, target, parameters, health)
+        payload = {"action": action, "target": host, "parameters": params}
+        status, body = await asyncio.to_thread(
+            self._http_post_json, f"{self._api_url}/api/v1/execute", payload)
 
+        findings = [{
+            "description": f"CyberStrikeAI {action} on {host}: HTTP {status}",
+            "confidence": 0.6 if status == 200 else 0.0,
+            "source": self.name,
+        }]
+        evidence = [{
+            "type": "api_response", "tool": self.name,
+            "target_host": host, "action": action,
+            "http_status": status, "body": str(body)[:2000],
+        }]
         return AdapterResult(
-            success=bool(output.get("success", False)),
-            output=output.get("output", ""),
-            error=output.get("error"),
-            evidence=output.get("evidence", []),
-            metadata={
-                "tool": self.name,
-                "original": ORIGINAL_NAME,
-                "action": action,
-            },
+            status == 200,
+            output=body if isinstance(body, str) else str(body),
+            error=None if status == 200 else f"HTTP {status}",
+            evidence=evidence,
+            metadata={"tool": self.name, "original": ORIGINAL_NAME,
+                      "action": action, "target_host": host,
+                      "http_status": status, "findings": findings},
         )
-
-    async def _execute_via_docker(self, action, target, parameters, health):
-        """Execute via Docker container."""
-        return {
-            "success": False,
-            "output": "",
-            "error": "CyberStrikeAI Docker execution requires Docker daemon (not available)",
-        }
-
-    async def _execute_via_api(self, action, target, parameters, health):
-        """Execute via HTTP API."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"API call to {self._api_url} for action '{action}' - not implemented",
-        }
-
-    async def _execute_stub(self, action, target, parameters, health):
-        """Return a stub result when the tool is not executable."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"CyberStrikeAI source present but service not started. "
-                     f"Status: {health['status']}. "
-                     f"Integration: Gin REST API + MCP. "
-                     f"See INTEGRATION.md for instructions.",
-        }
 
     async def collect_results(self) -> AdapterResult:
-        """Collect results from a previously executed task."""
         return AdapterResult(
-            success=True,
-            output="No async results to collect (stub implementation)",
-        )
+            True, metadata={"tool": self.name,
+                            "note": "CyberStrikeAI results are synchronous in this adapter"})
 
     async def shutdown(self) -> None:
-        """Clean up any resources used by the adapter."""
-        logger.info(f"Shutting down {self.name} adapter")
+        logger.info("Shutting down %s adapter", self.name)
+
+    # ------------------------------------------------------------- helpers
+    def _port_from_url(self) -> int:
+        try:
+            from urllib.parse import urlparse
+            return urlparse(self._api_url).port or DEFAULT_PORT
+        except ValueError:
+            return DEFAULT_PORT
+
+    @staticmethod
+    def _port_listening(port: int) -> bool:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(2)
+                return s.connect_ex(("127.0.0.1", port)) == 0
+        except OSError:
+            return False
+
+    def _http_post_json(self, url: str, payload: Dict[str, Any]):
+        """POST JSON via urllib (no external deps). Returns (status, body)."""
+        import json
+
+        data = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if self._api_token:
+            headers["Authorization"] = f"Bearer {self._api_token}"
+        req = urlrequest.Request(url, data=data, headers=headers, method="POST")
+        try:
+            with urlrequest.urlopen(req, timeout=HTTP_TIMEOUT_SECONDS) as resp:
+                return resp.status, resp.read().decode("utf-8", errors="replace")
+        except URLError as exc:
+            return 0, f"connection failed: {exc}"
+        except OSError as exc:
+            return 0, f"request failed: {exc}"

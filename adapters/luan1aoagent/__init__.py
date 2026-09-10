@@ -1,204 +1,123 @@
 """
-Adapter for LuaN1aoAgent (luan1aoagent).
+Adapter for LuaN1aoAgent (luan1aoagent) — REAL adapter.
 
-Integrates with the Cognitive security agent via CLI/Web (Node.js).
-Preserves all original code; this file is a thin wrapper.
+Extends SandboxedAdapter: policy gate + sandboxed CLI execution +
+evidence logging.
+
+LuaN1aoAgent is a cognitive security agent (Node.js/TypeScript,
+src/cli.ts) with a CLI/web interface. This adapter runs the
+built CLI in the sandbox; if the TypeScript has not been
+compiled it reports exactly that.
 """
 
 import asyncio
 import logging
-import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from cyberai.orchestrator.adapters.base import (
     AdapterCapability,
     AdapterResult,
-    SecurityToolAdapter,
+    SandboxedAdapter,
 )
+from cyberai.security.sandbox import run_subprocess
 
 logger = logging.getLogger(__name__)
 
-
-# Original project metadata preserved
 ORIGINAL_NAME = "LuaN1aoAgent"
-ORIGINAL_REPOSITORY = "https://github.com/SanMuzZzZz/LuaN1aoAgent"
-LICENSE = "AGPL v3"
-
 _ADAPTER_DIR = Path(__file__).resolve().parent
-API_URL_ENV = "LUAN1AO_API_URL"
-API_TOKEN_ENV = ""
-DOCKER_AVAILABLE = True
-MCP_AVAILABLE = False
-LOCAL_LLM = True
+LUAN_ENTRY = _ADAPTER_DIR / "dist" / "cli.js"
 
 
-class Adapter(SecurityToolAdapter):
-    """Thin adapter that wraps LuaN1aoAgent for the Cyber AI Orchestrator."""
+class Adapter(SandboxedAdapter):
+    """Real adapter that runs the LuaN1aoAgent CLI in the sandbox."""
 
     name = "luan1aoagent"
-    version = "0.1.0"
-    description = "Cognitive security agent"
+    version = "0.2.0"
+    description = "Cognitive security agent via Node CLI (real adapter)"
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config=None):
         super().__init__(config)
-        self._api_url = os.environ.get(API_URL_ENV, "http://localhost:3000") if API_URL_ENV else "http://localhost:3000"
-        self._api_token = os.environ.get(API_TOKEN_ENV, "") if API_TOKEN_ENV else ""
+        self._python = sys.executable or shutil.which("python")
 
-    async def health_check(self) -> Dict[str, Any]:
-        """Check if the LuaN1aoAgent service or CLI is available."""
-        # Check Docker availability if Docker is used
-        if DOCKER_AVAILABLE:
-            docker_ok = shutil.which("docker") is not None
-            if not docker_ok:
-                return {
-                    "status": "WARN",
-                    "message": "Docker not installed - LuaN1aoAgent requires Docker",
-                    "details": {"docker_available": False},
-                }
+    # ------------------------------------------------------------- health
+    async def health_check(self):
+        node = shutil.which("node")
+        if not node:
+            return {"status": "UNAVAILABLE", "message": "Node.js not found",
+                    "details": {}}
+        if not LUAN_ENTRY.exists():
+            return {"status": "WARN",
+                    "message": "dist/cli.js not built. "
+                               "Run: cd adapters/luan1aoagent && npm install && npm run build",
+                    "details": {"entry": str(LUAN_ENTRY), "node": node}}
+        return {"status": "AVAILABLE",
+                "message": "LuaN1aoAgent entry point present",
+                "details": {"python": self._python,
+                            "entry": str(LUAN_ENTRY)}}
 
-        # Check if API port is listening (for services with APIs)
-        if self._api_url:
-            try:
-                port = 3000
-                if port > 0:
-                    import socket
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(2)
-                    try:
-                        s.connect(("127.0.0.1", port))
-                        s.close()
-                        return {
-                            "status": "OK",
-                            "message": "Service is running",
-                            "details": {"url": self._api_url},
-                            }
-                    except (ConnectionRefusedError, socket.timeout):
-                        return {
-                            "status": "WARN",
-                            "message": "Service not running (port not listening)",
-                            "details": {"url": self._api_url, "docker_available": DOCKER_AVAILABLE},
-                        }
-            except Exception as e:
-                return {"status": "WARN", "message": str(e), "details": {}}
+    async def capabilities(self):
+        return [
+            AdapterCapability("research", "Research via LuaN1aoAgent"),
+            AdapterCapability("analysis", "Analyze via LuaN1aoAgent"),
+            AdapterCapability("planning", "Plan via LuaN1aoAgent"),
+        ]
 
-        # Check if CLI tool is available
-        cli_name = "luan1aoagent"
-        # Try common CLI entry points
-        for candidate in ["LuaN1aoAgent", "luan1aoagent", "python"]:
-            path = shutil.which(candidate)
-            if path:
-                return {
-                    "status": "OK",
-                    "message": f"CLI tool available at {path}",
-                    "details": {"cli": candidate, "path": path},
-                }
-
-        # Check if source code is present
-        if _ADAPTER_DIR.exists():
-            return {
-                "status": "WARN",
-                "message": "Source code present but service/CLI not started",
-                "details": {"source_dir": str(_ADAPTER_DIR), "integration": "CLI/Web (Node.js)"},
-            }
-
-        return {
-            "status": "ERROR",
-            "message": "LuaN1aoAgent not found",
-            "details": {},
-        }
-
-    async def capabilities(self) -> List[AdapterCapability]:
-        """Return the list of capabilities this adapter provides."""
-        caps = []
-        # Capabilities derived from the tool registry
-        registry_caps = ['research', 'analysis', 'planning']
-        for cap in registry_caps:
-            caps.append(AdapterCapability(
-                name=cap,
-                description=f"Capability: {cap} via LuaN1aoAgent",
-            ))
-        return caps
-
-    async def execute(self, task: Dict[str, Any]) -> AdapterResult:
-        """
-        Execute a task using LuaN1aoAgent.
-
-        Args:
-            task: Task spec with action, target, parameters
-
-        Returns:
-            AdapterResult with success/failure and output
-        """
+    # ----------------------------------------------------------- execution
+    async def _do_execute(self, task):
         action = task.get("action", "unknown")
         target = task.get("target", {})
-        parameters = task.get("parameters", {})
+        host = target.get("host") or target.get("id", "")
+        params = task.get("parameters", {})
+        if not host:
+            return AdapterResult(False, error="No target host specified",
+                                 metadata={"tool": self.name, "action": action})
 
-        # Check if the tool is actually available
         health = await self.health_check()
-        if health["status"] == "ERROR":
-            return AdapterResult(
-                success=False,
-                error=f"Tool not available: {health['message']}",
-            )
+        if health["status"] != "AVAILABLE":
+            return AdapterResult(False, error=health["message"],
+                                 metadata={"tool": self.name, "action": action,
+                                           "target_host": host,
+                                           "health": health["status"]})
 
-        # Delegate to the appropriate method based on integration type
-        if DOCKER_AVAILABLE and shutil.which("docker"):
-            # Could start Docker container and execute
-            output = await self._execute_via_docker(action, target, parameters, health)
-        elif self._api_url and health["status"] == "OK":
-            output = await self._execute_via_api(action, target, parameters, health)
+        node = shutil.which("node")
+        cmd = [node, str(LUAN_ENTRY), "--target", host]
+        exec_result = await asyncio.to_thread(
+            run_subprocess, cmd,
+            timeout=params.get("timeout", 120),
+            network_allowed=self._net_allowed(target),
+            cwd=str(_ADAPTER_DIR))
+        findings, evidence = self._normalize(host, action, exec_result)
+        return AdapterResult(
+            exec_result.success, output=exec_result.stdout,
+            error=exec_result.error, evidence=evidence,
+            metadata={"tool": self.name, "original": ORIGINAL_NAME,
+                      "action": action, "target_host": host,
+                      "command": cmd, "returncode": exec_result.returncode,
+                      "timed_out": exec_result.timed_out, "findings": findings})
+
+    async def collect_results(self):
+        return AdapterResult(True, metadata={"tool": self.name})
+
+    async def shutdown(self):
+        logger.info("Shutting down %s adapter", self.name)
+
+    # ------------------------------------------------------------- helpers
+    def _net_allowed(self, target):
+        return any(a in target.get("allowed_actions", [])
+                   for a in ("exploitation", "verification", "scan", "recon"))
+
+    def _normalize(self, host, action, r):
+        evidence = {"type": "tool_response", "tool": self.name,
+                    "target_host": host, "action": action,
+                    "stdout": r.stdout[:2000], "stderr": r.stderr[:1000],
+                    "returncode": r.returncode, "timed_out": r.timed_out}
+        if r.success:
+            findings = [{"description": f"LuaN1aoAgent {action} ok vs {host}",
+                         "confidence": 0.6, "source": self.name}]
         else:
-            # Source code present but service not running
-            output = await self._execute_stub(action, target, parameters, health)
-
-        return AdapterResult(
-            success=bool(output.get("success", False)),
-            output=output.get("output", ""),
-            error=output.get("error"),
-            evidence=output.get("evidence", []),
-            metadata={
-                "tool": self.name,
-                "original": ORIGINAL_NAME,
-                "action": action,
-            },
-        )
-
-    async def _execute_via_docker(self, action, target, parameters, health):
-        """Execute via Docker container."""
-        return {
-            "success": False,
-            "output": "",
-            "error": "LuaN1aoAgent Docker execution requires Docker daemon (not available)",
-        }
-
-    async def _execute_via_api(self, action, target, parameters, health):
-        """Execute via HTTP API."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"API call to {self._api_url} for action '{action}' - not implemented",
-        }
-
-    async def _execute_stub(self, action, target, parameters, health):
-        """Return a stub result when the tool is not executable."""
-        return {
-            "success": False,
-            "output": "",
-            "error": f"LuaN1aoAgent source present but service not started. "
-                     f"Status: {health['status']}. "
-                     f"Integration: CLI/Web (Node.js). "
-                     f"See INTEGRATION.md for instructions.",
-        }
-
-    async def collect_results(self) -> AdapterResult:
-        """Collect results from a previously executed task."""
-        return AdapterResult(
-            success=True,
-            output="No async results to collect (stub implementation)",
-        )
-
-    async def shutdown(self) -> None:
-        """Clean up any resources used by the adapter."""
-        logger.info(f"Shutting down {self.name} adapter")
+            findings = [{"description": f"LuaN1aoAgent {action} failed vs {host}",
+                         "confidence": 0.0, "source": self.name}]
+        return findings, evidence
