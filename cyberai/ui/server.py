@@ -1574,6 +1574,17 @@ def create_app():
         out = [ev.to_dict() for ev in store.history(limit=limit, since=since)]
         return {"events": out, "stats": store.stats()}
 
+    # ------------------------------------------------ /api/v1 (spec §2)
+    # New versioned surface for the redesigned frontend. Every router wraps
+    # the same backend subsystems as the legacy /api routes above.
+    try:
+        from cyberai.ui.api import ALL_ROUTERS
+        for _router in ALL_ROUTERS:
+            app.include_router(_router)
+        logger.info("mounted %d /api/v1 routers", len(ALL_ROUTERS))
+    except Exception as e:  # noqa: BLE001
+        logger.warning("could not mount /api/v1 routers: %s", e)
+
     return app
 
 

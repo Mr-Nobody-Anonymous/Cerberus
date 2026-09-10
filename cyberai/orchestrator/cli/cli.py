@@ -45,9 +45,13 @@ def _get_workspace_root() -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Output modes (spec §14) — --json / --quiet / --verbose
+# Output modes (spec §14) — --json / --yaml / --table / --quiet / --verbose
+#                   / --debug / --no-color
 # ---------------------------------------------------------------------------
-_OUTPUT_MODE: Dict[str, bool] = {"json": False, "quiet": False, "verbose": False}
+_OUTPUT_MODE: Dict[str, bool] = {
+    "json": False, "yaml": False, "table": False, "quiet": False,
+    "verbose": False, "debug": False, "no_color": False,
+}
 
 
 def _emit_json(payload: Any) -> None:
@@ -76,22 +80,41 @@ def _emit_info(msg: str) -> None:
 @click.version_option("2.0.0")
 @click.option("--json", "as_json", is_flag=True, default=False,
               help="Output machine-readable JSON (spec §14 output mode).")
+@click.option("--yaml", "as_yaml", is_flag=True, default=False,
+              help="Output machine-readable YAML (spec §14 output mode).")
+@click.option("--table", "as_table", is_flag=True, default=False,
+              help="Force tabular output for list-like results.")
 @click.option("--quiet", is_flag=True, default=False,
               help="Suppress human output (only errors).")
 @click.option("--verbose", is_flag=True, default=False,
               help="Show extra detail (durations, paths, diagnostics).")
+@click.option("--debug", is_flag=True, default=False,
+              help="Show tracebacks and internal diagnostics.")
+@click.option("--no-color", "no_color", is_flag=True, default=False,
+              help="Disable ANSI colors (also honored via NO_COLOR env var).")
 @click.pass_context
-def cli(ctx, as_json, quiet, verbose):
+def cli(ctx, as_json, as_yaml, as_table, quiet, verbose, debug, no_color):
     """Cyber AI — integrated local AI security research orchestrator."""
     # Global output modes (spec §14). Stored on a module-level dict so
     # subcommands and helpers can read them without threading Context.
     _OUTPUT_MODE["json"] = as_json
+    _OUTPUT_MODE["yaml"] = as_yaml
+    _OUTPUT_MODE["table"] = as_table
     _OUTPUT_MODE["quiet"] = quiet or as_json  # JSON mode implies no human noise
     _OUTPUT_MODE["verbose"] = verbose
+    _OUTPUT_MODE["debug"] = debug
+    _OUTPUT_MODE["no_color"] = no_color or bool(os.environ.get("NO_COLOR"))
+    if _OUTPUT_MODE["no_color"]:
+        # Rich/click honor NO_COLOR; also strip click's own styling.
+        os.environ["NO_COLOR"] = "1"
     ctx.ensure_object(dict)
     ctx.obj["json"] = as_json
+    ctx.obj["yaml"] = as_yaml
+    ctx.obj["table"] = as_table
     ctx.obj["quiet"] = quiet
     ctx.obj["verbose"] = verbose
+    ctx.obj["debug"] = debug
+    ctx.obj["no_color"] = no_color
 
 
 # ---------------------------------------------------------------------------
@@ -588,8 +611,13 @@ def profile():
 def doctor():
     """Run comprehensive health checks."""
     from cyberai.orchestrator.cli.doctor import run_health_check
-    for component, status_val, msg in run_health_check():
-        icon = {"ok": "[OK]", "warn": "[WARN]", "error": "[ERROR]", "info": "[INFO]"}
+    results = run_health_check()
+    if _OUTPUT_MODE["json"]:
+        _emit_json([{"component": c, "status": s, "message": m}
+                    for c, s, m in results])
+        return
+    icon = {"ok": "[OK]", "warn": "[WARN]", "error": "[ERROR]", "info": "[INFO]"}
+    for component, status_val, msg in results:
         click.echo(f"  {icon.get(status_val, '[?]')} {component}: {msg}")
 
 
@@ -1393,331 +1421,36 @@ def mem_stats():
 
 
 # ---------------------------------------------------------------------------
-# interactive — streaming REPL with /-commands (spec §22)
+# interactive — themed operator shell (spec §22)
 # ---------------------------------------------------------------------------
 @cli.command()
 @click.option("--simulate", is_flag=True, default=False,
               help="Default all launched tasks to simulation mode")
-def interactive(simulate):
-    """Interactive streaming REPL with /-commands.
+@click.option("--verbose", is_flag=True, default=False,
+              help="Show extra detail in command results")
+@click.pass_context
+def interactive(ctx, simulate, verbose):
+    """Interactive operator shell — themed REPL with the shared command bus.
 
-    A Claude-Code-style operator console: launch tasks, watch live events,
-    query memory, and inspect platform state without leaving the shell.
+    A Claude-Code-style console: Rich tables, tab completion, persistent
+    history (~/.cerberus/cli_history), background tasks, and the full
+    slash-command catalog (/targets /findings /status …) dispatched through
+    the SAME command bus as the web UI chat and the REST API.
 
-    Slash commands:
-      /help                 show this list
-      /status               platform status (JSON)
-      /agents               list agent roster
-      /targets              list authorized targets
-      /models               list model registry
-      /tools                list registered tools
-      /sessions [N]         recent sessions (default 10)
-      /findings [N]         recent findings (default 10)
-      /memory <query>       semantic memory search
-      /task <objective>     launch a task (uses --simulate default)
-      /stop                 stop the running task
+    Local controls:
+      /help                 command catalog (from the shared registry)
+      /clear                clear the screen
+      /stop                 stop the running background task
       /result               show the last task's result
       /watch                live-tail events until Ctrl+C
-      /clear                clear the screen
-      /quit                 exit the REPL
+      /quit                 exit the shell
 
     Anything that is not a slash command is treated as a task objective.
+    See docs/CLI_GUIDE.md and docs/COMMANDS.md.
     """
-    banner = r"""
-   ___ _____ ___ ___ _  _ ___ _  _ ___
-  / __|_   _| __| _ ) \| | __| \| | __|
- | (__  | | | _|| _ ) .` | _|| .` | _|
-  \___| |_| |___|___|_|\_|___|_|\_|___|
-  AI Security IDE — interactive console
-"""
-    click.secho(banner, fg="green", bold=True)
-    click.echo(f"  mode: {'SIMULATE (no live traffic)' if simulate else 'LIVE'}")
-    click.echo("  type /help for commands, /quit to exit\n")
-
-    _repl_loop(simulate)
-
-
-def _repl_loop(simulate_default: bool) -> None:
-    """The main REPL read-eval-print loop."""
-    import shlex
-
-    while True:
-        try:
-            # BUG-9 fix: the "❯" glyph crashes with UnicodeEncodeError on
-            # legacy Windows code pages (cp1252). Probe the console encoding
-            # once and degrade the prompt to ASCII when it can't cope.
-            if not hasattr(_repl_loop, "_ascii_prompt"):
-                try:
-                    "❯".encode(sys.stdout.encoding or "utf-8")
-                    _repl_loop._ascii_prompt = False
-                except (UnicodeEncodeError, LookupError):
-                    _repl_loop._ascii_prompt = True
-            if _repl_loop._ascii_prompt:
-                click.secho("cerberus", fg="green", nl=False)
-                click.secho(" > ", fg="cyan", nl=False)
-            else:
-                click.secho("cerberus", fg="green", nl=False)
-                click.secho(" ❯ ", fg="cyan", nl=False)
-            line = input("").strip()
-        except (EOFError, KeyboardInterrupt):
-            click.echo("\nbye.")
-            return
-
-        if not line:
-            continue
-
-        try:
-            parts = shlex.split(line)
-        except ValueError as e:
-            click.secho(f"  parse error: {e}", fg="red")
-            continue
-
-        cmd, args = parts[0].lower(), parts[1:]
-
-        try:
-            if cmd in ("/quit", "/exit", "exit", "quit"):
-                click.echo("bye.")
-                return
-            elif cmd == "/clear":
-                click.clear()
-            elif cmd == "/help":
-                _repl_help()
-            elif cmd == "/status":
-                _repl_status()
-            elif cmd == "/agents":
-                _repl_agents()
-            elif cmd == "/targets":
-                _repl_targets()
-            elif cmd == "/models":
-                _repl_models()
-            elif cmd == "/tools":
-                _repl_tools()
-            elif cmd == "/sessions":
-                _repl_sessions(int(args[0]) if args else 10)
-            elif cmd == "/findings":
-                _repl_findings(int(args[0]) if args else 10)
-            elif cmd == "/memory":
-                if not args:
-                    click.secho("  usage: /memory <query>", fg="yellow")
-                else:
-                    _repl_memory(" ".join(args))
-            elif cmd == "/task":
-                if not args:
-                    click.secho("  usage: /task <objective>", fg="yellow")
-                else:
-                    _repl_task(" ".join(args), simulate_default)
-            elif cmd == "/stop":
-                _repl_stop()
-            elif cmd == "/result":
-                _repl_result()
-            elif cmd == "/watch":
-                _repl_watch()
-            else:
-                # Non-slash input = treat as a task objective
-                _repl_task(line, simulate_default)
-        except SystemExit:
-            # click subcommands sometimes raise SystemExit; keep the REPL alive
-            pass
-        except Exception as e:  # noqa: BLE001 — REPL must never die
-            click.secho(f"  error: {e}", fg="red")
-
-
-def _repl_help() -> None:
-    click.echo("  /help                 show this list")
-    click.echo("  /status               platform status (JSON)")
-    click.echo("  /agents               list agent roster")
-    click.echo("  /targets              list authorized targets")
-    click.echo("  /models               list model registry")
-    click.echo("  /tools                list registered tools")
-    click.echo("  /sessions [N]         recent sessions (default 10)")
-    click.echo("  /findings [N]         recent findings (default 10)")
-    click.echo("  /memory <query>       semantic memory search")
-    click.echo("  /task <objective>     launch a task")
-    click.echo("  /stop                 stop the running task")
-    click.echo("  /result               show the last task's result")
-    click.echo("  /watch                live-tail events until Ctrl+C")
-    click.echo("  /clear                clear the screen")
-    click.echo("  /quit                 exit the REPL")
-    click.echo("  <anything else>       treated as a task objective")
-
-
-def _repl_status() -> None:
-    from cyberai import CyberAIOrchestrator
-    orch = CyberAIOrchestrator()
-    try:
-        click.echo(json.dumps(orch.get_status(), indent=2, default=str))
-    finally:
-        orch.close()
-
-
-def _repl_agents() -> None:
-    for name, desc in [
-        ("planner", "Mission planning"),
-        ("researcher", "Threat intelligence"),
-        ("recon", "Network discovery"),
-        ("analyst", "Pattern analysis"),
-        ("coder", "Exploit / PoC code"),
-        ("verifier", "Evidence validation"),
-        ("reporter", "Report generation"),
-    ]:
-        click.echo(f"  {name:12s} {desc}")
-
-
-def _repl_targets() -> None:
-    from cyberai.orchestrator import PolicyEngine
-    pe = PolicyEngine()
-    for t in pe.list_targets():
-        state = t.get("state", "?")
-        color = {"ACTIVE": "green", "UNAUTHORIZED": "red", "OFFLINE": "yellow"}.get(state, "white")
-        click.echo(f"  {t.get('id', '?'):20s} {t.get('host', '?'):22s} "
-                   + click.style(state, fg=color))
-
-
-def _repl_models() -> None:
-    from cyberai.llm_gateway import LLMGateway
-    gw = LLMGateway()
-    for m in gw.list_registry():
-        click.echo(f"  {m.get('alias', '?'):20s} provider={m.get('provider', '?'):10s} "
-                   f"model={m.get('model', '?')}")
-
-
-def _repl_tools() -> None:
-    reg = ToolRegistry()
-    for name, t in reg.to_dict()["tools"].items():
-        click.echo(f"  {name:20s} type={t['type']:10s} status={t['status']}")
-
-
-def _repl_sessions(limit: int) -> None:
-    mm = MemoryManager()
-    try:
-        for s in mm.list_sessions()[:limit]:
-            click.echo(f"  {s['id'][:8]}  {s.get('status', '?'):10s} "
-                       f"target={s.get('target_id', '?'):16s} {str(s.get('objective', ''))[:60]}")
-    finally:
-        mm.close()
-
-
-def _repl_findings(limit: int) -> None:
-    mm = MemoryManager()
-    try:
-        for f in mm.get_findings()[:limit]:
-            click.echo(f"  [{f.get('status', ''):8s}] conf={f.get('confidence', 0):.2f} "
-                       f"{str(f.get('observation', ''))[:80]}")
-    finally:
-        mm.close()
-
-
-def _repl_memory(query: str) -> None:
-    from cyberai.memory.memory_store import MemoryStore
-    ms = MemoryStore()
-    results = ms.semantic_search(query, limit=8)
-    if not results:
-        click.echo("  no matching memories.")
-        return
-    for r in results:
-        click.echo(f"  [{r.get('similarity', 0):.2f}] ({r['memory_type']}) {r['content'][:80]}")
-
-
-# ---------------------------------------------------------------------------
-# REPL task runner — tasks run in a background thread so /stop stays reachable.
-# The handle holds the live orchestrator while a task is in flight.
-# ---------------------------------------------------------------------------
-_REPL_TASK_HANDLE: Dict[str, Any] = {
-    "orchestrator": None,   # live CyberAIOrchestrator while a task runs
-    "thread": None,         # worker thread
-    "result": None,         # last task result dict
-    "error": None,          # last task error string
-}
-
-
-def _repl_echo(msg: str, fg: str = "white") -> None:
-    """REPL-safe echo: degrades non-encodable glyphs (▶ ■ ⚠ …) on legacy
-    Windows code pages (cp1252) instead of crashing with UnicodeEncodeError
-    (BUG-9). Probes the console encoding once, then rewrites the message to
-    ASCII when the code page can't represent it."""
-    if not hasattr(_repl_echo, "_ascii"):
-        try:
-            "▶■⚠⏳⛔✔❯".encode(sys.stdout.encoding or "utf-8")
-            _repl_echo._ascii = False
-        except (UnicodeEncodeError, LookupError):
-            _repl_echo._ascii = True
-    if _repl_echo._ascii:
-        replacements = {"▶": ">", "■": "#", "⚠": "!", "⏳": "~", "⛔": "X",
-                        "✔": "+", "❯": ">", "—": "-", "…": "..."}
-        for k, v in replacements.items():
-            msg = msg.replace(k, v)
-    click.secho(msg, fg=fg)
-
-
-def _repl_task(objective: str, simulate: bool) -> None:
-    _repl_echo(f"  ▶ launching: {objective}", "cyan")
-    if simulate:
-        click.echo("    mode: SIMULATE")
-
-    if _REPL_TASK_HANDLE["thread"] is not None and _REPL_TASK_HANDLE["thread"].is_alive():
-        _repl_echo("  ⚠ a task is already running — /stop it first", "yellow")
-        return
-
-    from cyberai import CyberAIOrchestrator
-
-    def _worker() -> None:
-        orch = CyberAIOrchestrator(simulate=simulate)
-        _REPL_TASK_HANDLE["orchestrator"] = orch
-        _REPL_TASK_HANDLE["result"] = None
-        _REPL_TASK_HANDLE["error"] = None
-        try:
-            _REPL_TASK_HANDLE["result"] = asyncio.run(orch.run(objective))
-        except Exception as e:  # noqa: BLE001 — worker must never crash the REPL
-            _REPL_TASK_HANDLE["error"] = str(e)
-        finally:
-            try:
-                orch.close()
-            except Exception:  # noqa: BLE001
-                pass
-            _REPL_TASK_HANDLE["orchestrator"] = None
-
-    t = threading.Thread(target=_worker, daemon=True, name="cerberus-repl-task")
-    _REPL_TASK_HANDLE["thread"] = t
-    t.start()
-    click.echo("    running in background — /stop to cancel, /status to check")
-
-
-def _repl_stop() -> None:
-    orch = _REPL_TASK_HANDLE.get("orchestrator")
-    if orch is None:
-        # Thread alive but handle not yet set = orchestrator still constructing.
-        if _REPL_TASK_HANDLE["thread"] is not None and _REPL_TASK_HANDLE["thread"].is_alive():
-            _repl_echo("  ⏳ task is starting — /stop again in a moment", "yellow")
-            return
-        _repl_echo("  ■ no running task", "yellow")
-        return
-    try:
-        orch.stop()
-        _repl_echo("  ■ stop signal sent — takes effect at next step boundary", "yellow")
-    except Exception as e:  # noqa: BLE001
-        click.secho(f"  stop failed: {e}", fg="red")
-
-
-def _repl_result() -> None:
-    """Show the last background task's result (or error / running state)."""
-    if _REPL_TASK_HANDLE["thread"] is not None and _REPL_TASK_HANDLE["thread"].is_alive():
-        _repl_echo("  ⏳ task still running", "yellow")
-        return
-    if _REPL_TASK_HANDLE.get("error"):
-        _repl_echo(f"  ⛔ task failed: {_REPL_TASK_HANDLE['error']}", "red")
-        return
-    result = _REPL_TASK_HANDLE.get("result")
-    if result is None:
-        click.secho("  no task has been run yet", fg="yellow")
-        return
-    _repl_echo("  ✔ last task result:", "green")
-    click.echo(json.dumps(result, indent=2, default=str))
-
-
-def _repl_watch() -> None:
-    """Inline event tail — reuses the watch command's logic."""
-    ctx = click.get_current_context()
-    ctx.invoke(watch, interval=2.0, max_events=0, source="all")
+    verbose = verbose or bool(ctx.obj and ctx.obj.get("verbose"))
+    from cyberai.orchestrator.cli.shell.interactive import run_console
+    run_console(simulate=simulate, verbose=verbose)
 
 
 if __name__ == "__main__":

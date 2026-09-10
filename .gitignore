@@ -43,6 +43,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Runtime logs (session transcripts, smoke output, debug dumps)
+logs/*
+!logs/.gitkeep
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
 # ============ CYBER AI ORCHESTRATOR ============
 
 # Secrets - NEVER commit

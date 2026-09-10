@@ -54,29 +54,37 @@ With no active task the button reports `no_active_task` (never errors).
 
 ---
 
-## 4. Operator console
+## 4. Operator console & chat
 
-Type into the console box at the bottom of the workspace view and press
-Enter. Commands:
+The chat box (bottom of the workspace view) is the operator console.
+Type a message and press Enter:
+
+- **Slash commands** dispatch through the shared command bus — the same
+  handlers as the CLI shell and `POST /api/v1/commands/execute`
+  (see `docs/COMMANDS.md` for the full catalog of 25 commands).
+- **Natural language** goes to the LLM gateway with the chat history.
+
+Most-used commands:
 
 | Command | Effect |
 |---|---|
-| `help` | list all commands |
-| `status` | platform status |
-| `targets` | authorized lab targets |
-| `tools` | tool registry |
-| `models` | model registry |
-| `agents` | agent roster |
-| `findings` | findings from memory |
-| `evidence` | evidence vault |
-| `memory <query>` | search experience memory |
-| `knowledge <query>` | search knowledge base |
-| `engagements` | authorized engagements |
-| `health` | subsystem health summary |
-| `audit` | recent audit trail |
-| `simulate <objective>` | dispatch a full simulated AI run |
-| `engage <target-id>` | select engagement |
-| `clear` | clear console output |
+| `/help` | list all commands (or `/help findings` for one) |
+| `/status` | platform status snapshot |
+| `/targets` | targets with auth + reachability state |
+| `/targets authorize <id>` / `/targets revoke <id>` | policy-gated authorization |
+| `/findings status=VERIFIED` | filter findings |
+| `/verify <id>` / `/likely <id>` / `/reject <id>` | set finding status |
+| `/run <objective> [target=<id>] [mode=SIMULATE]` | launch a mission |
+| `/stop` | stop the running mission |
+| `/sessions` / `/session <id>` / `/fork <id>` / `/rename <id> title=…` | session management |
+| `/memory <query>` | search experience memory |
+| `/agents` `/tools` `/models` `/routing` | registries |
+| `/security` `/approvals` `/approve <id>` `/deny <id>` | security center |
+| `/health` `/doctor` | health + environment checks |
+
+Authorization is enforced in the bus: a revoked target yields
+`blocked=true, ok=false` on every surface — the UI cannot bypass it
+(locked by `tests/test_security_regressions.py`).
 
 ---
 
@@ -110,17 +118,17 @@ $py = ".\_cerberus-clean-check\Scripts\python.exe"
 # Global output modes (spec §14) — put the flag BEFORE the command:
 & $py -m cyberai.orchestrator.cli --json agents
 & $py -m cyberai.orchestrator.cli --json session list
-& $py -m cyberai.orchestrator.cli --json scorecard
 & $py -m cyberai.orchestrator.cli --quiet findings      # suppress output
 & $py -m cyberai.orchestrator.cli --verbose models      # extra detail
 
-# Interactive REPL with background tasks:
+# Interactive shell (themed REPL, tab completion, persistent history):
 & $py -m cyberai.orchestrator.cli interactive --simulate
-#   /task <objective>   launch in background thread
-#   /stop               cooperative stop of the running task
-#   /result             show last task result JSON
-#   /status /help       …and 40+ more commands
+#   /targets /findings /status …  full shared catalog (docs/COMMANDS.md)
+#   anything non-slash = task objective (background thread)
+#   /stop /result /watch /quit   REPL controls
 ```
+
+See `docs/CLI_GUIDE.md` for the complete shell guide.
 
 ---
 
@@ -134,7 +142,10 @@ $py = ".\_cerberus-clean-check\Scripts\python.exe"
 | `GET /api/scorecard` | flat fields: `total_sessions`, `total_findings`, `verified_findings`, `total_tool_calls`, `success_rate`, `uptime` |
 | `POST /api/tasks` | launch a task `{objective, target_id, simulate, dry_run}` |
 | `POST /api/tasks/stop` | cooperative stop; `{"status": "no_active_task"}` when idle |
-| `POST /api/command` | console — accepts `{"command": …}` or `{"message": …}` |
+| `GET /api/v1/commands` | command catalog (palette + `/help`) |
+| `POST /api/v1/commands/execute` | `{"input": "/status"}` → shared bus envelope |
+| `GET /api/v1/chats`, `POST /api/v1/chats/{id}/messages` | chat sessions; slash content routes through the bus |
+| `GET /api/v1/workspace/tree`, `GET /api/v1/workspace/file` | read-only workspace explorer (approved roots only) |
 | `GET /api/realtime` | SSE stream (envelope `{type, data, ts}` per event) |
 | `GET /api/sessions`, `GET /api/sessions/{id}` | sessions + replay timeline |
 | `GET /api/findings` | findings explorer |
@@ -145,7 +156,9 @@ $py = ".\_cerberus-clean-check\Scripts\python.exe"
 | `GET /api/system-health` | subsystem health |
 
 Regression coverage: `tests/test_ui_api.py` (25 tests) locks the contract
-of every fixed endpoint.
+of every fixed endpoint; `tests/test_security_regressions.py` (21 tests)
+locks the authorization + workspace-path contracts; `tests/test_cli_shell.py`
+(37 tests) locks the CLI shell.
 
 ---
 

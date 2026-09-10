@@ -609,7 +609,9 @@ asyncio.run(main())
 
 ### Using the CLI
 
-The CLI provides 40+ operational commands via `python -m cyberai.orchestrator.cli <command>` (run with no arguments for the full list, or enter the interactive REPL with `python -m cyberai.orchestrator.cli`):
+The CLI provides 40+ operational commands via `python -m cyberai.orchestrator.cli <command>` (run with no arguments for the full list). Global output flags — `--json`, `--yaml`, `--table`, `--quiet`, `--verbose`, `--debug`, `--no-color` — go before the subcommand (spec §14).
+
+The redesigned **interactive shell** (`python -m cyberai.orchestrator.cli interactive`) is a themed REPL with tab completion, persistent history (`~/.cerberus/cli_history`), background tasks, and the full shared slash-command catalog (`/targets`, `/findings`, `/status`, …) — the same command bus as the web UI chat and the REST API. See `docs/CLI_GUIDE.md` and `docs/COMMANDS.md`.
 
 ```bash
 # 1. Health check — full diagnostic suite (exits 0)
@@ -645,6 +647,8 @@ python -m cyberai.orchestrator.cli task lab-web-01 --objective "Find SQL injecti
 # 9. CERBERUS Command Deck Web UI
 python -m cyberai.orchestrator.cli ui
 ```
+
+The Command Deck is a three-pane AI Security IDE (chat sidebar, 14 views, live agent/security rail, Ctrl+K palette) served by the same FastAPI app at `/api/v1/*`. Guide: `docs/UI_GUIDE.md`; architecture: `docs/FRONTEND_ARCHITECTURE.md`.
 
 ### Using the REST API
 
