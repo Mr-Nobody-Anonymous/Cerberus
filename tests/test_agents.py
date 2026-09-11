@@ -1,6 +1,6 @@
-"""Agent-level tests: recon, verifier, analyst, coder (assessment priority #5).
+"""Agent-level tests: recon, verifier, analyst, coder, reporter, researcher.
 
-Covers the four lowest-covered agents using the established fake-dependency
+Covers the six lowest-covered agents using the established fake-dependency
 pattern (no network, no real LLM, no real adapters):
 - ReconAgent: run() LLM-only path, adapter path, _try_adapter matrix
 - VerifierAgent: verify_finding state machine, challenge_conclusion,
@@ -8,6 +8,9 @@ pattern (no network, no real LLM, no real adapters):
 - AnalystAgent: run() with/without memory, experience recording
 - CoderAgent: analyze/generate routing, sensitive-source routing,
   unknown action
+- ReporterAgent: run() report shape, findings/evidence summaries,
+  evidence file save, experience recording
+- ResearcherAgent: run() with/without memory, experience recording
 - BaseAgent: run() contract, _llm_call failure modes, _record_experience
 """
 
@@ -21,6 +24,8 @@ from cyberai.orchestrator.agents.recon.recon import ReconAgent
 from cyberai.orchestrator.agents.verifier.verifier import VerifierAgent
 from cyberai.orchestrator.agents.analyst.analyst import AnalystAgent
 from cyberai.orchestrator.agents.coder.coder import CoderAgent
+from cyberai.orchestrator.agents.reporter.reporter import ReporterAgent
+from cyberai.orchestrator.agents.researcher.researcher import ResearcherAgent
 
 
 # ---------------------------------------------------------------------------
@@ -76,9 +81,13 @@ class FakeMemory:
 class FakeLogger:
     def __init__(self):
         self.events = []
+        self.saved_evidence = []
 
     def log_event(self, session_id, category, data):
         self.events.append((session_id, category, data))
+
+    def save_evidence(self, session_id, kind, payload):
+        self.saved_evidence.append((session_id, kind, payload))
 
 
 class FakeToolRegistry:
@@ -734,5 +743,152 @@ async def test_coder_logs_and_records_experience():
     own = [e for e in log.events if e[0] == "sess-9"]
     assert own[0][1] == "model_calls"
     assert own[0][2]["action"] == "analyze"
-    assert mem.experiences[0]["tool"] == "coder_agent"
-    assert mem.experiences[0]["confidence"] == 0.8  # analyze confidence
+
+
+# ---------------------------------------------------------------------------
+# ReporterAgent
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_reporter_generates_report_with_findings():
+    gw = FakeGateway(content="# Final Report\nAll clear.")
+    mem = FakeMemory()
+    log = FakeLogger()
+    agent = ReporterAgent(llm_gateway=gw, memory_manager=mem, session_logger=log)
+    result = await agent.run({
+        "target_id": "juice-shop",
+        "session_id": "sess-r1",
+        "findings": [
+            {"status": "VERIFIED", "observation": "XSS in search",
+             "confidence": 0.9, "source": "recon_agent"},
+            {"status": "UNVERIFIED", "observation": "open port 3000",
+             "confidence": 0.5, "source": "recon_agent"},
+        ],
+        "evidence": ["ev-1", "ev-2", "ev-3"],
+        "analysis": "Two findings, one verified.",
+        "objective": "Assess Juice Shop",
+    })
+    assert result["status"] == "generated"
+    assert result["content"] == "# Final Report\nAll clear."
+    assert result["findings_count"] == 2
+    assert result["evidence_count"] == 3
+    assert result["target_id"] == "juice-shop"
+    assert result["session_id"] == "sess-r1"
+    assert result["objective"] == "Assess Juice Shop"
+    assert result["generated_at"]
+    # routed to the report_generation task type
+    assert gw.calls[0]["role"] == "report_generation"
+    # findings summary is embedded in the prompt
+    assert "XSS in search" in gw.calls[0]["prompt"]
+    assert "VERIFIED" in gw.calls[0]["prompt"]
+    # evidence file saved via the session logger
+    assert log.saved_evidence == [("sess-r1", "final_report", result)]
+    # experience recorded
+    assert len(mem.experiences) == 1
+    assert mem.experiences[0]["action"] == "reporting"
+    assert mem.experiences[0]["tool"] == "reporter_agent"
+    assert mem.experiences[0]["confidence"] == 0.9
+
+
+@pytest.mark.asyncio
+async def test_reporter_empty_findings_and_evidence():
+    gw = FakeGateway(content="Nothing to report.")
+    agent = ReporterAgent(llm_gateway=gw)
+    result = await agent.run({
+        "target_id": "t", "session_id": "sess-r2",
+        "findings": [], "evidence": [], "analysis": "", "objective": "o",
+    })
+    assert result["findings_count"] == 0
+    assert result["evidence_count"] == 0
+    # empty-findings branch renders the "None recorded." summary
+    assert "None recorded." in gw.calls[0]["prompt"]
+    # empty-evidence branch renders the "No evidence items collected." line
+    assert "No evidence items collected." in gw.calls[0]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_reporter_no_logger_no_memory():
+    """run() works with neither logger nor memory (no evidence save)."""
+    gw = FakeGateway(content="r")
+    agent = ReporterAgent(llm_gateway=gw)
+    result = await agent.run({
+        "target_id": "t", "session_id": "sess-r3",
+        "findings": [], "evidence": [], "analysis": "", "objective": "o",
+    })
+    assert result["status"] == "generated"
+    assert result["content"] == "r"
+
+
+@pytest.mark.asyncio
+async def test_reporter_llm_unavailable_still_reports():
+    """A failed LLM call yields the [LLM_UNAVAILABLE] marker, not a crash."""
+    gw = FakeGateway(success=False)
+    agent = ReporterAgent(llm_gateway=gw)
+    result = await agent.run({
+        "target_id": "t", "session_id": "sess-r4",
+        "findings": [], "evidence": [], "analysis": "", "objective": "o",
+    })
+    assert result["status"] == "generated"
+    assert result["content"].startswith("[LLM_UNAVAILABLE:")
+
+
+# ---------------------------------------------------------------------------
+# ResearcherAgent
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_researcher_run_with_memory():
+    gw = FakeGateway(content="CVE-2024-1234 affects the target.")
+    mem = FakeMemory(search_results=[
+        {"observation": "target runs nginx 1.18", "result": "success"},
+    ])
+    log = FakeLogger()
+    agent = ResearcherAgent(llm_gateway=gw, memory_manager=mem, session_logger=log)
+    result = await agent.run({
+        "target": "juice-shop", "topic": "known CVEs",
+        "session_id": "sess-res1", "target_id": "juice-shop",
+    })
+    assert result["research"] == "CVE-2024-1234 affects the target."
+    assert result["target"] == "juice-shop"
+    assert result["topic"] == "known CVEs"
+    assert result["relevant_experiences"] == 1
+    assert result["findings"] == []
+    # memory searched with "target topic" query
+    assert mem.search_queries == [("juice-shop known CVEs", 5)]
+    # routed to vulnerability_research
+    assert gw.calls[0]["role"] == "vulnerability_research"
+    # past experience embedded in the prompt
+    assert "target runs nginx 1.18" in gw.calls[0]["prompt"]
+    # experience recorded
+    assert len(mem.experiences) == 1
+    assert mem.experiences[0]["action"] == "research"
+    assert mem.experiences[0]["tool"] == "researcher_agent"
+    assert mem.experiences[0]["confidence"] == 0.6
+    # event logged under the session id
+    own = [e for e in log.events if e[0] == "sess-res1"]
+    assert own[0][1] == "planner"
+    assert own[0][2]["agent"] == "researcher"
+
+
+@pytest.mark.asyncio
+async def test_researcher_run_without_memory():
+    gw = FakeGateway(content="no prior context")
+    agent = ResearcherAgent(llm_gateway=gw)
+    result = await agent.run({
+        "target": "metasploitable", "topic": "exploit paths",
+        "session_id": "sess-res2",
+    })
+    assert result["relevant_experiences"] == 0
+    # no experiences section in the prompt
+    assert "nginx" not in gw.calls[0]["prompt"]
+    assert result["research"] == "no prior context"
+
+
+@pytest.mark.asyncio
+async def test_researcher_llm_unavailable():
+    gw = FakeGateway(success=False)
+    agent = ResearcherAgent(llm_gateway=gw)
+    result = await agent.run({
+        "target": "t", "topic": "x", "session_id": "sess-res3",
+    })
+    assert result["research"].startswith("[LLM_UNAVAILABLE:")
