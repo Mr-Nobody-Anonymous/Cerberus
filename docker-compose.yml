@@ -16,15 +16,17 @@
 
 services:
   # LiteLLM Gateway - LLM proxy for all agents
+  # Pinned to the exact version verified against this platform (the vendored
+  # source copy was removed 2026-09-10; the proxy is consumed as a service).
   litellm:
-    image: ghcr.io/berriai/litellm:main
+    image: litellm/litellm:1.97.0
     container_name: cyberai-litellm
     profiles: ["cloud", "local", "gpu", "server"]
     ports:
       - "4000:4000"
     volumes:
-      - ./cyberai/llm-gateway/config:/app/config
-      - ./cyberai/llm-gateway/models:/app/models
+      - ./cyberai/llm_gateway/config:/app/config
+      - ./cyberai/llm_gateway/models:/app/models
     environment:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-test}
       - LITELLM_PORT=4000

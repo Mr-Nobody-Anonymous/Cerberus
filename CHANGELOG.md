@@ -5,6 +5,20 @@ All notable changes to Cerberus are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+- **Vendored LiteLLM source tree** (`cyberai/llm_gateway/litellm/`, 8,184 files / 152 MB) — it was never imported: the gateway talks HTTP to the LiteLLM proxy, which now runs as the pinned Docker image `litellm/litellm:1.97.0` (exact version previously vendored).
+- **Vendored A-Evolve source tree** (`cyberai/evolution/a-evolve/`, 417 files / 6.4 MB) — never imported by the native evolution engine; retained upstream as design reference (see REPOSITORY_MAP.yaml).
+
+### Fixed
+- **Broken kebab-case paths** left over from the `platform/` → `cyberai/` rename: `docker-compose.yml` volume mounts, `.env.example` `LITELLM_CONFIG_PATH`, `scaffold_system.py` gateway-config writes, and `.gitignore` LiteLLM data paths now point at the real `cyberai/llm_gateway/` (snake_case) directory. The compose mounts previously referenced `cyberai/llm-gateway/`, which does not exist — Docker would have mounted empty dirs.
+- **ARCHITECTURE.md** no longer describes `cyberai/tool-gateway/` as an "empty legacy directory" — it hosts the live MCP gateway (loaded via `importlib`).
+
+### Changed
+- **Package build no longer sweeps 5,685 vendored files** into the wheel/sdist (`[tool.setuptools.packages.find]` glob `cyberai*` previously matched the vendored trees).
+- **Coverage config** no longer needs to omit the vendored tree.
+
 ## [2.0.0] - 2026-09-09
 
 ### Added

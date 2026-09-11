@@ -88,9 +88,11 @@ backups/*
 !backups/.gitkeep
 
 # LiteLLM data
-cyberai/llm-gateway/litellm.db
-cyberai/llm-gateway/logs/*
-!cyberai/llm-gateway/logs/.gitkeep
+# (vendored source removed 2026-09-10 — the proxy runs as a pinned Docker
+#  image, see docker-compose.yml; these paths guard the runtime artifacts)
+cyberai/llm_gateway/litellm.db
+cyberai/llm_gateway/logs/*
+!cyberai/llm_gateway/logs/.gitkeep
 
 # Local model data
 infrastructure/ollama/models/

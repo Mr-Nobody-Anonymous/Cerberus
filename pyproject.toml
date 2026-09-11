@@ -75,8 +75,6 @@ asyncio_mode = "auto"
 [tool.coverage.run]
 source = ["cyberai"]
 omit = [
-    # Vendored third-party code — not ours to measure
-    "cyberai/llm_gateway/litellm/*",
     # UI static assets
     "cyberai/ui/static/*",
 ]

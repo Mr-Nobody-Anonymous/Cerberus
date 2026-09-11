@@ -115,7 +115,7 @@ C:\Users\hp\Desktop\Cerberus/
 └── tests/                                # Test suite
 ```
 
-> **Note on path layout:** The pre-Phase-A package was named `platform/`, which shadowed Python's stdlib `platform` module. Phase A renamed it to `cyberai/`. Two empty legacy directories (`cyberai/llm-gateway/`, `cyberai/tool-gateway/`) remain after the kebab→snake rename; they are reserved and not part of the active code.
+> **Note on path layout:** The pre-Phase-A package was named `platform/`, which shadowed Python's stdlib `platform` module. Phase A renamed it to `cyberai/`. One legacy kebab-case directory (`cyberai/tool-gateway/`) remains by design: it hosts the live MCP gateway package, loaded via `importlib` because kebab-case names cannot be imported with standard `import` statements (see `cyberai/orchestrator/cli/_mcp.py`). The former `cyberai/llm-gateway/` directory was removed 2026-09-10; gateway config lives in `cyberai/llm_gateway/` (snake_case).
 
 ---
 
@@ -212,7 +212,7 @@ MCP server discovery and management. `mcp_config.json` is intentionally package-
 
 ### `cyberai/evolution/` — Evolution engine
 
-Population, mutation, selection, elite archive, failure memory. Includes A-Evolve integration at `cyberai/evolution/a-evolve/`.
+Population, mutation, selection, elite archive, failure memory. Self-contained native implementation (design informed by upstream A-Evolve, which is no longer vendored — see REPOSITORY_MAP.yaml).
 
 ### `cyberai/self_improvement/` — 10-stage pipeline
 

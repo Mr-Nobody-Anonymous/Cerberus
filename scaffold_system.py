@@ -82,7 +82,7 @@ EMBEDDINGS_MODEL=nomic-embed-text
 LITELLM_MASTER_KEY=sk-cerberus-local-master-key
 LITELLM_PORT=4000
 LITELLM_HOST=127.0.0.1
-LITELLM_CONFIG_PATH=cyberai/llm-gateway/config/config.yaml
+LITELLM_CONFIG_PATH=cyberai/llm_gateway/config/config.yaml
 
 # ==================== FASTAPI API SERVER ====================
 API_HOST=127.0.0.1
@@ -481,7 +481,7 @@ def create_llm_gateway_config() -> None:
     print("[5/6] Creating LLM gateway configuration...")
 
     # models.yaml — model registry
-    models_path = WORKSPACE_ROOT / "cyberai" / "llm-gateway" / "models" / "models.yaml"
+    models_path = WORKSPACE_ROOT / "cyberai" / "llm_gateway" / "models" / "models.yaml"
     models_path.parent.mkdir(parents=True, exist_ok=True)
     models_content = """# CERBERUS — Model Registry
 # Maps abstract model aliases to concrete provider/model pairs.
@@ -533,7 +533,7 @@ models:
     print(f"  [OK] Created {models_path}")
 
     # config.yaml — LiteLLM proxy config
-    config_path = WORKSPACE_ROOT / "cyberai" / "llm-gateway" / "config" / "config.yaml"
+    config_path = WORKSPACE_ROOT / "cyberai" / "llm_gateway" / "config" / "config.yaml"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_content = """# CERBERUS — LiteLLM Proxy Configuration
 model_list:

@@ -8,8 +8,13 @@ repositories:
   - original_name: litellm
     local_name: litellm
     role: llm_gateway
-    original_repository: preserved
+    original_repository: removed
     integration_method: service
+    note: >-
+      Vendored source copy removed 2026-09-10 (it was never imported —
+      the gateway talks HTTP to the proxy). Consumed as the pinned Docker
+      image litellm/litellm:1.97.0 in docker-compose.yml. Upstream:
+      https://github.com/BerriAI/litellm (MIT).
 
   - original_name: ollama
     local_name: ollama
@@ -132,3 +137,14 @@ repositories:
     role: security_agent
     original_repository: preserved
     integration_method: adapter
+
+  - original_name: a-evolve
+    local_name: a-evolve
+    role: evolution_reference
+    original_repository: removed
+    integration_method: inspiration
+    note: >-
+      Vendored source copy removed 2026-09-10. It was never imported by
+      the native evolution engine (cyberai/evolution/ is self-contained);
+      it served as design reference for the EvolutionEngine. Upstream:
+      https://github.com/A-EVO-Lab/a-evolve (MIT).

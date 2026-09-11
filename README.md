@@ -36,7 +36,7 @@ Unlike traditional security platforms, **CERBERUS thinks and evolves**. Every en
 - **Population Management**: Successful strategies breed; failures are recorded and avoided
 - **Elite Archive**: Best-of-generation strategies persist across sessions
 - **Coevolution**: Red Force counter-evolves alongside Blue, creating an adversarial arms race
-- **A-Evolve Integration**: Universal infrastructure for self-improving agents (`cyberai/evolution/a-evolve/`)
+- **Native Evolution Engine**: Self-contained evolution loop (design informed by [A-Evolve](https://github.com/A-EVO-Lab/a-evolve))
 
 ### 🤖 **Specialized AI Agents**
 Each capability has its own AI specialist coordinated by the Master Orchestrator:
@@ -336,26 +336,11 @@ CERBERUS/
 │   │   ├── selection.py         # Fitness-based selection
 │   │   ├── evaluation.py        # Strategy evaluation (lab/simulation)
 │   │   ├── fitness.py           # Fitness function scoring
-│   │   ├── archive.py           # Elite strategy archive
-│   │   └── a-evolve/            # 📦 A-Evolve: universal self-improving agent infra
-│   │       ├── README.md        # Full A-Evolve documentation
-│   │       ├── DESIGN.md
-│   │       ├── QUICKSTART.md
-│   │       ├── agent_evolve/    # Evolution framework
-│   │       ├── artifacts/       # Evolution artifacts
-│   │       ├── docs/            # Algorithm docs
-│   │       ├── examples/        # Example agents
-│   │       ├── figs/            # Figures
-│   │       ├── seed_workspaces/ # Seed agent workspaces
-│   │       └── tests/           # Test suite
+│   │   └── archive.py           # Elite strategy archive
 │   │
 │   ├── llm_gateway/             # 🔌 LLM Gateway
 │   │   ├── __init__.py          # LLMGateway: routing, fallback, health checks
-│   │   └── models/              # Model registry config
-│   │
-│   ├── llm-gateway/             # LiteLLM gateway config
-│   │   ├── config/              # LiteLLM configuration
-│   │   ├── litellm/             # LiteLLM service files
+│   │   ├── config/              # LiteLLM proxy configuration (mounted into the container)
 │   │   └── models/              # models.yaml model registry
 │   │
 │   ├── memory/                  # 🧠 Memory system
@@ -674,11 +659,11 @@ curl http://localhost:8000/models
 
 ---
 
-## 🔬 A-Evolve: Self-Improving Agent Infrastructure
+## 🔬 Evolution Engine: Self-Improving Strategies
 
-CERBERUS integrates **A-Evolve** (`cyberai/evolution/a-evolve/`), the universal infrastructure for self-improving agents. A-Evolve evolves *any* agent across *any* domain using *any* evolution algorithm — with zero human intervention.
+CERBERUS ships a **native evolution engine** (`cyberai/evolution/`) — a self-contained evolutionary loop for strategy self-improvement. The design is informed by [A-Evolve](https://github.com/A-EVO-Lab/a-evolve) (upstream reference, not vendored).
 
-### The Evolution Loop (A-Evolve)
+### The Evolution Loop
 
 ```
 ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────┐    ┌────────┐
@@ -686,29 +671,25 @@ CERBERUS integrates **A-Evolve** (`cyberai/evolution/a-evolve/`), the universal 
 └─────────┘    └─────────┘    └─────────┘    └──────┘    └────────┘
 ```
 
-1. **Solve** — Agent processes a batch of tasks (black-box execution)
-2. **Observe** — Collect trajectories + benchmark feedback into structured logs
-3. **Evolve** — Evolution engine mutates workspace files (prompts, skills, memory)
-4. **Gate** — Validate mutations on holdout tasks; regressions rolled back via git
-5. **Reload** — Agent reloads from the (possibly rolled-back) workspace
+1. **Solve** — Agents process tasks (black-box execution)
+2. **Observe** — Outcomes feed the fitness function and failure memory
+3. **Evolve** — Mutation engine breeds new strategies from elites
+4. **Gate** — Selection engine scores variants; regressions die out
+5. **Reload** — Elite archive persists winners across sessions
 
-### Built-in Adapters
+### Native Components
 
-| Adapter | Domain | Seed Workspace |
+| Component | File | Purpose |
 | :--- | :--- | :--- |
-| `swe-verified` | Real-world GitHub issues (Python repos) | `seed_workspaces/swe/` |
-| `mcp-atlas` | Tool-calling via MCP (16+ servers) | `seed_workspaces/mcp/` |
-| `terminal-bench` | Terminal/CLI ops in Docker | `seed_workspaces/terminal/` |
-| `skill-bench` | Agentic skill discovery | `seed_workspaces/skillbench/` |
-
-### 3-Line Evolution
-
-```python
-import agent_evolve as ae
-
-evolver = ae.Evolver(agent="./my_agent", benchmark="swe-verified")
-results = evolver.run(cycles=10)
-```
+| `EvolutionEngine` | `engine.py` | Coordinates the evolution loop |
+| `Strategy` | `strategy.py` | Genome dataclass |
+| `Population` | `population.py` | Population management |
+| `MutationEngine` | `mutation.py` | Mutation & crossover |
+| `SelectionEngine` | `selection.py` | Fitness-based selection |
+| `EvaluationEngine` | `evaluation.py` | Strategy evaluation (lab/simulation) |
+| `FitnessFunction` | `fitness.py` | Fitness scoring |
+| `EliteArchive` | `archive.py` | Elite strategy archive |
+| `GhostWargame` | `wargame.py` | Failure-memory wargame analytics |
 
 ---
 
@@ -779,7 +760,6 @@ If you discover vulnerabilities during authorized testing:
 | `README.md` | This file - platform overview and quick start |
 | `ARCHITECTURE.md` | Deep-dive technical reference |
 | `REPOSITORY_MAP.yaml` | Repository-to-role mapping |
-| `cyberai/evolution/a-evolve/README.md` | A-Evolve full documentation |
 | `.env.example` | Environment configuration template |
 
 ---
@@ -809,18 +789,20 @@ python -m pytest tests/test_evolution.py -v
 This platform structure is provided as-is. Individual components retain their original licenses. See `REPOSITORY_MAP.yaml` for details.
 
 **Primary Licenses:**
-- MIT: litellm, hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix, drakben, a-evolve
-- Apache 2.0: ollama, open-webui, strix
+- MIT: hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix, drakben
+- Apache 2.0: ollama, open-webui
 - GPL v3: Dark-Moon
 - Dual MIT + Proprietary: CAI
 - AGPL v3: LuaN1aoAgent
+
+**Runtime services (not vendored):** LiteLLM (MIT) — pinned Docker image `litellm/litellm:1.97.0`
 
 ---
 
 ## 🙏 Acknowledgments
 
 This platform integrates the following open-source security research projects:
-- **A-Evolve** by A-EVO-Lab — Universal self-improving agent infrastructure
+- **A-Evolve** by A-EVO-Lab — Evolution design reference (native engine in `cyberai/evolution/`)
 - **PentAGI** by vxcontrol — Autonomous penetration testing
 - **Strix** by usestrix — Security assessment agent
 - **HexStrike AI** by 0x4m4 — MCP tool gateway

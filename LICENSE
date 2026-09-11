@@ -24,13 +24,19 @@ SOFTWARE.
 
 NOTE: This MIT license applies to the Cerberus orchestrator platform code
 (the `cyberai/` package, `adapters/` wrappers, `tests/`, and workspace
-configuration). Individual vendored components under `adapters/`,
-`infrastructure/`, and `cyberai/evolution/a-evolve/` retain their original
-licenses as documented in REPOSITORY_MAP.yaml:
+configuration). Individual vendored components under `adapters/` and
+`infrastructure/` retain their original licenses as documented in
+REPOSITORY_MAP.yaml:
 
-- MIT: litellm, hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix,
-  drakben, a-evolve
+- MIT: hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix, drakben
 - Apache 2.0: ollama, open-webui
 - GPL v3: Dark-Moon
 - Dual MIT + Proprietary: CAI
 - AGPL v3: LuaN1aoAgent
+
+Third-party services consumed at runtime (not vendored in this repository):
+- LiteLLM (MIT, https://github.com/BerriAI/litellm) — LLM proxy, pinned
+  Docker image `litellm/litellm:1.97.0` in docker-compose.yml
+- A-Evolve (MIT, https://github.com/A-EVO-Lab/a-evolve) — self-improving
+  agent infrastructure that inspired the native evolution engine; the
+  vendored source copy was removed 2026-09-10 (it was never imported)
