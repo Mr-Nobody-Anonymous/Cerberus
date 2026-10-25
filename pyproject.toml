@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "click>=8.1.0,<9",
+    "click>=8.5.0,<9",
     "PyYAML>=6.0,<7",
     "httpx>=0.24.0,<1",
     # Adapter runtime deps — drakben.py and guardian-cli's cli/ import these
