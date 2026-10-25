@@ -21,8 +21,8 @@ prompt-toolkit==3.0.53
 
 # REST API server (cyberai.orchestrator.api / cyberai.ui) — lazy-imported
 # fastapi>=0.115 required: starlette<1.1 has PYSEC-2026-2280 (fixed 1.1.0)
-fastapi==0.141.1
-uvicorn==0.27.0
+fastapi==0.160.0
+uvicorn==0.54.0
 
 # Test suite (pytest-asyncio activated via [tool.pytest.ini_options]
 # asyncio_mode=auto in pyproject.toml)
