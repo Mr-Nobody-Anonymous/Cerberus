@@ -35,7 +35,7 @@ class TestCommandEndpoint:
         assert r.status_code == 200, r.text
         body = r.json()
         # The console interpreter returns its reply under "reply".
-        assert "reply" in body and body["reply"]
+        assert body.get("reply")
 
     def test_message_key_still_accepted(self, client):
         """Documented contract {"message": ...} stays primary (backward-compat)."""
@@ -134,6 +134,7 @@ class TestCooperativeCancellation:
         """AgentPipeline with should_cancel→True returns cancelled result
         without executing any step."""
         import asyncio
+
         from cyberai.collaboration.pipeline import AgentPipeline
 
         pipeline = AgentPipeline()
@@ -158,6 +159,7 @@ class TestCooperativeCancellation:
     def test_pipeline_runs_without_cancel_probe(self):
         """should_cancel stays Optional — pipelines without it run normally."""
         import asyncio
+
         from cyberai.collaboration.pipeline import AgentPipeline
 
         pipeline = AgentPipeline()  # no should_cancel set

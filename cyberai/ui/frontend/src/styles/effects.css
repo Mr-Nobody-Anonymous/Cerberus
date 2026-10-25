@@ -1,0 +1,93 @@
+/**
+ * CERBERUS visual effects — subtle cyber-ops polish layer.
+ * Spec constraints: professional, restrained. NO matrix rain, NO neon excess,
+ * NO giant animations. Subtle pulse/glow/scanline only.
+ *
+ * All effects respect prefers-reduced-motion and degrade gracefully.
+ */
+
+/* ── Keyframes ─────────────────────────────────────────────────────── */
+
+@keyframes cb-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+@keyframes cb-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+  50%      { box-shadow: 0 0 12px 1px rgba(34, 211, 238, 0.18); }
+}
+
+@keyframes cb-scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(2000%); }
+}
+
+@keyframes cb-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Status dot — semantic pulse for live indicators ──────────────── */
+
+.cb-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cb-dot--ok    { background: var(--cb-green);  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5); }
+.cb-dot--warn  { background: var(--cb-yellow); box-shadow: 0 0 6px rgba(251, 191, 36, 0.5); }
+.cb-dot--err   { background: var(--cb-red);    box-shadow: 0 0 6px rgba(248, 113, 113, 0.5); }
+.cb-dot--info  { background: var(--cb-cyan);   box-shadow: 0 0 6px rgba(34, 211, 238, 0.5); }
+.cb-dot--idle  { background: var(--cb-text-faint); }
+
+/* Live indicators breathe slowly (2s) — calm, not urgent. */
+.cb-dot--pulse { animation: cb-pulse 2s ease-in-out infinite; }
+
+/* ── Panel glow — accent focus ring for active panels ─────────────── */
+
+.cb-glow {
+  animation: cb-glow 3s ease-in-out infinite;
+}
+
+/* ── Scanline — one thin line sweeping a container (e.g. loading) ──── */
+
+.cb-scanline {
+  position: relative;
+  overflow: hidden;
+}
+.cb-scanline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(34, 211, 238, 0.35) 50%,
+    transparent 100%
+  );
+  animation: cb-scan 2.4s linear infinite;
+  pointer-events: none;
+}
+
+/* ── Fade-in — gentle entrance for panels and rows ────────────────── */
+
+.cb-fade-in {
+  animation: cb-fade-in 180ms ease-out both;
+}
+
+/* ── Accessibility: kill all motion when requested ────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-dot--pulse,
+  .cb-glow,
+  .cb-scanline::after,
+  .cb-fade-in {
+    animation: none;
+  }
+}

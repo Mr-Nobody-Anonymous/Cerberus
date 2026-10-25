@@ -9,7 +9,7 @@ their command paths; they go through this context so that:
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,7 @@ class CommandContext:
     """Bundles backend accessors + per-invocation state for handlers."""
 
     def __init__(self, workspace_root=None, event_publisher=None,
-                 mission_runner=None, orchestrator_holder: Optional[Dict] = None):
-        from pathlib import Path
+                 mission_runner=None, orchestrator_holder: dict | None = None):
         self.workspace_root = workspace_root or _default_root()
         # Optional async event publisher (Web UI passes EVENT_BUS.publish).
         self.event_publisher = event_publisher
@@ -79,15 +78,15 @@ class CommandContext:
         return get_event_store()
 
     # ------------------------------------------------------------ helpers
-    def publish(self, event_type: str, data: Dict[str, Any]) -> None:
+    def publish(self, event_type: str, data: dict[str, Any]) -> None:
         """Publish an event when a publisher is attached (no-op otherwise)."""
         if self.event_publisher:
             try:
                 self.event_publisher(event_type, data)
-            except Exception:  # noqa: BLE001 — publishing must never break a command
+            except Exception:
                 logger.exception("event publish failed for %s", event_type)
 
-    def status_snapshot(self) -> Dict[str, Any]:
+    def status_snapshot(self) -> dict[str, Any]:
         """Lightweight platform status (no long-lived orchestrator)."""
         from cyberai import CyberAIOrchestrator
         orch = CyberAIOrchestrator(simulate=True, local_only=True)
@@ -105,7 +104,7 @@ class CommandContext:
         if callable(close):
             try:
                 close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.exception("failed closing %r", resource)
 
 

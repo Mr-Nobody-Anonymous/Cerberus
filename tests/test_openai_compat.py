@@ -19,8 +19,7 @@ import json
 import httpx
 import pytest
 
-from cyberai.llm_gateway import LLMGateway
-from cyberai.llm_gateway import openai_compat
+from cyberai.llm_gateway import LLMGateway, openai_compat
 
 
 # ---------------------------------------------------------------------------
@@ -281,7 +280,7 @@ async def test_openai_compat_malformed_response_fails_cleanly():
 
 def test_registry_rejects_invalid_openai_compat_entry():
     """_load_registry drops openai_compatible entries without an endpoint."""
-    from cyberai.llm_gateway import _load_registry  # noqa: F401 — exists
+    from cyberai.llm_gateway import _load_registry
     problems = openai_compat.validate_entry("bad", {
         "provider": "openai_compatible"})
     assert problems != []

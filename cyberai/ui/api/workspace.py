@@ -9,7 +9,7 @@ the root, Windows drive letters) is rejected with 403.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import PlainTextResponse
@@ -26,7 +26,7 @@ _TEXT_SUFFIXES = {
     ".txt", ".md", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg",
     ".py", ".js", ".ts", ".tsx", ".jsx", ".html", ".css", ".csv",
     ".log", ".xml", ".cff", ".sh", ".ps1", ".bat", ".env", ".gitignore",
-    ".dockerfile", ".cff", ".rst",
+    ".dockerfile", ".rst",
 }
 _MAX_FILE_BYTES = 512 * 1024  # 512 KiB
 
@@ -46,15 +46,15 @@ def _resolve_safe(rel_path: str) -> Path:
     root = (WORKSPACE_ROOT / first).resolve()
     try:
         candidate.relative_to(root)
-    except ValueError:
+    except ValueError as ve:
         raise HTTPException(status_code=403,
-                            detail="access denied: path escapes the workspace root")
+                            detail="access denied: path escapes the workspace root") from ve
     # Also ensure it stays under WORKSPACE_ROOT (defense in depth).
     try:
         candidate.relative_to(WORKSPACE_ROOT.resolve())
-    except ValueError:
+    except ValueError as ve:
         raise HTTPException(status_code=403,
-                            detail="access denied: path escapes the workspace")
+                            detail="access denied: path escapes the workspace") from ve
     return candidate
 
 
@@ -70,8 +70,8 @@ async def workspace_tree(path: str = "", depth: int = Query(default=2, ge=0, le=
     if path and not base.is_dir():
         raise HTTPException(status_code=404, detail="directory not found")
 
-    def walk(dir_path: Path, remaining_depth: int) -> List[Dict[str, Any]]:
-        entries: List[Dict[str, Any]] = []
+    def walk(dir_path: Path, remaining_depth: int) -> list[dict[str, Any]]:
+        entries: list[dict[str, Any]] = []
         try:
             children = sorted(dir_path.iterdir(),
                               key=lambda p: (p.is_file(), p.name.lower()))
@@ -80,7 +80,7 @@ async def workspace_tree(path: str = "", depth: int = Query(default=2, ge=0, le=
         for child in children:
             if child.name.startswith(".") or child.name == "__pycache__":
                 continue
-            entry: Dict[str, Any] = {
+            entry: dict[str, Any] = {
                 "name": child.name,
                 "path": str(child.relative_to(WORKSPACE_ROOT)).replace("\\", "/"),
                 "type": "directory" if child.is_dir() else "file",
@@ -117,13 +117,13 @@ async def workspace_file(path: str = Query(..., description="workspace-relative 
                             detail=f"unsupported file type: {target.suffix or 'none'}")
     try:
         size = target.stat().st_size
-    except OSError:
-        raise HTTPException(status_code=404, detail="file not found")
+    except OSError as e:
+        raise HTTPException(status_code=404, detail="file not found") from e
     if size > _MAX_FILE_BYTES:
         raise HTTPException(status_code=413,
                             detail=f"file too large ({size} bytes; max {_MAX_FILE_BYTES})")
     try:
         content = target.read_text(encoding="utf-8", errors="replace")
     except OSError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     return PlainTextResponse(content)

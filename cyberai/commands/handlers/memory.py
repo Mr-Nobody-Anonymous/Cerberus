@@ -19,7 +19,7 @@ def _memory(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "memory", data={"results": results, "query": q},
             rows=results, columns=["id", "kind", "summary"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("memory", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(store)

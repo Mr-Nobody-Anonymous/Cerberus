@@ -6,11 +6,7 @@ Run with ``python -m pytest tests/ -v`` from the repository root so the
 
 def test_imports():
     """Test that core modules can be imported."""
-    from cyberai.orchestrator import Orchestrator
-    from cyberai.orchestrator import ToolRegistry
-    from cyberai.orchestrator import PolicyEngine
-    from cyberai.orchestrator import MemoryManager
-    from cyberai.orchestrator import ModelRouter
+    from cyberai.orchestrator import MemoryManager, ModelRouter, Orchestrator, PolicyEngine, ToolRegistry
     print("All core imports successful")
 
 

@@ -25,35 +25,34 @@ intelligence to the user.  Internally it coordinates:
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 import uuid
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from cyberai.config import config, WORKSPACE_ROOT
-from cyberai.task import Task, TaskStatus, VerificationState
-from cyberai.memory.memory_store import MemoryStore, MemoryEntry
-from cyberai.meta_learning.tracker import PerformanceTracker, PerformanceRecord
-from cyberai.observability.logger import StructuredLogger
 from cyberai.capabilities.registry import CapabilityRegistry
-from cyberai.evolution.engine import EvolutionEngine
 from cyberai.collaboration.pipeline import AgentPipeline
+from cyberai.config import config
+from cyberai.evolution.engine import EvolutionEngine
+from cyberai.memory.memory_store import MemoryStore
+from cyberai.meta_learning.tracker import PerformanceRecord, PerformanceTracker
+from cyberai.observability.logger import StructuredLogger
+from cyberai.task import Task, TaskStatus
 
-from .orchestrator import Orchestrator
+from .adapters.adapter_manager import AdapterManager
+from .agents.analyst.analyst import AnalystAgent
+from .agents.coder.coder import CoderAgent
+from .agents.planner.planner import PlannerAgent
+from .agents.recon.recon import ReconAgent
+from .agents.reporter.reporter import ReporterAgent
+from .agents.researcher.researcher import ResearcherAgent
+from .agents.verifier.verifier import VerifierAgent
 from .memory.memory_manager import MemoryManager
+from .orchestrator import Orchestrator
 from .policies.policy_engine import PolicyEngine
 from .routing.model_router import ModelRouter
 from .tool_registry import ToolRegistry
-from .adapters.adapter_manager import AdapterManager
-from .agents.planner.planner import PlannerAgent
-from .agents.researcher.researcher import ResearcherAgent
-from .agents.recon.recon import ReconAgent
-from .agents.analyst.analyst import AnalystAgent
-from .agents.coder.coder import CoderAgent
-from .agents.verifier.verifier import VerifierAgent
-from .agents.reporter.reporter import ReporterAgent
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ class CyberAIOrchestrator:
         *,
         simulate: bool = False,
         dry_run: bool = False,
-        local_only: Optional[bool] = None,
+        local_only: bool | None = None,
     ):
         self.simulate = simulate
         self.dry_run = dry_run
@@ -150,7 +149,7 @@ class CyberAIOrchestrator:
         )
 
         # Active agent instances (created lazily)
-        self._agents: Dict[str, Any] = {}
+        self._agents: dict[str, Any] = {}
         self._session_logger_instance = None
 
         # Cooperative cancellation flag — set via stop(), honored at
@@ -201,7 +200,7 @@ class CyberAIOrchestrator:
         return self._session_logger_instance
 
     @staticmethod
-    def _emit(event_callback, event_type: str, data: Dict[str, Any]) -> None:
+    def _emit(event_callback, event_type: str, data: dict[str, Any]) -> None:
         """Forward an orchestrator event to an external callback (if any)."""
         if event_callback is None:
             return
@@ -213,8 +212,8 @@ class CyberAIOrchestrator:
     # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
-    async def run(self, objective: str, target_id: Optional[str] = None,
-                  event_callback=None, **kwargs) -> Dict[str, Any]:
+    async def run(self, objective: str, target_id: str | None = None,
+                  event_callback=None, **kwargs) -> dict[str, Any]:
         """
         Run the full autonomous pipeline for a given objective.
 
@@ -237,15 +236,20 @@ class CyberAIOrchestrator:
 
         # --- 1. Authorization check ---
         # In simulation mode we auto-authorize (target is virtual)
-        if target_id and not self.simulate:
+        if not self.simulate and not self.dry_run:
+            if not target_id:
+                raise PermissionError(
+                    "Target ID is required for active operations when not in simulation mode. "
+                    "Specify an authorized target from lab/targets/targets.yaml."
+                )
             if not self.policy.is_authorized(target_id):
                 raise PermissionError(
                     f"Target '{target_id}' is not authorized. "
                     "Register it in lab/targets/targets.yaml."
                 )
             if not self.policy.check_action_allowed(target_id, "analysis"):
-                logger.warning(
-                    f"Action 'analysis' not in explicit allowed_actions for {target_id}"
+                raise PermissionError(
+                    f"Action 'analysis' is not allowed on target '{target_id}'."
                 )
 
         # --- 2. Create canonical task state ---
@@ -290,7 +294,7 @@ class CyberAIOrchestrator:
         self._emit(event_callback, "phase", {
             "task_id": task_id, "phase": "executing", "message": "Agents engaging"
         })
-        execution_result = await self._execute_pipeline(task, plan_result, event_callback)
+        await self._execute_pipeline(task, plan_result, event_callback)
 
         # --- 5b. Cancellation point ---
         if self._stop_requested:
@@ -361,7 +365,7 @@ class CyberAIOrchestrator:
 
         return task.to_dict()
 
-    def _retrieve_memories(self, objective: str) -> List[Dict]:
+    def _retrieve_memories(self, objective: str) -> list[dict]:
         """Retrieve relevant past experiences from typed memory."""
         try:
             store = MemoryStore()
@@ -371,7 +375,7 @@ class CyberAIOrchestrator:
             memories = []
         return memories
 
-    async def _generate_plan(self, task: Task, memories: List[Dict]) -> Dict[str, Any]:
+    async def _generate_plan(self, task: Task, memories: list[dict]) -> dict[str, Any]:
         """Generate a plan, optionally using evolution strategies."""
         # Check for elite strategies in memory
         elite_strategies = []
@@ -453,8 +457,8 @@ class CyberAIOrchestrator:
         }
         return mapping.get(action, "analysis")
 
-    async def _execute_pipeline(self, task: Task, plan_result: Dict,
-                                event_callback=None) -> Dict[str, Any]:
+    async def _execute_pipeline(self, task: Task, plan_result: dict,
+                                event_callback=None) -> dict[str, Any]:
         """Execute the plan through the agent collaboration pipeline."""
 
         pipeline = AgentPipeline(task=task)
@@ -471,7 +475,7 @@ class CyberAIOrchestrator:
         pipeline.add_step("reporter", "reporting", "Generate report",
                           output_key="report")
 
-        async def execute_agent(agent_name: str, context: Dict) -> Dict:
+        async def execute_agent(agent_name: str, context: dict) -> dict:
             agent = self._get_agent(agent_name)
             agent_task = {
                 "objective": context.get("objective", ""),
@@ -497,11 +501,27 @@ class CyberAIOrchestrator:
                 # Dry-run: don't execute
                 result = {"status": "dry_run", "agent": agent_name}
             else:
-                # Real execution
-                try:
-                    result = await agent.run(agent_task)
-                except Exception as e:
-                    result = {"success": False, "error": str(e), "agent": agent_name}
+                # Real execution - enforce target authorization and allowed action
+                target_check = agent_task.get("target_id", "")
+                if not target_check or not self.policy.is_authorized(target_check):
+                    result = {
+                        "success": False,
+                        "error": f"Target '{target_check}' is not authorized for active execution",
+                        "agent": agent_name,
+                        "blocked": True,
+                    }
+                elif not self.policy.check_action_allowed(target_check, capability):
+                    result = {
+                        "success": False,
+                        "error": f"Action '{capability}' is not allowed on target '{target_check}'",
+                        "agent": agent_name,
+                        "blocked": True,
+                    }
+                else:
+                    try:
+                        result = await agent.run(agent_task)
+                    except Exception as e:
+                        result = {"success": False, "error": str(e), "agent": agent_name}
 
             self._emit(event_callback, "agent_completed", {
                 "task_id": task.id,
@@ -526,8 +546,8 @@ class CyberAIOrchestrator:
                 )
             )
 
-            # Store as experience
-            try:
+            # Store as experience (advisory — never fatal)
+            with contextlib.suppress(Exception):
                 self.memory.store_experience({
                     "session_id": task.id,
                     "target_id": agent_task.get("target_id", ""),
@@ -538,8 +558,6 @@ class CyberAIOrchestrator:
                     "evidence": [],
                     "confidence": 0.5,
                 })
-            except Exception:
-                pass
 
             return result
 
@@ -565,7 +583,7 @@ class CyberAIOrchestrator:
             "strategies_evaluated": len(plan_result.get("strategies", [])),
         }
 
-    def _simulate_agent(self, agent_name: str, agent_task: Dict) -> Dict[str, Any]:
+    def _simulate_agent(self, agent_name: str, agent_task: dict) -> dict[str, Any]:
         """Return deterministic mock results for an agent in simulation mode."""
         mock_outputs = {
             "researcher": {
@@ -637,7 +655,7 @@ class CyberAIOrchestrator:
             except Exception:
                 finding["verification"] = "UNVERIFIED"
 
-    async def _evolve_strategies(self, strategies: List[Dict], task: Task) -> None:
+    async def _evolve_strategies(self, strategies: list[dict], task: Task) -> None:
         """Run one generation of strategy evolution based on task results."""
         try:
             await self.evolution.evolve_generation(
@@ -648,7 +666,7 @@ class CyberAIOrchestrator:
         except Exception as e:
             logger.warning(f"Evolution failed: {e}")
 
-    async def _generate_report(self, task: Task) -> Dict[str, Any]:
+    async def _generate_report(self, task: Task) -> dict[str, Any]:
         """Generate the final report."""
         # In simulation mode, use a deterministic mock report
         if self.simulate:
@@ -686,7 +704,7 @@ class CyberAIOrchestrator:
 
         return report
 
-    def _dry_run_report(self, task: Task, plan_result: Dict) -> Dict[str, Any]:
+    def _dry_run_report(self, task: Task, plan_result: dict) -> dict[str, Any]:
         """Generate a dry-run report showing planned actions without executing."""
         capabilities_used = []
         tools_planned = []
@@ -739,7 +757,7 @@ class CyberAIOrchestrator:
     # Convenience: single-target assess
     # ------------------------------------------------------------------
     async def assess(self, target_id: str, objective: str,
-                     dry_run: bool = False, simulate: bool = False) -> Dict[str, Any]:
+                     dry_run: bool = False, simulate: bool = False) -> dict[str, Any]:
         """Run an assessment on an authorized target."""
         self.dry_run = dry_run
         self.simulate = simulate or self.local_only
@@ -748,19 +766,34 @@ class CyberAIOrchestrator:
         result = await self.run(objective, target_id=target_id, task=task)
         return result
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get full platform status."""
         ollama_status = "UNKNOWN"
         litellm_status = "UNKNOWN"
+        coro = self.llm_gateway.health_check()
         try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            ll_status = loop.run_until_complete(self.llm_gateway.health_check())
-            ollama_status = ll_status.get("ollama", {}).get("status", "UNKNOWN")
-            litellm_status = ll_status.get("litellm", {}).get("status", "UNKNOWN")
-            loop.close()
+            try:
+                running_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                running_loop = None
+
+            if running_loop and running_loop.is_running():
+                # Already running inside an event loop in this thread: close coro to avoid leak
+                coro.close()
+                ollama_status = "ONLINE" if getattr(self.llm_gateway, "_ollama_available", False) else "OFFLINE"
+                litellm_status = "AVAILABLE" if getattr(self.llm_gateway, "_litellm_available", False) else "OFFLINE"
+            else:
+                loop = asyncio.new_event_loop()
+                try:
+                    asyncio.set_event_loop(loop)
+                    ll_status = loop.run_until_complete(coro)
+                    ollama_status = ll_status.get("ollama", {}).get("status", "UNKNOWN")
+                    litellm_status = ll_status.get("litellm", {}).get("status", "UNKNOWN")
+                finally:
+                    loop.close()
         except Exception:
-            pass
+            with contextlib.suppress(Exception):
+                coro.close()
 
         return {
             "platform": "Cyber AI",
@@ -780,11 +813,7 @@ class CyberAIOrchestrator:
 
     def close(self) -> None:
         """Clean up resources."""
-        try:
+        with contextlib.suppress(Exception):
             self.memory.close()
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self.performance.close()
-        except Exception:
-            pass

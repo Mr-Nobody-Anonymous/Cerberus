@@ -35,7 +35,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # ---------------------------------------------------------------------------
 # Event vocabulary (spec §25)
@@ -88,7 +88,7 @@ SYSTEM_EVENTS = [
     "system.info",
 ]
 
-EVENT_TYPES: List[str] = (
+EVENT_TYPES: list[str] = (
     SESSION_EVENTS + AGENT_EVENTS + TOOL_EVENTS + FINDING_EVENTS
     + APPROVAL_EVENTS + MODEL_EVENTS + POLICY_EVENTS + SYSTEM_EVENTS
 )
@@ -118,9 +118,9 @@ class Event:
     session_id: str = "-"
     agent: str = "-"
     timestamp: str = field(default_factory=_now_iso)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": self.type,
             "session_id": self.session_id,
@@ -153,7 +153,7 @@ class Event:
         return ""
 
     # ------------------------------------------------------------------ Web
-    def sse_payload(self) -> Dict[str, Any]:
+    def sse_payload(self) -> dict[str, Any]:
         """Payload for the SSE stream (keeps the legacy envelope)."""
         return {"type": self.type, "data": self.to_dict(), "ts": time.time()}
 
@@ -162,8 +162,8 @@ def make_event(
     event_type: str,
     session_id: str = "-",
     agent: str = "-",
-    metadata: Optional[Dict[str, Any]] = None,
-    timestamp: Optional[str] = None,
+    metadata: dict[str, Any] | None = None,
+    timestamp: str | None = None,
 ) -> Event:
     """Create a canonical event, validating the type against the vocabulary.
 
@@ -182,7 +182,7 @@ def make_event(
     )
 
 
-def normalize(raw: Dict[str, Any]) -> Event:
+def normalize(raw: dict[str, Any]) -> Event:
     """Normalize a legacy bus event ({"type", "data", "ts"}) into an Event.
 
     Accepts both the legacy envelope and the canonical shape.
@@ -215,9 +215,9 @@ def normalize(raw: Dict[str, Any]) -> Event:
                  timestamp=stamp, metadata=meta)
 
 
-def validate(event: Event) -> List[str]:
+def validate(event: Event) -> list[str]:
     """Return a list of schema problems (empty list = valid)."""
-    problems: List[str] = []
+    problems: list[str] = []
     if not event.type or not isinstance(event.type, str):
         problems.append("type must be a non-empty string")
     elif "." not in event.type:

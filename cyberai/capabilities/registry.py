@@ -8,7 +8,7 @@ specific repository to use.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class CapabilityProvider:
     description: str = ""
     priority: int = 100  # Lower = higher priority
     status: str = "UNKNOWN"  # AVAILABLE, UNAVAILABLE, UNKNOWN
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class CapabilityRegistry:
@@ -34,7 +34,7 @@ class CapabilityRegistry:
     """
 
     # Default capability -> provider mappings
-    DEFAULT_CAPABILITIES: Dict[str, List[Dict[str, Any]]] = {
+    DEFAULT_CAPABILITIES: dict[str, list[dict[str, Any]]] = {
         "reconnaissance": [
             {"name": "strix", "type": "tool", "priority": 10},
             {"name": "pentagi", "type": "tool", "priority": 20},
@@ -125,7 +125,7 @@ class CapabilityRegistry:
     }
 
     def __init__(self):
-        self._capabilities: Dict[str, List[CapabilityProvider]] = {}
+        self._capabilities: dict[str, list[CapabilityProvider]] = {}
         self._load_defaults()
 
     def _load_defaults(self) -> None:
@@ -141,17 +141,17 @@ class CapabilityRegistry:
                 for p in providers
             ]
 
-    def get_providers(self, capability: str) -> List[CapabilityProvider]:
+    def get_providers(self, capability: str) -> list[CapabilityProvider]:
         """Get all providers for a capability, sorted by priority."""
         providers = self._capabilities.get(capability, [])
         return sorted(providers, key=lambda p: p.priority)
 
-    def get_best_provider(self, capability: str) -> Optional[CapabilityProvider]:
+    def get_best_provider(self, capability: str) -> CapabilityProvider | None:
         """Get the highest-priority provider for a capability."""
         providers = self.get_providers(capability)
         return providers[0] if providers else None
 
-    def get_available_providers(self, capability: str) -> List[CapabilityProvider]:
+    def get_available_providers(self, capability: str) -> list[CapabilityProvider]:
         """Get only available providers for a capability."""
         return [
             p for p in self.get_providers(capability)
@@ -172,11 +172,11 @@ class CapabilityRegistry:
                 provider.status = status
                 return
 
-    def list_capabilities(self) -> List[str]:
+    def list_capabilities(self) -> list[str]:
         """List all registered capabilities."""
         return sorted(self._capabilities.keys())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return the registry as a dict."""
         return {
             capability: [

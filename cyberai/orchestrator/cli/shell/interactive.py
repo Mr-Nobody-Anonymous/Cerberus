@@ -10,16 +10,16 @@ thread (SIMULATE default keeps it safe offline).
 """
 
 import asyncio
+import contextlib
 import shlex
 import sys
 import threading
-from typing import Any, Dict, Optional
+from typing import Any
 
-from .render import make_console, render_banner, render_result, render_hint
-from .theme import state_style
+from .render import make_console, render_banner, render_hint, render_result
 
 # Live task handle (orchestrator + worker thread + last result)
-_TASK: Dict[str, Any] = {"orchestrator": None, "thread": None,
+_TASK: dict[str, Any] = {"orchestrator": None, "thread": None,
                          "result": None, "error": None}
 
 # BUG-9: glyphs like ❯ ▶ ✔ crash with UnicodeEncodeError on legacy Windows
@@ -64,6 +64,7 @@ def run_console(simulate: bool = True, verbose: bool = False) -> None:
     try:
         from prompt_toolkit import PromptSession
         from prompt_toolkit.formatted_text import HTML
+
         from .completion import build_completer, build_history
         completer = build_completer()
         history = build_history()
@@ -102,7 +103,7 @@ def run_console(simulate: bool = True, verbose: bool = False) -> None:
             _dispatch(console, cmd, args, line, simulate, verbose)
         except SystemExit:
             return  # /quit — exit the REPL loop cleanly
-        except Exception as e:  # noqa: BLE001 — REPL must never die
+        except Exception as e:
             console.print(f"  error: {e}", style="cb.err")
 
 
@@ -151,7 +152,6 @@ def _dispatch(console, cmd: str, args, line: str,
 
 def _show_help(console) -> None:
     """Render the command catalog grouped by category."""
-    from rich.columns import Columns
     from rich.table import Table
 
     from cyberai.commands import load_builtin_commands
@@ -193,13 +193,11 @@ def _launch_task(console, objective: str, simulate: bool) -> None:
         _TASK["error"] = None
         try:
             _TASK["result"] = asyncio.run(orch.run(objective))
-        except Exception as e:  # noqa: BLE001 — worker must never crash the REPL
+        except Exception as e:
             _TASK["error"] = str(e)
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 orch.close()
-            except Exception:  # noqa: BLE001
-                pass
             _TASK["orchestrator"] = None
 
     t = threading.Thread(target=_worker, daemon=True, name="cerberus-task")
@@ -222,7 +220,7 @@ def _stop_task(console) -> None:
         orch.stop()
         console.print(_s("  ■ stop signal sent — takes effect at next step boundary"),
                       style="cb.warn")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"  stop failed: {e}", style="cb.err")
 
 

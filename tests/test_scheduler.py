@@ -7,6 +7,7 @@ Covers:
 """
 
 import asyncio
+import contextlib
 import time
 
 import pytest
@@ -37,7 +38,7 @@ class TestSubmit:
     async def test_submit_priority_recorded_in_queue(self, scheduler):
         # The queue holds (priority, task_id, agent_name, task) tuples.
         await scheduler.submit("recon", {}, priority=1)
-        priority, task_id, agent, task = await scheduler._queue.get()
+        priority, _task_id, agent, task = await scheduler._queue.get()
         assert priority == 1
         assert agent == "recon"
         assert task == {}
@@ -105,17 +106,15 @@ class TestCancelAndCounts:
             assert scheduler.list_active() == 1
         finally:
             running_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await running_task
-            except asyncio.CancelledError:
-                pass
 
     async def test_end_to_end_submit_execute_store(self, scheduler):
         """Worker drains the queue, executes, stores the result."""
         task_id = await scheduler.submit("recon", {"action": "scan"})
 
         async def worker():
-            priority, tid, agent, task = await scheduler._queue.get()
+            _priority, tid, agent, task = await scheduler._queue.get()
             await asyncio.sleep(0.05)  # simulate work
             scheduler.store_result(tid, {"agent": agent, **task})
 

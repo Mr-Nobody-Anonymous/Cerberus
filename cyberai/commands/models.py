@@ -1,7 +1,8 @@
 """Data models for the shared command bus."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -17,9 +18,9 @@ class CommandSpec:
     category: str
     description: str
     handler: Callable[..., Any]
-    aliases: List[str] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
     usage: str = ""
-    examples: List[str] = field(default_factory=list)
+    examples: list[str] = field(default_factory=list)
     # Commands that mutate state or launch missions must declare it so hosts
     # can gate them behind confirmation UIs.
     destructive: bool = False
@@ -46,8 +47,8 @@ class ParsedCommand:
 
     raw: str
     name: str = ""
-    args: List[str] = field(default_factory=list)
-    kwargs: Dict[str, str] = field(default_factory=dict)
+    args: list[str] = field(default_factory=list)
+    kwargs: dict[str, str] = field(default_factory=dict)
     is_command: bool = False
 
     def arg(self, index: int, default: str = "") -> str:
@@ -69,16 +70,16 @@ class CommandResult:
 
     ok: bool
     command: str
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
     message: str = ""
     # Authorization/policy rejections set blocked=True (never ok=True).
     blocked: bool = False
     error: str = ""
     # Optional structured rows for table rendering in the CLI.
-    rows: Optional[List[Dict[str, Any]]] = None
-    columns: Optional[List[str]] = None
+    rows: list[dict[str, Any]] | None = None
+    columns: list[str] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         out = {
             "ok": self.ok,
             "command": self.command,
@@ -95,19 +96,19 @@ class CommandResult:
         return out
 
     @classmethod
-    def success(cls, command: str, data: Optional[Dict[str, Any]] = None,
+    def success(cls, command: str, data: dict[str, Any] | None = None,
                 message: str = "", **table) -> "CommandResult":
         return cls(ok=True, command=command, data=data or {}, message=message,
                    **table)
 
     @classmethod
     def failure(cls, command: str, error: str,
-                data: Optional[Dict[str, Any]] = None) -> "CommandResult":
+                data: dict[str, Any] | None = None) -> "CommandResult":
         return cls(ok=False, command=command, data=data or {}, error=error)
 
     @classmethod
     def blocked_result(cls, command: str, reason: str,
-                       data: Optional[Dict[str, Any]] = None) -> "CommandResult":
+                       data: dict[str, Any] | None = None) -> "CommandResult":
         """Policy/authorization rejection — the ONLY way handlers report blocks."""
         return cls(ok=False, command=command, data=data or {},
                    error=reason, blocked=True)

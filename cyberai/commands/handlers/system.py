@@ -31,7 +31,7 @@ def _status(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
     try:
         snapshot = ctx.status_snapshot()
         return CommandResult.success("status", data=snapshot)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("status", f"{type(e).__name__}: {e}")
 
 
@@ -50,7 +50,7 @@ def _health(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
     try:
         ctx.status_snapshot()
         components.append({"name": "Orchestrator", "status": "HEALTHY"})
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         components.append({"name": "Orchestrator", "status": "OFFLINE",
                            "detail": str(e)})
     components.append({"name": "Ollama",
@@ -64,7 +64,7 @@ def _health(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
         mm = ctx.memory_manager()
         components.append({"name": "Memory DB", "status": "HEALTHY",
                            "detail": str(getattr(mm, "db_path", ""))})
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         components.append({"name": "Memory DB", "status": "OFFLINE",
                            "detail": str(e)})
     finally:
@@ -97,7 +97,7 @@ def _doctor(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
         from cyberai.config import config
         cfg_ok = bool(config.get("privacy", "mode", "local_only"))
         checks.append({"name": "Config", "status": "OK", "detail": f"privacy={cfg_ok}"})
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         checks.append({"name": "Config", "status": "ERROR", "detail": str(e)})
     ok = all(c["status"] in ("OK",) for c in checks)
     return CommandResult(ok=ok, command="doctor",

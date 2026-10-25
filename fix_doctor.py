@@ -1,7 +1,9 @@
 """Fix the stray 'm,' at the start of doctor.py."""
 import io
 
-PATH = r"C:\Users\hp\Desktop\Cerberus\cyberai\orchestrator\cli\doctor.py"
+from pathlib import Path
+
+PATH = Path(__file__).resolve().parent / "cyberai" / "orchestrator" / "cli" / "doctor.py"
 
 with io.open(PATH, "r", encoding="utf-8") as f:
     content = f.read()

@@ -7,10 +7,10 @@ Manages a population of strategies across generations.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+
+from cyberai.config import config
 
 from .strategy import Strategy, StrategyStatus
-from cyberai.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 class Population:
     """Manages a population of strategies."""
 
-    def __init__(self, population_dir: Optional[Path] = None, max_size: int = 50):
+    def __init__(self, population_dir: Path | None = None, max_size: int = 50):
         self.population_dir = population_dir or config.get_path(
             "memory", "evolution_dir", "memory/evolution"
         ) / "population"
         self.population_dir.mkdir(parents=True, exist_ok=True)
         self.max_size = max_size
-        self._strategies: Dict[str, Strategy] = {}
+        self._strategies: dict[str, Strategy] = {}
         self._load()
 
     def _load(self) -> None:
@@ -72,23 +72,23 @@ class Population:
             if path.exists():
                 path.unlink()
 
-    def get(self, strategy_id: str) -> Optional[Strategy]:
+    def get(self, strategy_id: str) -> Strategy | None:
         """Get a strategy by ID."""
         return self._strategies.get(strategy_id)
 
-    def get_by_generation(self, generation: int) -> List[Strategy]:
+    def get_by_generation(self, generation: int) -> list[Strategy]:
         """Get all strategies from a specific generation."""
         return [s for s in self._strategies.values() if s.generation == generation]
 
-    def get_successful(self) -> List[Strategy]:
+    def get_successful(self) -> list[Strategy]:
         """Get all successful strategies."""
         return [s for s in self._strategies.values() if s.status == StrategyStatus.SUCCESSFUL.value]
 
-    def get_failed(self) -> List[Strategy]:
+    def get_failed(self) -> list[Strategy]:
         """Get all failed strategies."""
         return [s for s in self._strategies.values() if s.status == StrategyStatus.FAILED.value]
 
-    def get_best(self, limit: int = 5) -> List[Strategy]:
+    def get_best(self, limit: int = 5) -> list[Strategy]:
         """Get the highest-fitness strategies."""
         sorted_strategies = sorted(
             self._strategies.values(),
@@ -97,7 +97,7 @@ class Population:
         )
         return sorted_strategies[:limit]
 
-    def get_all(self) -> List[Strategy]:
+    def get_all(self) -> list[Strategy]:
         """Get all strategies."""
         return list(self._strategies.values())
 

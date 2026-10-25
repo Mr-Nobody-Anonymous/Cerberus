@@ -10,7 +10,7 @@ All agent types inherit from BaseAgent, which provides:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def _event_store():
     try:
         from cyberai.orchestrator.event_store import get_event_store
         return get_event_store()
-    except Exception:  # noqa: BLE001 — events are advisory
+    except Exception:
         return None
 
 
@@ -51,7 +51,7 @@ class BaseAgent:
         self.logger = session_logger
         self.llm_gateway = llm_gateway
 
-    async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Execute a task. Must be implemented by subclasses.
 
@@ -123,7 +123,7 @@ class BaseAgent:
                 )
                 return f"[LLM_UNAVAILABLE: {response.get('message', 'all hops failed')}]"
             return response.get("content", "")
-        except Exception as e:  # noqa: BLE001 — structured, logged failure
+        except Exception as e:
             logger.error("LLM call raised in %s: %s", self.name, e)
             return f"[LLM_ERROR: {e}]"
 
@@ -136,11 +136,11 @@ class BaseAgent:
         action: str,
         tool: str,
         result: str,
-        evidence: Optional[List] = None,
+        evidence: list | None = None,
         confidence: float = 0.0,
-        lessons: Optional[List] = None,
+        lessons: list | None = None,
         score: float = 0.0,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Record an experience in the memory system."""
         if not self.memory:
             return None

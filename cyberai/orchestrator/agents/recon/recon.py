@@ -6,7 +6,7 @@ Delegates actual scanning to adapter tools (strix, darkmoon, etc.).
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import BaseAgent
 from .prompts import build_recon_analysis_prompt
@@ -25,7 +25,7 @@ class ReconAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(name="recon", **kwargs)
 
-    async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Perform reconnaissance on an authorized target.
 
@@ -84,7 +84,7 @@ class ReconAgent(BaseAgent):
                         "tool": used_tool, "agent": self.name,
                         "target": target, "action": "recon",
                     }, agent=self.name)
-                except Exception:  # noqa: BLE001 — advisory only
+                except Exception:
                     _store = None
                 adapter_result = await self._try_adapter(adapter_path, tool_task)
                 if _store is not None:
@@ -144,7 +144,7 @@ class ReconAgent(BaseAgent):
 
         return result
 
-    async def _try_adapter(self, adapter_path: str, task: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def _try_adapter(self, adapter_path: str, task: dict[str, Any]) -> dict[str, Any] | None:
         """Attempt to call an adapter's execute method."""
         try:
             # adapter_path is like "adapters.pentagi"

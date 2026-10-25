@@ -1,5 +1,6 @@
 /* CERBERUS global styles — dark cyber-command-center theme. */
 @import "./tokens.css";
+@import "./effects.css";
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 

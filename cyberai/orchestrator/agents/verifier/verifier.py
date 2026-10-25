@@ -12,7 +12,7 @@ the evidence-based heuristic path always remains authoritative.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .prompts import build_verification_challenge_prompt
 
@@ -44,7 +44,7 @@ class VerifierAgent:
         self.logger = kwargs.get("session_logger")
         self.llm_gateway = kwargs.get("llm_gateway")
 
-    async def verify_finding(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+    async def verify_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
         """
         Verify a finding by checking its evidence.
 
@@ -99,7 +99,7 @@ class VerifierAgent:
         )
         return finding
 
-    def _assess_evidence(self, evidence: List[Any]) -> Dict[str, Any]:
+    def _assess_evidence(self, evidence: list[Any]) -> dict[str, Any]:
         """
         Assess the quality of evidence.
 
@@ -144,9 +144,9 @@ class VerifierAgent:
     async def challenge_conclusion(
         self,
         conclusion: str,
-        evidence: List[Dict[str, Any]],
-        tool_output: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        evidence: list[dict[str, Any]],
+        tool_output: str | None = None,
+    ) -> dict[str, Any]:
         """
         Challenge a conclusion by asking what evidence proves it.
 
@@ -194,9 +194,9 @@ class VerifierAgent:
         }
 
     async def _llm_challenge(
-        self, conclusion: str, evidence: List[Dict[str, Any]],
-        tool_output: Optional[str],
-    ) -> Optional[Dict[str, Any]]:
+        self, conclusion: str, evidence: list[dict[str, Any]],
+        tool_output: str | None,
+    ) -> dict[str, Any] | None:
         """
         Run the LLM verification review. Returns None (never fabricates)
         when no gateway is available or the fallback chain fails.
@@ -225,12 +225,12 @@ class VerifierAgent:
                 )
                 return None
             return self._parse_llm_review(response.get("content", ""))
-        except Exception as e:  # noqa: BLE001 — heuristic path remains
+        except Exception as e:
             logger.warning("LLM verification review failed: %s", e)
             return None
 
     @staticmethod
-    def _parse_llm_review(content: str) -> Optional[Dict[str, Any]]:
+    def _parse_llm_review(content: str) -> dict[str, Any] | None:
         """Parse the LLM reviewer's JSON answer, tolerating code fences."""
         if not content:
             return None

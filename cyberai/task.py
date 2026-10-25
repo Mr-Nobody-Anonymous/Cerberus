@@ -3,11 +3,11 @@ Canonical Task state for the Cyber AI orchestrator.
 Every component works against this shared state object.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any
 
 
 class TaskStatus(Enum):
@@ -39,23 +39,23 @@ class Task:
     authorization: str = "pending"
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     status: str = TaskStatus.CREATED.value
-    plan: List[Dict[str, Any]] = field(default_factory=list)
-    observations: List[Dict[str, Any]] = field(default_factory=list)
-    hypotheses: List[Dict[str, Any]] = field(default_factory=list)
-    actions: List[Dict[str, Any]] = field(default_factory=list)
-    evidence: List[Dict[str, Any]] = field(default_factory=list)
-    findings: List[Dict[str, Any]] = field(default_factory=list)
-    agents_used: List[str] = field(default_factory=list)
-    tools_used: List[str] = field(default_factory=list)
-    models_used: List[str] = field(default_factory=list)
-    verification: List[Dict[str, Any]] = field(default_factory=list)
-    memory_references: List[str] = field(default_factory=list)
-    errors: List[Dict[str, Any]] = field(default_factory=list)
-    timestamps: Dict[str, str] = field(default_factory=lambda: {
+    plan: list[dict[str, Any]] = field(default_factory=list)
+    observations: list[dict[str, Any]] = field(default_factory=list)
+    hypotheses: list[dict[str, Any]] = field(default_factory=list)
+    actions: list[dict[str, Any]] = field(default_factory=list)
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+    findings: list[dict[str, Any]] = field(default_factory=list)
+    agents_used: list[str] = field(default_factory=list)
+    tools_used: list[str] = field(default_factory=list)
+    models_used: list[str] = field(default_factory=list)
+    verification: list[dict[str, Any]] = field(default_factory=list)
+    memory_references: list[str] = field(default_factory=list)
+    errors: list[dict[str, Any]] = field(default_factory=list)
+    timestamps: dict[str, str] = field(default_factory=lambda: {
         "created": datetime.now(timezone.utc).isoformat(),
     })
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    final_report: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    final_report: dict[str, Any] | None = None
 
     def set_status(self, status: TaskStatus) -> None:
         self.status = status.value
@@ -70,7 +70,7 @@ class Task:
 
     def add_plan_step(self, action: str, capability: str, description: str = "",
                       agent: str = "", tool: str = "", model: str = "",
-                      expected_evidence: str = "") -> Dict[str, Any]:
+                      expected_evidence: str = "") -> dict[str, Any]:
         step = {
             "id": str(uuid.uuid4()),
             "step": len(self.plan) + 1,
@@ -97,8 +97,8 @@ class Task:
                 return
 
     def add_observation(self, content: str, source: str = "", confidence: float = 0.0,
-                        evidence: Optional[List[str]] = None,
-                        verification: str = VerificationState.UNVERIFIED.value) -> Dict[str, Any]:
+                        evidence: list[str] | None = None,
+                        verification: str = VerificationState.UNVERIFIED.value) -> dict[str, Any]:
         obs = {
             "id": str(uuid.uuid4()),
             "content": content,
@@ -112,8 +112,8 @@ class Task:
         return obs
 
     def add_hypothesis(self, statement: str, confidence: float = 0.0,
-                       supporting_observations: Optional[List[str]] = None,
-                       verification: str = VerificationState.UNVERIFIED.value) -> Dict[str, Any]:
+                       supporting_observations: list[str] | None = None,
+                       verification: str = VerificationState.UNVERIFIED.value) -> dict[str, Any]:
         hyp = {
             "id": str(uuid.uuid4()),
             "statement": statement,
@@ -126,8 +126,8 @@ class Task:
         return hyp
 
     def add_action(self, action: str, tool: str, agent: str = "", model: str = "",
-                   parameters: Optional[Dict[str, Any]] = None,
-                   result: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                   parameters: dict[str, Any] | None = None,
+                   result: dict[str, Any] | None = None) -> dict[str, Any]:
         act = {
             "id": str(uuid.uuid4()),
             "action": action,
@@ -148,7 +148,7 @@ class Task:
         return act
 
     def add_evidence(self, content: str, source: str = "", evidence_type: str = "observation",
-                     hash: str = "", confidence: float = 0.0) -> Dict[str, Any]:
+                     hash: str = "", confidence: float = 0.0) -> dict[str, Any]:
         import hashlib
         ev = {
             "id": str(uuid.uuid4()),
@@ -163,8 +163,8 @@ class Task:
         return ev
 
     def add_finding(self, description: str, confidence: float = 0.0,
-                    evidence_ids: Optional[List[str]] = None, source: str = "",
-                    verification: str = VerificationState.UNVERIFIED.value) -> Dict[str, Any]:
+                    evidence_ids: list[str] | None = None, source: str = "",
+                    verification: str = VerificationState.UNVERIFIED.value) -> dict[str, Any]:
         finding = {
             "id": str(uuid.uuid4()),
             "description": description,
@@ -191,7 +191,7 @@ class Task:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "objective": self.objective,
@@ -217,7 +217,7 @@ class Task:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Task":
+    def from_dict(cls, data: dict[str, Any]) -> "Task":
         task = cls(
             objective=data["objective"],
             scope=data.get("scope", "authorized_lab"),

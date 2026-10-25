@@ -25,7 +25,7 @@ import platform
 import shutil
 import subprocess
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -56,15 +56,15 @@ class HardwareProfile:
     os: str = ""
     cpu_count: int = 0
     ram_gb: float = 0.0
-    gpus: List[Dict[str, Any]] = field(default_factory=list)
+    gpus: list[dict[str, Any]] = field(default_factory=list)
     total_vram_gb: float = 0.0
     docker: bool = False
     ollama: bool = False
     profile: str = "MINIMAL"
     profile_source: str = "detected"  # "env" when CERBERUS_PROFILE forced
-    notes: List[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "os": self.os,
             "cpu_count": self.cpu_count,
@@ -103,7 +103,7 @@ def _detect_ram_gb() -> float:
         )
         # "MemTotal:       32612384 kB"
         return float(out.stdout.split()[1]) * 1024 / (1024 ** 3)
-    except Exception as e:  # noqa: BLE001 — probe must never crash startup
+    except Exception as e:
         logger.warning("RAM detection failed: %s", e)
         return 0.0
 
@@ -117,7 +117,7 @@ def _detect_cpu_count() -> int:
         return os.cpu_count() or 0
 
 
-def _detect_gpus() -> List[Dict[str, Any]]:
+def _detect_gpus() -> list[dict[str, Any]]:
     """
     Detect GPUs via nvidia-smi (NVIDIA) — the common case for ML machines.
 
@@ -125,7 +125,7 @@ def _detect_gpus() -> List[Dict[str, Any]]:
     nvidia-smi is unavailable. AMD/Intel accelerators are reported via a
     note (no reliable cross-platform CLI probe exists for them).
     """
-    gpus: List[Dict[str, Any]] = []
+    gpus: list[dict[str, Any]] = []
     smi = shutil.which("nvidia-smi")
     if not smi:
         return gpus
@@ -142,7 +142,7 @@ def _detect_gpus() -> List[Dict[str, Any]]:
                     "name": parts[0],
                     "vram_gb": round(float(parts[1]) / 1024, 1),
                 })
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning("GPU detection failed: %s", e)
     return gpus
 
@@ -247,10 +247,10 @@ def format_report(hp: HardwareProfile) -> str:
 
 
 __all__ = [
-    "HardwareProfile",
-    "detect_hardware",
-    "classify",
-    "format_report",
-    "PROFILE_ORDER",
     "PROFILE_DESCRIPTIONS",
+    "PROFILE_ORDER",
+    "HardwareProfile",
+    "classify",
+    "detect_hardware",
+    "format_report",
 ]

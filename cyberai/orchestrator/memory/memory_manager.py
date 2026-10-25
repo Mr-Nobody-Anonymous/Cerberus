@@ -5,13 +5,14 @@ Persistent memory layer that stores structured experiences from
 authorized lab tasks. Supports semantic retrieval for future planning.
 """
 
+import contextlib
 import json
 import logging
 import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import config
 
@@ -32,11 +33,13 @@ class MemoryManager:
     Supports semantic retrieval via embeddings when available.
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or config.get_path("memory", "db_path", "memory/memory.db")
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.db_path))
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        with contextlib.suppress(Exception):
+            self._conn.execute("PRAGMA journal_mode=WAL")
         self._init_db()
 
     def _init_db(self) -> None:
@@ -93,7 +96,7 @@ class MemoryManager:
                 )
             """)
 
-    def store_experience(self, experience: Dict[str, Any]) -> str:
+    def store_experience(self, experience: dict[str, Any]) -> str:
         """
         Store a structured experience record.
 
@@ -136,7 +139,7 @@ class MemoryManager:
         logger.info(f"Stored experience {exp_id}")
         return exp_id
 
-    def search_experiences(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def search_experiences(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
         """
         Search experiences by keyword (semantic search when embeddings available).
 
@@ -160,7 +163,7 @@ class MemoryManager:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_experiences_by_result(self, result: str, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_experiences_by_result(self, result: str, limit: int = 50) -> list[dict[str, Any]]:
         """Get experiences filtered by result (success/failure)."""
         with self._conn:
             rows = self._conn.execute(
@@ -187,7 +190,7 @@ class MemoryManager:
             )
         logger.info(f"Updated score for {exp_id} by {score_delta}")
 
-    def store_finding(self, finding: Dict[str, Any]) -> str:
+    def store_finding(self, finding: dict[str, Any]) -> str:
         """
         Store a finding with verification status.
 
@@ -232,7 +235,7 @@ class MemoryManager:
             )
         logger.info(f"Updated finding {finding_id} status to {status}")
 
-    def get_findings(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_findings(self, status: str | None = None) -> list[dict[str, Any]]:
         """Get findings, optionally filtered by status."""
         if status:
             with self._conn:
@@ -277,7 +280,7 @@ class MemoryManager:
                 (now, "completed", summary, findings_count, evidence_count, session_id),
             )
 
-    def list_sessions(self) -> List[Dict[str, Any]]:
+    def list_sessions(self) -> list[dict[str, Any]]:
         """List all sessions."""
         with self._conn:
             rows = self._conn.execute(
@@ -285,7 +288,7 @@ class MemoryManager:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def get_session(self, session_id: str) -> dict[str, Any] | None:
         """Get a session by ID."""
         with self._conn:
             row = self._conn.execute(

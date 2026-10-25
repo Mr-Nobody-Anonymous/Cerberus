@@ -9,12 +9,12 @@ implementation that can be extended.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import sys
-import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
 
@@ -54,13 +54,13 @@ class MCPGateway:
     - Custom MCP configurations
     """
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         # Intentionally package-relative: mcp_config.json is default package
         # data that ships next to this module — NOT a workspace resource (do
         # not route through cyberai.config.resolve_path).
         self.config_path = config_path or Path(__file__).parent / "mcp_config.json"
-        self._servers: Dict[str, Dict[str, Any]] = {}
-        self._tools: Dict[str, Dict[str, Any]] = {}
+        self._servers: dict[str, dict[str, Any]] = {}
+        self._tools: dict[str, dict[str, Any]] = {}
         self._load_config()
 
     def _load_config(self) -> None:
@@ -84,7 +84,7 @@ class MCPGateway:
         else:
             logger.info("No MCP config file found - using defaults")
 
-    def discover_mcp_servers(self) -> List[Dict[str, Any]]:
+    def discover_mcp_servers(self) -> list[dict[str, Any]]:
         """
         Discover available MCP servers from adapters.
 
@@ -120,7 +120,7 @@ class MCPGateway:
             },
         }
 
-        for name, config in adapter_dirs.items():
+        for config in adapter_dirs.values():
             adapter_path = Path(config["cwd"])
             if adapter_path.exists():
                 # Check if the entry point exists
@@ -131,7 +131,7 @@ class MCPGateway:
 
         return discovered
 
-    async def health_check_all(self) -> Dict[str, Dict[str, Any]]:
+    async def health_check_all(self) -> dict[str, dict[str, Any]]:
         """Check health of all configured MCP servers.
 
         Performs a REAL probe: launches each stdio server and sends a
@@ -139,7 +139,7 @@ class MCPGateway:
         timeout are HEALTHY; launch failures are OFFLINE; timeouts are
         DEGRADED. Purely file-based discovery results are DISCOVERED.
         """
-        results: Dict[str, Dict[str, Any]] = {}
+        results: dict[str, dict[str, Any]] = {}
         for name, config in self._servers.items():
             # Darkmoon has a slow startup (imports + banner + health check)
             probe_timeout = 90.0 if name == "darkmoon-mcp" else 45.0
@@ -153,8 +153,8 @@ class MCPGateway:
                 }
         return results
 
-    async def _probe_server(self, name: str, cfg: Dict[str, Any],
-                            timeout: float = 45.0) -> Dict[str, Any]:
+    async def _probe_server(self, name: str, cfg: dict[str, Any],
+                            timeout: float = 45.0) -> dict[str, Any]:
         """Launch a stdio MCP server and send a JSON-RPC initialize probe.
 
         Reads the response line-by-line (stdio MCP servers stay alive
@@ -224,7 +224,7 @@ class MCPGateway:
                 "message": f"unexpected response: {str(response)[:150]}"}
 
     async def list_server_tools(self, server: str,
-                                timeout: float = 60.0) -> Dict[str, Any]:
+                                timeout: float = 60.0) -> dict[str, Any]:
         """Ask an MCP server for its tool list (JSON-RPC tools/list).
 
         Performs the full handshake: initialize → initialized → tools/list.
@@ -265,7 +265,7 @@ class MCPGateway:
             return {"status": "UNAVAILABLE", "server": server,
                     "error": f"cannot launch '{command}': {e}"}
 
-        tools: List[Dict[str, Any]] = []
+        tools: list[dict[str, Any]] = []
         try:
             # 1. initialize
             proc.stdin.write(json.dumps({
@@ -324,19 +324,19 @@ class MCPGateway:
         return {"status": "ERROR", "server": server,
                 "error": "no tools/list response"}
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """List all tools available through MCP servers."""
         return sorted(self._tools.keys())
 
-    def get_tool(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_tool(self, name: str) -> dict[str, Any] | None:
         """Get tool info by name."""
         return self._tools.get(name)
 
-    def list_servers(self) -> List[Dict[str, Any]]:
+    def list_servers(self) -> list[dict[str, Any]]:
         """Return all known MCP server configs (configured + discovered)."""
         discovered = self.discover_mcp_servers()
         seen = set()
-        out: List[Dict[str, Any]] = []
+        out: list[dict[str, Any]] = []
         for s in discovered + list(self._servers.values()):
             n = s.get("name", "")
             if n and n not in seen:
@@ -348,9 +348,9 @@ class MCPGateway:
         self,
         server: str,
         tool: str,
-        arguments: Optional[Dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
         timeout: float = 30.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Dispatch a tool call to the named MCP server.
 
         Supports stdio MCP servers by spawning the configured command and
@@ -413,7 +413,7 @@ class MCPGateway:
                 "error": f"cannot launch '{command}': {e}",
             }
 
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         try:
             # 1. initialize
             proc.stdin.write(json.dumps({
@@ -486,7 +486,7 @@ class MCPGateway:
             "result": result.get("result"),
         }
 
-    async def health(self) -> Dict[str, Any]:
+    async def health(self) -> dict[str, Any]:
         """Aggregate health across configured servers."""
         configured = list(self._servers.keys())
         discovered = [s.get("name") for s in self.discover_mcp_servers()]
@@ -503,7 +503,7 @@ class MCPGateway:
             "total": len(checks),
         }
 
-    def register_server(self, name: str, config: Dict[str, Any]) -> None:
+    def register_server(self, name: str, config: dict[str, Any]) -> None:
         """Register (or replace) an MCP server configuration at runtime."""
         config.setdefault("name", name)
         self._servers[name] = config
@@ -516,7 +516,7 @@ class MCPGateway:
             return True
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return the MCP gateway state as a dict."""
         return {
             "servers": self._servers,
@@ -530,7 +530,7 @@ class MCPGateway:
 # ---------------------------------------------------------------------------
 
 async def _read_json_line(stream: asyncio.StreamReader,
-                          max_lines: int = 500) -> Optional[Dict[str, Any]]:
+                          max_lines: int = 500) -> dict[str, Any] | None:
     """Read lines from a stdio MCP server until one parses as JSON.
 
     Skips banner/log lines that some servers print before protocol output.
@@ -550,7 +550,7 @@ async def _read_json_line(stream: asyncio.StreamReader,
     return None
 
 
-async def _read_tail(stream: Optional[asyncio.StreamReader],
+async def _read_tail(stream: asyncio.StreamReader | None,
                      max_bytes: int = 400) -> str:
     """Best-effort read of remaining stderr for diagnostics."""
     if stream is None:
@@ -562,7 +562,7 @@ async def _read_tail(stream: Optional[asyncio.StreamReader],
         return ""
 
 
-async def _kill_proc(proc: Optional[asyncio.subprocess.Process]) -> None:
+async def _kill_proc(proc: asyncio.subprocess.Process | None) -> None:
     """Terminate a subprocess cleanly (Windows + POSIX).
 
     Also closes the transport pipes so Windows proactor transports
@@ -572,29 +572,21 @@ async def _kill_proc(proc: Optional[asyncio.subprocess.Process]) -> None:
         return
     try:
         if proc.returncode is None:
-            try:
+            with contextlib.suppress(ProcessLookupError, OSError):
                 proc.kill()
-            except (ProcessLookupError, OSError):
-                pass
         # Give the process a moment to die, then close pipes to avoid
         # Windows proactor 'unclosed transport' ResourceWarnings.
-        try:
+        with contextlib.suppress(asyncio.TimeoutError):
             await asyncio.wait_for(proc.wait(), timeout=2.0)
-        except asyncio.TimeoutError:
-            pass
         for pipe in (proc.stdin, proc.stdout, proc.stderr):
             if pipe is not None:
-                try:
+                with contextlib.suppress(Exception):
                     pipe.close()
-                except Exception:
-                    pass
         # Close the underlying transport so its __del__ doesn't complain
         # after the event loop is gone (Windows proactor).
         transport = getattr(proc, "_transport", None)
         if transport is not None:
-            try:
+            with contextlib.suppress(Exception):
                 transport.close()
-            except Exception:
-                pass
     except Exception:
         pass

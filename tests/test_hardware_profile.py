@@ -16,9 +16,9 @@ import os
 import pytest
 
 from cyberai.llm_gateway.hardware import (
-    HardwareProfile,
-    PROFILE_ORDER,
     PROFILE_DESCRIPTIONS,
+    PROFILE_ORDER,
+    HardwareProfile,
     classify,
     detect_hardware,
     format_report,

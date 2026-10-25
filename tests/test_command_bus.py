@@ -129,7 +129,7 @@ class TestRegistry:
 class TestBuiltinCommands:
     @classmethod
     def setup_class(cls):
-        from cyberai.commands import load_builtin_commands, get_dispatcher
+        from cyberai.commands import get_dispatcher, load_builtin_commands
         load_builtin_commands()
         cls.dispatcher = get_dispatcher()
 

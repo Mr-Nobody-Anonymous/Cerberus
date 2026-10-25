@@ -60,7 +60,7 @@ def _list(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "sessions", data={"sessions": out, "total": len(rows)},
             rows=out, columns=["id", "title", "status", "kind", "started_at"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("sessions", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(mm)
@@ -82,7 +82,7 @@ def _show(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "session": s, "findings": findings,
             "metadata": _session_meta(s),
         })
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("session", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(mm)
@@ -116,7 +116,7 @@ def _rename(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
         return CommandResult.success("rename",
                                      data={"id": session_id, "title": title},
                                      message=f"renamed to {title!r}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("rename", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(mm)
@@ -153,7 +153,7 @@ def _fork(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
         return CommandResult.success("fork", data={
             "id": new_id, "forked_from": session_id,
         }, message=f"forked {session_id} → {new_id}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("fork", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(mm)

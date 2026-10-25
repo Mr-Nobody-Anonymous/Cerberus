@@ -6,7 +6,7 @@ Weights are configurable and documented.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class FitnessFunction:
     All weights are configurable and documented.
     """
 
-    def __init__(self, weights: Optional[Dict[str, float]] = None):
+    def __init__(self, weights: dict[str, float] | None = None):
         self.weights = weights or dict(DEFAULT_WEIGHTS)
 
     def compute(
@@ -88,7 +88,7 @@ class FitnessFunction:
 
     def compute_from_strategy_result(
         self,
-        result: Dict[str, Any],
+        result: dict[str, Any],
     ) -> float:
         """
         Compute fitness from a strategy evaluation result.
@@ -114,11 +114,11 @@ class FitnessFunction:
             failure_count=result.get("failure_count", 0),
         )
 
-    def get_weights(self) -> Dict[str, float]:
+    def get_weights(self) -> dict[str, float]:
         """Return the current weights."""
         return dict(self.weights)
 
-    def set_weights(self, weights: Dict[str, float]) -> None:
+    def set_weights(self, weights: dict[str, float]) -> None:
         """Update the weights."""
         self.weights.update(weights)
         logger.info(f"Updated fitness weights: {self.weights}")

@@ -6,8 +6,9 @@ Each agent receives only relevant context, not every previous output.
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +20,9 @@ class PipelineStep:
     agent_name: str
     capability: str
     description: str = ""
-    input_filter: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
+    input_filter: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     output_key: str = ""
-    result: Optional[Dict[str, Any]] = None
+    result: dict[str, Any] | None = None
     status: str = "pending"  # pending, running, completed, failed
 
 
@@ -35,17 +36,17 @@ class AgentPipeline:
 
     def __init__(self, task: Any = None):
         self.task = task
-        self.steps: List[PipelineStep] = []
-        self._context: Dict[str, Any] = {}
+        self.steps: list[PipelineStep] = []
+        self._context: dict[str, Any] = {}
         # Optional cooperative-cancellation probe, checked between steps.
-        self.should_cancel: Optional[Callable[[], bool]] = None
+        self.should_cancel: Callable[[], bool] | None = None
 
     def add_step(
         self,
         agent_name: str,
         capability: str,
         description: str = "",
-        input_filter: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
+        input_filter: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
         output_key: str = "",
     ) -> PipelineStep:
         """Add a step to the pipeline."""
@@ -59,7 +60,7 @@ class AgentPipeline:
         self.steps.append(step)
         return step
 
-    def _build_context_for_step(self, step: PipelineStep) -> Dict[str, Any]:
+    def _build_context_for_step(self, step: PipelineStep) -> dict[str, Any]:
         """
         Build the context for a specific step.
 
@@ -94,7 +95,7 @@ class AgentPipeline:
 
         return context
 
-    async def run(self, agent_executor: Callable[[str, Dict[str, Any]], Dict[str, Any]]) -> Dict[str, Any]:
+    async def run(self, agent_executor: Callable[[str, dict[str, Any]], dict[str, Any]]) -> dict[str, Any]:
         """
         Run the pipeline.
 
@@ -128,7 +129,7 @@ class AgentPipeline:
                             "results": results,
                             "cancelled": True,
                         }
-                except Exception as e:  # noqa: BLE001 — probe must never kill the run
+                except Exception as e:
                     logger.debug(f"Cancellation probe failed: {e}")
             step.status = "running"
             context = self._build_context_for_step(step)
@@ -156,14 +157,14 @@ class AgentPipeline:
             "results": results,
         }
 
-    def get_step_result(self, agent_name: str) -> Optional[Dict[str, Any]]:
+    def get_step_result(self, agent_name: str) -> dict[str, Any] | None:
         """Get the result of a specific step."""
         for step in self.steps:
             if step.agent_name == agent_name:
                 return step.result
         return None
 
-    def get_all_results(self) -> Dict[str, Any]:
+    def get_all_results(self) -> dict[str, Any]:
         """Get all step results."""
         return {
             step.output_key: step.result

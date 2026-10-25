@@ -5,7 +5,7 @@
 """
 
 import socket
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -47,7 +47,7 @@ async def list_targets():
 
 
 @router.patch("/{target_id}")
-async def update_target(target_id: str, body: Dict[str, Any]):
+async def update_target(target_id: str, body: dict[str, Any]):
     """Authorize (allowed=true) or revoke (allowed=false) a target."""
     require_fields(body, "allowed")
     allowed = body["allowed"]

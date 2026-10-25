@@ -13,14 +13,13 @@ Grammar (whitespace-separated tokens):
 """
 
 import shlex
-from typing import List, Tuple
 
 from cyberai.commands.models import ParsedCommand
 
 _MAX_TOKENS = 64
 
 
-def tokenize(raw: str) -> List[str]:
+def tokenize(raw: str) -> list[str]:
     """Split a raw line into tokens honoring double quotes."""
     raw = raw.strip()
     if not raw:
@@ -32,7 +31,7 @@ def tokenize(raw: str) -> List[str]:
         return raw.split()[:_MAX_TOKENS]
 
 
-def _split_kv(token: str) -> Tuple[str, str] | None:
+def _split_kv(token: str) -> tuple[str, str] | None:
     if "=" not in token:
         return None
     key, _, value = token.partition("=")
@@ -48,7 +47,7 @@ def parse_command(raw: str) -> ParsedCommand:
         return ParsedCommand(raw=raw, is_command=False)
 
     name = tokens[0][1:].lower()
-    args: List[str] = []
+    args: list[str] = []
     kwargs = {}
     for token in tokens[1:]:
         kv = _split_kv(token)
@@ -60,7 +59,7 @@ def parse_command(raw: str) -> ParsedCommand:
                           is_command=True)
 
 
-def suggestions(fragment: str, names: List[str], limit: int = 5) -> List[str]:
+def suggestions(fragment: str, names: list[str], limit: int = 5) -> list[str]:
     """Prefix-match suggestions for autocomplete surfaces."""
     frag = fragment.lower().lstrip("/")
     if not frag:

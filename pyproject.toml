@@ -34,17 +34,21 @@ dependencies = [
     "python-dotenv>=1.0,<2",
     "rich>=13,<16",
     "typer>=0.9,<1",
+    "prompt-toolkit>=3.0.38,<4",
 ]
 
 [project.optional-dependencies]
 api = [
-    "fastapi>=0.104.0,<1",
+    "fastapi>=0.115.0,<1",
     "uvicorn>=0.24.0,<1",
 ]
 dev = [
-    "pytest>=7.4.0,<9",
-    "pytest-asyncio>=0.23.0,<1",
-    "pytest-cov>=4.1.0,<7",
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=0.23.0,<2",
+    "pytest-cov>=4.1.0,<8",
+    "ruff>=0.8.0",
+    "bandit[toml]>=1.7.0",
+    "pip-audit>=2.7.0",
 ]
 cloud = [
     # NOTE: The LLM gateway talks to OpenAI/Anthropic over raw httpx — these
@@ -52,11 +56,14 @@ cloud = [
     # Re-add only if an SDK-based provider transport is introduced.
 ]
 all = [
-    "fastapi>=0.104.0,<1",
+    "fastapi>=0.115.0,<1",
     "uvicorn>=0.24.0,<1",
-    "pytest>=7.4.0,<9",
-    "pytest-asyncio>=0.23.0,<1",
-    "pytest-cov>=4.1.0,<7",
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=0.23.0,<2",
+    "pytest-cov>=4.1.0,<8",
+    "ruff>=0.8.0",
+    "bandit[toml]>=1.7.0",
+    "pip-audit>=2.7.0",
 ]
 
 [project.scripts]
@@ -66,11 +73,51 @@ cyber-ai = "cyberai.orchestrator.cli.cli:cli"
 include = ["cyberai*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml", "*.json", "*.md"]
+"*" = ["*.yaml", "*.json", "*.md", "*.html", "*.css", "*.js", "*.svg", "*.ico"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = [
+    # Vendored adapter codebases — they carry their own lint configs
+    "adapters",
+    "projects",
+    "infrastructure",
+    "cyberai/ui/frontend",
+    "_cerberus-clean-check",
+    "_ci_check",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "B",   # bugbear (real bug patterns)
+    "UP",  # pyupgrade
+    "SIM", # simplify
+    "RUF", # ruff-specific
+]
+ignore = [
+    "E501",  # line length handled by formatter where possible; long strings allowed
+    "B008",  # function call in default arg — used for Rich console/theme singletons
+    "SIM108", # ternary rewrite hurts readability in some cases
+    "RUF012", # mutable class attrs — dataclass-style patterns used widely
+    # Intentional unicode: box-drawing/arrow glyphs in CLI banners and tables
+    "RUF001", "RUF002", "RUF003",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cyberai"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: unused fixtures/imports are common; star imports in test helpers
+"tests/**" = ["F401", "F403", "SIM117"]
 
 [tool.coverage.run]
 source = ["cyberai"]

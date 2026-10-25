@@ -13,7 +13,7 @@ repositories:
     note: >-
       Vendored source copy removed 2026-09-10 (it was never imported —
       the gateway talks HTTP to the proxy). Consumed as the pinned Docker
-      image litellm/litellm:1.97.0 in docker-compose.yml. Upstream:
+      image ghcr.io/berriai/litellm:v1.97.0 in docker-compose.yml. Upstream:
       https://github.com/BerriAI/litellm (MIT).
 
   - original_name: ollama

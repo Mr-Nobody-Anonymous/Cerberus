@@ -7,7 +7,7 @@ explicitly registered and authorized before any active testing is allowed.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import config, validate_targets_file
 
@@ -22,11 +22,11 @@ class PolicyEngine:
     in the lab targets file before any active testing is permitted.
     """
 
-    def __init__(self, targets_path: Optional[Path] = None):
+    def __init__(self, targets_path: Path | None = None):
         self.targets_path = targets_path or config.get_path(
             "policy", "targets_path", "lab/targets/targets.yaml"
         )
-        self._targets: Dict[str, Dict[str, Any]] = {}
+        self._targets: dict[str, dict[str, Any]] = {}
         self._load_targets()
 
     def _load_targets(self) -> None:
@@ -63,15 +63,15 @@ class PolicyEngine:
             return False
         return target.get("allowed", False) is True
 
-    def get_target(self, target_id: str) -> Optional[Dict[str, Any]]:
+    def get_target(self, target_id: str) -> dict[str, Any] | None:
         """Get target info by ID."""
         return self._targets.get(target_id)
 
-    def list_targets(self) -> List[Dict[str, Any]]:
+    def list_targets(self) -> list[dict[str, Any]]:
         """List all registered targets."""
         return list(self._targets.values())
 
-    def list_authorized_targets(self) -> List[Dict[str, Any]]:
+    def list_authorized_targets(self) -> list[dict[str, Any]]:
         """List only authorized targets."""
         return [t for t in self._targets.values() if t.get("allowed", False)]
 
@@ -98,7 +98,7 @@ class PolicyEngine:
 
         return action in allowed_actions
 
-    def register_target(self, target: Dict[str, Any]) -> None:
+    def register_target(self, target: dict[str, Any]) -> None:
         """
         Register a new target.
 

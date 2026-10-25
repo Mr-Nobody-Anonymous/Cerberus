@@ -1,7 +1,7 @@
 """Dispatcher — resolves parsed commands against the registry."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from cyberai.commands.context import CommandContext
 from cyberai.commands.models import CommandResult, ParsedCommand
@@ -18,10 +18,10 @@ class Dispatcher:
         result = dispatcher.execute("/findings status=VERIFIED", ctx)
     """
 
-    def __init__(self, registry: Optional[CommandRegistry] = None):
+    def __init__(self, registry: CommandRegistry | None = None):
         self.registry = registry or get_registry()
 
-    def execute(self, raw: str, ctx: Optional[CommandContext] = None) -> CommandResult:
+    def execute(self, raw: str, ctx: CommandContext | None = None) -> CommandResult:
         """Parse + invoke. Non-command text returns ok=False, chat=True."""
         from cyberai.commands.parser import parse_command
 
@@ -37,7 +37,7 @@ class Dispatcher:
         return self.registry.invoke(parsed.name, ctx, parsed)
 
     def execute_parsed(self, parsed: ParsedCommand,
-                       ctx: Optional[CommandContext] = None) -> CommandResult:
+                       ctx: CommandContext | None = None) -> CommandResult:
         """Invoke an already-parsed command (used by API layer)."""
         if not parsed.is_command:
             return CommandResult(
@@ -52,7 +52,7 @@ class Dispatcher:
         from cyberai.commands.parser import suggestions
         return suggestions(fragment, self.registry.names())
 
-    def help(self, name: str = "") -> Dict[str, Any]:
+    def help(self, name: str = "") -> dict[str, Any]:
         """Structured help for one command or the whole catalog."""
         if name:
             spec = self.registry.command(name)

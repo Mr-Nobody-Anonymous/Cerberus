@@ -17,8 +17,7 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .memory.memory_manager import MemoryManager
 from .policies.policy_engine import PolicyEngine
@@ -39,17 +38,17 @@ class Orchestrator:
 
     def __init__(
         self,
-        memory: Optional[MemoryManager] = None,
-        policy: Optional[PolicyEngine] = None,
-        model_router: Optional[ModelRouter] = None,
-        tool_registry: Optional[ToolRegistry] = None,
+        memory: MemoryManager | None = None,
+        policy: PolicyEngine | None = None,
+        model_router: ModelRouter | None = None,
+        tool_registry: ToolRegistry | None = None,
     ):
         self.memory = memory or MemoryManager()
         self.policy = policy or PolicyEngine()
         self.model_router = model_router or ModelRouter()
         self.tool_registry = tool_registry or ToolRegistry()
-        self._sessions: Dict[str, Dict[str, Any]] = {}
-        self._active_tasks: Dict[str, asyncio.Task] = {}
+        self._sessions: dict[str, dict[str, Any]] = {}
+        self._active_tasks: dict[str, asyncio.Task] = {}
         self._evidence_manager = None
         self._attach_hardware_profile()
 
@@ -77,10 +76,10 @@ class Orchestrator:
 
             hp = detect_hardware()
             self.model_router.attach_profile(hp.profile)
-        except Exception as e:  # noqa: BLE001 — advisory, never fatal
+        except Exception as e:
             logger.warning("Hardware profile detection failed: %s", e)
 
-    async def start_session(self, target_id: str) -> Dict[str, Any]:
+    async def start_session(self, target_id: str) -> dict[str, Any]:
         """
         Start a new orchestration session.
 
@@ -117,7 +116,7 @@ class Orchestrator:
         self.memory.end_session(session_id, summary)
         logger.info(f"Ended session {session_id}")
 
-    async def plan(self, session_id: str, objective: str) -> Dict[str, Any]:
+    async def plan(self, session_id: str, objective: str) -> dict[str, Any]:
         """
         Plan a task using the planner agent.
 
@@ -169,8 +168,8 @@ class Orchestrator:
         target_id: str,
         tool_name: str,
         action: str,
-        parameters: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        parameters: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute a task using a registered tool.
 
@@ -259,8 +258,8 @@ class Orchestrator:
         return task
 
     async def _execute_via_adapter(
-        self, tool_name: str, task: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, tool_name: str, task: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Attempt to run a task through the tool's real adapter.
 
@@ -298,7 +297,7 @@ class Orchestrator:
             logger.warning(f"Adapter execution failed for {tool_name} ({adapter_path}): {e}")
             return None
 
-    async def verify(self, session_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
+    async def verify(self, session_id: str, finding: dict[str, Any]) -> dict[str, Any]:
         """
         Verify a finding using the verifier agent.
 
@@ -316,7 +315,7 @@ class Orchestrator:
         verified["session_id"] = session_id
         return verified
 
-    async def assess(self, target_id: str, objective: str) -> Dict[str, Any]:
+    async def assess(self, target_id: str, objective: str) -> dict[str, Any]:
         """
         Run a full assessment on an authorized target.
 
@@ -363,7 +362,7 @@ class Orchestrator:
             await self.end_session(session_id, summary=f"Failed: {e}")
             raise
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get orchestrator status."""
         return {
             "platform": "Cyber AI Orchestrator",

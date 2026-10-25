@@ -5,9 +5,9 @@ the CLI renders exactly what the web UI and API return (surface parity).
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from rich.console import Console, group
+from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -32,7 +32,7 @@ def make_console() -> Console:
         try:
             if hasattr(stream, "reconfigure"):
                 stream.reconfigure(errors="replace")
-        except Exception:  # noqa: BLE001 — never crash on console setup
+        except Exception:
             pass
     from .theme import CERBERUS_THEME
     return Console(theme=CERBERUS_THEME, no_color=_NO_COLOR["enabled"],
@@ -82,8 +82,8 @@ def render_result(console: Console, result, verbose: bool = False) -> None:
         render_data(console, result.data, verbose)
 
 
-def render_rows(console: Console, rows: List[Dict[str, Any]],
-                columns: Optional[List[str]] = None) -> None:
+def render_rows(console: Console, rows: list[dict[str, Any]],
+                columns: list[str] | None = None) -> None:
     """Render structured rows as a Rich table."""
     if not rows:
         console.print(Text("  (no results)", style="cb.dim"))
@@ -111,14 +111,14 @@ def render_rows(console: Console, rows: List[Dict[str, Any]],
     console.print(table)
 
 
-def render_data(console: Console, data: Dict[str, Any], verbose: bool = False) -> None:
+def render_data(console: Console, data: dict[str, Any], verbose: bool = False) -> None:
     """Render a data payload as pretty JSON (trimmed unless verbose)."""
     payload = data
     if not verbose and isinstance(payload, dict):
         trimmed = {}
         for k, v in payload.items():
             if isinstance(v, list) and len(v) > 8:
-                trimmed[k] = v[:8] + [f"... +{len(v) - 8} more"]
+                trimmed[k] = [*v[:8], f"... +{len(v) - 8} more"]
             else:
                 trimmed[k] = v
         payload = trimmed
@@ -127,13 +127,22 @@ def render_data(console: Console, data: Dict[str, Any], verbose: bool = False) -
 
 def render_banner(console: Console, mode: str = "LIVE") -> None:
     """Startup banner for the interactive console."""
+    from rich.panel import Panel
+    from rich.table import Table
+
     from .theme import BANNER
-    console.print(Text(BANNER, style="cb.banner"))
     mode_style = "cb.green" if mode == "SIMULATE" else "cb.accent"
-    console.print("  mode: ", style="cb.dim", end="")
-    console.print(mode, style=mode_style, end="")
-    console.print(_s("   ·   /help for commands   ·   /quit to exit"),
-                  style="cb.dim")
+    body = Text(BANNER, style="cb.banner")
+    body.append(f"  [{mode}]", style=mode_style)
+    console.print(Panel(body, border_style="cb.accent", expand=False,
+                        subtitle="operator console"))
+    # Status strip: mode pill + quick facts
+    strip = Table.grid(padding=(0, 2))
+    strip.add_column(style="cb.dim", justify="left")
+    strip.add_column(style="cb.accent", justify="left")
+    strip.add_row(_s("mode"), Text(mode, style=mode_style))
+    strip.add_row(_s("help"), _s("/help for commands · /quit to exit"))
+    console.print(strip)
 
 
 def render_hint(console: Console, text: str) -> None:

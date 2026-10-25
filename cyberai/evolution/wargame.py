@@ -15,10 +15,10 @@ fast-forward a whole generation without touching real targets.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.evolution.engine import EvolutionEngine
-from cyberai.evolution.population import Strategy, StrategyStatus
+from cyberai.evolution.population import Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class GhostWargame:
     """Failure-learning + fast-forward simulation facade over EvolutionEngine."""
 
-    def __init__(self, engine: Optional[EvolutionEngine] = None):
+    def __init__(self, engine: EvolutionEngine | None = None):
         self.engine = engine or EvolutionEngine()
 
     # -- failure memory ----------------------------------------------------
@@ -45,15 +45,15 @@ class GhostWargame:
             if recent:
                 recent[0]["tools"] = [tool] if "tools" not in recent[0] else recent[0]["tools"] + [tool]
 
-    def recent_failures(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def recent_failures(self, limit: int = 10) -> list[dict[str, Any]]:
         """Recent failure records (newest first)."""
         return self.engine.get_recent_failures(limit=limit)
 
-    def failures_by_tool(self, tool: str) -> List[Dict[str, Any]]:
+    def failures_by_tool(self, tool: str) -> list[dict[str, Any]]:
         """All failures associated with a tool."""
         return self.engine.get_failures_by_tool(tool)
 
-    def failures_by_category(self, category: str) -> List[Dict[str, Any]]:
+    def failures_by_category(self, category: str) -> list[dict[str, Any]]:
         """All failures in a category (tool_unavailable, no_evidence, ...)."""
         return self.engine.get_failures_by_category(category)
 
@@ -63,7 +63,7 @@ class GhostWargame:
         """True if the engine's avoidance logic would skip this strategy."""
         return self.engine.should_avoid_similar(strategy)
 
-    def filter_avoided(self, strategies: List[Strategy]) -> Dict[str, List[Any]]:
+    def filter_avoided(self, strategies: list[Strategy]) -> dict[str, list[Any]]:
         """Split strategies into (kept, avoided) based on failure memory."""
         kept, avoided = [], []
         for s in strategies:
@@ -78,9 +78,9 @@ class GhostWargame:
     async def fast_forward(
         self,
         task_type: str,
-        task_context: Optional[Dict[str, Any]] = None,
+        task_context: dict[str, Any] | None = None,
         num_strategies: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run a full evolution generation in simulate mode.
 
         No real tools run: the deterministic mock evaluator scores each
@@ -96,11 +96,11 @@ class GhostWargame:
 
     # -- analytics -------------------------------------------------------------
 
-    def analytics(self) -> Dict[str, Any]:
+    def analytics(self) -> dict[str, Any]:
         """Aggregate failure analytics for the wargame dashboard."""
         failures = self.engine.get_recent_failures(limit=1000)
-        by_category: Dict[str, int] = {}
-        by_tool: Dict[str, int] = {}
+        by_category: dict[str, int] = {}
+        by_tool: dict[str, int] = {}
         for f in failures:
             cat = f.get("failure_category", "unknown")
             by_category[cat] = by_category.get(cat, 0) + 1

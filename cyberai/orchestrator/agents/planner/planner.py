@@ -7,7 +7,7 @@ to inform planning decisions.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import BaseAgent
 from .prompts import build_planning_prompt
@@ -26,7 +26,7 @@ class PlannerAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(name="planner", **kwargs)
 
-    async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Create a plan for a security objective.
 
@@ -97,7 +97,7 @@ class PlannerAgent(BaseAgent):
 
         return plan
 
-    def _default_steps(self, objective: str, target_id: str) -> List[Dict[str, Any]]:
+    def _default_steps(self, objective: str, target_id: str) -> list[dict[str, Any]]:
         """Generate default plan steps as a fallback."""
         return [
             {

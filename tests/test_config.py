@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 
 from cyberai.config import (
+    WORKSPACE_ROOT,
     Config,
     ConfigError,
-    WORKSPACE_ROOT,
     get_workspace_root,
     load_required_yaml,
     resolve_path,

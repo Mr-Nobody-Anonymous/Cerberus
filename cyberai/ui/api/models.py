@@ -5,7 +5,7 @@
     PATCH /api/v1/models/routing update one route
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -34,7 +34,7 @@ async def get_routing():
 
 
 @router.patch("/routing")
-async def update_routing(body: Dict[str, Any]):
+async def update_routing(body: dict[str, Any]):
     require_fields(body, "task_type", "model_alias")
     task_type = str(body["task_type"]).strip()
     model_alias = str(body["model_alias"]).strip()
@@ -46,8 +46,8 @@ async def update_routing(body: Dict[str, Any]):
         with open(mr.config_path, "w", encoding="utf-8") as f:
             _yaml.dump({"routes": mr.get_all_routes()}, f,
                        default_flow_style=False)
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
     EVENT_BUS.publish("audit", {
         "actor": "OPERATOR", "agent": "-", "tool": "model_router",
         "target": "-", "action": f"route {task_type} -> {model_alias}",

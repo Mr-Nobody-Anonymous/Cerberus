@@ -13,11 +13,12 @@ Loads and indexes security knowledge from:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+
+from cyberai.config import WORKSPACE_ROOT
 
 logger = logging.getLogger(__name__)
 
-from cyberai.config import WORKSPACE_ROOT
 KNOWLEDGE_DIR = WORKSPACE_ROOT / "knowledge"
 
 
@@ -28,9 +29,9 @@ class KnowledgeBase:
     Provides search capabilities across all knowledge sources.
     """
 
-    def __init__(self, knowledge_dir: Optional[Path] = None):
+    def __init__(self, knowledge_dir: Path | None = None):
         self.knowledge_dir = knowledge_dir or KNOWLEDGE_DIR
-        self._index: Dict[str, List[Dict[str, Any]]] = {}
+        self._index: dict[str, list[dict[str, Any]]] = {}
         self._load()
 
     def _load(self) -> None:
@@ -62,7 +63,7 @@ class KnowledgeBase:
         total = sum(len(v) for v in self._index.values())
         logger.info(f"Loaded {total} knowledge items from {len(self._index)} categories")
 
-    def search(self, query: str, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def search(self, query: str, categories: list[str] | None = None) -> list[dict[str, Any]]:
         """
         Search the knowledge base.
 
@@ -96,14 +97,14 @@ class KnowledgeBase:
 
         return results
 
-    def get_categories(self) -> List[str]:
+    def get_categories(self) -> list[str]:
         """Return all available knowledge categories."""
         return sorted(self._index.keys())
 
-    def get_category_items(self, category: str) -> List[Dict[str, Any]]:
+    def get_category_items(self, category: str) -> list[dict[str, Any]]:
         """Get all items in a category."""
         return self._index.get(category, [])
 
-    def get_summary(self) -> Dict[str, int]:
+    def get_summary(self) -> dict[str, int]:
         """Return a summary of knowledge base contents."""
         return {cat: len(items) for cat, items in self._index.items()}

@@ -14,18 +14,17 @@ The app is created against isolated tmp storage (memory DB, targets
 file) so tests never touch the real workspace databases.
 """
 
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 
 fastapi = pytest.importorskip("fastapi", reason="fastapi not installed")
 httpx = pytest.importorskip("httpx", reason="httpx not installed for TestClient")
 
-from pathlib import Path
-from unittest.mock import patch
-
 from fastapi.testclient import TestClient  # noqa: E402
 
 from cyberai.orchestrator.api.api_server import create_app  # noqa: E402
-
 
 TARGETS_YAML = """\
 targets:

@@ -27,7 +27,7 @@ def _findings(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             rows=rows[:limit],
             columns=["id", "target_id", "status", "confidence", "observation"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("findings", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(mm)
@@ -54,7 +54,7 @@ def _set_status(ctx: CommandContext, parsed: ParsedCommand,
         return CommandResult.success(
             "findings", data={"id": finding_id, "status": new_status},
             message=f"finding {finding_id} → {new_status}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("findings", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(mm)

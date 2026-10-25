@@ -6,13 +6,17 @@
     POST   /api/v1/sessions/{id}/fork  fork
 """
 
-from typing import Any, Dict
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from cyberai.ui.api._helpers import (get_session_or_404, parse_session_meta,
-                                     require_fields, session_title,
-                                     write_session_meta)
+from cyberai.ui.api._helpers import (
+    get_session_or_404,
+    parse_session_meta,
+    require_fields,
+    session_title,
+    write_session_meta,
+)
 from cyberai.ui.server import _session_timeline
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
@@ -69,7 +73,7 @@ async def get_session(session_id: str):
 
 
 @router.patch("/{session_id}")
-async def rename_session(session_id: str, body: Dict[str, Any]):
+async def rename_session(session_id: str, body: dict[str, Any]):
     require_fields(body, "title")
     from cyberai.orchestrator import MemoryManager
     mm = MemoryManager()
@@ -86,7 +90,7 @@ async def rename_session(session_id: str, body: Dict[str, Any]):
 
 
 @router.post("/{session_id}/fork", status_code=201)
-async def fork_session(session_id: str, body: Dict[str, Any] = None):
+async def fork_session(session_id: str, body: dict[str, Any] | None = None):
     body = body or {}
     from cyberai.orchestrator import MemoryManager
     mm = MemoryManager()

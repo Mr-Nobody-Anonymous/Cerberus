@@ -21,17 +21,22 @@ Design rules (consistent with the platform's "SQLite-first" philosophy):
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import sqlite3
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
-from cyberai.orchestrator.events import (  # noqa: F401 (Event re-exported)
-    Event, LEGACY_ALIASES, make_event, normalize,
+from cyberai.orchestrator.events import (
+    LEGACY_ALIASES,
+    Event,
+    make_event,
+    normalize,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,14 +61,14 @@ CREATE INDEX IF NOT EXISTS idx_events_session ON events (session_id);
 class EventStore:
     """Persistent, fan-out event store backing both the UI and the CLI."""
 
-    def __init__(self, db_path: Optional[Path] = None, max_history: int = 2000):
+    def __init__(self, db_path: Path | None = None, max_history: int = 2000):
         self._db_path = Path(db_path) if db_path else _DEFAULT_DB
         self._max_history = max_history
-        self._subscribers: Dict[str, Callable[[Event], None]] = {}
+        self._subscribers: dict[str, Callable[[Event], None]] = {}
         self._lock = threading.RLock()
-        self._memory_history: List[Event] = []
+        self._memory_history: list[Event] = []
         self._sqlite_ok = False
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection | None = None
         self._init_db()
 
     # ------------------------------------------------------------------ db
@@ -75,7 +80,7 @@ class EventStore:
             self._conn.executescript(_SCHEMA)
             self._conn.commit()
             self._sqlite_ok = True
-        except Exception as e:  # noqa: BLE001 — degrade, never crash
+        except Exception as e:
             logger.warning("EventStore: SQLite unavailable (%s) — in-memory mode", e)
             self._sqlite_ok = False
             self._conn = None
@@ -83,10 +88,8 @@ class EventStore:
     def close(self) -> None:
         with self._lock:
             if self._conn is not None:
-                try:
+                with contextlib.suppress(Exception):
                     self._conn.close()
-                except Exception:
-                    pass
                 self._conn = None
 
     # ------------------------------------------------------------- ingest
@@ -102,24 +105,22 @@ class EventStore:
                          event.agent, json.dumps(event.metadata, default=str)),
                     )
                     self._conn.commit()
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.debug("EventStore insert failed: %s", e)
             self._memory_history.append(event)
             if len(self._memory_history) > self._max_history:
                 self._memory_history = self._memory_history[-self._max_history:]
             subscribers = list(self._subscribers.values())
         for cb in subscribers:
-            try:
+            with contextlib.suppress(Exception):
                 cb(event)
-            except Exception:  # noqa: BLE001 — one bad subscriber never kills others
-                pass
         return event
 
-    def append_raw(self, raw: Dict[str, Any]) -> Event:
+    def append_raw(self, raw: dict[str, Any]) -> Event:
         """Normalize a legacy/raw envelope then append (UI bridge path)."""
         return self.append(normalize(raw))
 
-    def publish(self, event_type: str, data: Dict[str, Any],
+    def publish(self, event_type: str, data: dict[str, Any],
                 session_id: str = "-", agent: str = "-") -> Event:
         """Convenience: build a canonical event from parts and append.
 
@@ -138,7 +139,7 @@ class EventStore:
 
     # ------------------------------------------------------------- read
     def history(self, limit: int = 200, since: str = "",
-                event_type: str = "") -> List[Event]:
+                event_type: str = "") -> list[Event]:
         """Newest-first event history (survives restarts via SQLite)."""
         with self._lock:
             if self._sqlite_ok and self._conn is not None:
@@ -162,7 +163,7 @@ class EventStore:
                         agent=r["agent"], timestamp=r["ts"],
                         metadata=json.loads(r["metadata"] or "{}"),
                     ) for r in rows]
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.debug("EventStore query failed: %s", e)
             # In-memory fallback (newest first)
             out = list(reversed(self._memory_history))
@@ -184,7 +185,7 @@ class EventStore:
             self._subscribers.pop(sub_id, None)
 
     # ------------------------------------------------------------- stats
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Counts by type — powers the UI activity feed badges."""
         with self._lock:
             if self._sqlite_ok and self._conn is not None:
@@ -197,9 +198,9 @@ class EventStore:
                     return {"total": total,
                             "by_type": {r["type"]: r["n"] for r in rows},
                             "backend": "sqlite"}
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
-        counts: Dict[str, int] = {}
+        counts: dict[str, int] = {}
         for e in self._memory_history:
             counts[e.type] = counts.get(e.type, 0) + 1
         return {"total": len(self._memory_history), "by_type": counts,
@@ -209,7 +210,7 @@ class EventStore:
 # ---------------------------------------------------------------------------
 # Module-level shared store (one per process)
 # ---------------------------------------------------------------------------
-_STORE: Optional[EventStore] = None
+_STORE: EventStore | None = None
 _STORE_LOCK = threading.Lock()
 
 

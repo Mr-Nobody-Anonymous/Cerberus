@@ -16,9 +16,8 @@ routing.yaml under ``profile_overrides``.
 """
 
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,19 +44,19 @@ DEFAULT_ROUTES = {
 class ModelRouter:
     """Routes tasks to appropriate models based on task type."""
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         # Intentionally package-relative: routing.yaml is registry data that
         # ships next to this module — NOT a workspace resource (do not route
         # through cyberai.config.resolve_path).
         self.config_path = config_path or Path(__file__).parent / "routing.yaml"
-        self._routes: Dict[str, Any] = {}
-        self._profile_overrides: Dict[str, Dict[str, str]] = {}
-        self._profile: Optional[str] = None
-        self._alias_serving: Optional[Any] = None  # callable(alias) -> bool
+        self._routes: dict[str, Any] = {}
+        self._profile_overrides: dict[str, dict[str, str]] = {}
+        self._profile: str | None = None
+        self._alias_serving: Any | None = None  # callable(alias) -> bool
         self._load()
 
     def attach_profile(
-        self, profile: str, alias_serving: Optional[Any] = None,
+        self, profile: str, alias_serving: Any | None = None,
     ) -> None:
         """
         Attach a hardware execution profile for profile-aware routing.
@@ -73,7 +72,7 @@ class ModelRouter:
         logger.info("ModelRouter attached profile: %s", profile)
 
     @property
-    def profile(self) -> Optional[str]:
+    def profile(self) -> str | None:
         """The attached execution profile (None = profile-agnostic)."""
         return self._profile
 
@@ -114,7 +113,7 @@ class ModelRouter:
             try:
                 import yaml
 
-                with open(self.config_path, "r", encoding="utf-8") as f:
+                with open(self.config_path, encoding="utf-8") as f:
                     data = yaml.safe_load(f)
                 self._routes = data.get("routes", {})
                 self._profile_overrides = data.get("profile_overrides", {}) or {}
@@ -150,7 +149,7 @@ class ModelRouter:
             return entry.get("preferred", "local_fast")
         return entry
 
-    def route_with_fallback(self, task_type: str) -> List[str]:
+    def route_with_fallback(self, task_type: str) -> list[str]:
         """
         Get the full fallback chain for a task type.
 
@@ -168,7 +167,7 @@ class ModelRouter:
             return [m for m in chain if not (m in seen or seen.add(m))]
         return [entry, entry]
 
-    def get_all_routes(self) -> Dict[str, Any]:
+    def get_all_routes(self) -> dict[str, Any]:
         """Return all routing rules."""
         return dict(self._routes)
 

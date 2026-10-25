@@ -1,0 +1,19 @@
+# CODEOWNERS — default review ownership for the Cerberus core.
+# Vendored trees (adapters/, infrastructure/) are third-party code and are
+# intentionally not owned here.
+
+# Core package
+/cyberai/          @Mr-Nobody-Anonymous
+
+# Security-critical paths — policy, authorization, sandbox, evidence
+/cyberai/security/         @Mr-Nobody-Anonymous
+/cyberai/orchestrator/policies/  @Mr-Nobody-Anonymous
+/cyberai/orchestrator/evidence/  @Mr-Nobody-Anonymous
+
+# CI and repo configuration
+/.github/          @Mr-Nobody-Anonymous
+/pyproject.toml    @Mr-Nobody-Anonymous
+/requirements.txt  @Mr-Nobody-Anonymous
+
+# Tests
+/tests/            @Mr-Nobody-Anonymous

@@ -10,7 +10,6 @@ Implements controlled evolutionary operators:
 
 import logging
 import random
-from typing import Any, Dict, List, Optional
 
 from .strategy import Strategy
 
@@ -24,7 +23,7 @@ class MutationEngine:
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
 
-    def mutate(self, strategy: Strategy, num_variants: int = 3) -> List[Strategy]:
+    def mutate(self, strategy: Strategy, num_variants: int = 3) -> list[Strategy]:
         """
         Create mutated variants of a strategy.
 
@@ -69,7 +68,7 @@ class MutationEngine:
         else:
             idx = random.randrange(len(strategy.actions))
             action = strategy.actions[idx]
-            if "parameters" in action and action["parameters"]:
+            if action.get("parameters"):
                 param_key = random.choice(list(action["parameters"].keys()))
                 action["parameters"][param_key] = f"mutated_{param_key}"
 

@@ -6,7 +6,7 @@ potential vulnerabilities and prioritize risks.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import BaseAgent
 from .prompts import build_analysis_prompt
@@ -25,7 +25,7 @@ class AnalystAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(name="analyst", **kwargs)
 
-    async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze findings and evidence.
 

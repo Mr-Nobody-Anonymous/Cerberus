@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import config
 
@@ -41,7 +41,7 @@ class EvidenceManager:
         "manual_note",
     ]
 
-    def __init__(self, evidence_dir: Optional[Path] = None):
+    def __init__(self, evidence_dir: Path | None = None):
         self.evidence_dir = evidence_dir or EVIDENCE_DIR
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
         # Create .gitkeep
@@ -55,7 +55,7 @@ class EvidenceManager:
         source: str = "unknown",
         verification_status: str = "UNVERIFIED",
         confidence: float = 0.0,
-        timestamp: Optional[str] = None,
+        timestamp: str | None = None,
     ) -> str:
         """
         Store an evidence item.
@@ -102,7 +102,7 @@ class EvidenceManager:
         logger.info(f"Stored evidence {evidence_id} (type: {evidence_type})")
         return evidence_id
 
-    def get_evidence(self, evidence_id: str) -> Optional[Dict[str, Any]]:
+    def get_evidence(self, evidence_id: str) -> dict[str, Any] | None:
         """Retrieve evidence by ID."""
         evidence_path = self.evidence_dir / f"{evidence_id}.json"
         if evidence_path.exists():
@@ -110,7 +110,7 @@ class EvidenceManager:
                 return json.load(f)
         return None
 
-    def list_evidence(self, session_id: str) -> List[Dict[str, Any]]:
+    def list_evidence(self, session_id: str) -> list[dict[str, Any]]:
         """List all evidence for a session."""
         results = []
         for f in self.evidence_dir.glob("*.json"):
@@ -123,7 +123,7 @@ class EvidenceManager:
                 continue
         return sorted(results, key=lambda x: x.get("timestamp", ""))
 
-    def update_verification_status(self, evidence_id: str, status: str, confidence: float = None) -> bool:
+    def update_verification_status(self, evidence_id: str, status: str, confidence: float | None = None) -> bool:
         """Update the verification status of an evidence item."""
         evidence_path = self.evidence_dir / f"{evidence_id}.json"
         if not evidence_path.exists():

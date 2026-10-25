@@ -4,7 +4,6 @@
     GET /api/v1/memory/search   semantic search
 """
 
-from typing import Any, Dict
 
 from fastapi import APIRouter
 

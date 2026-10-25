@@ -6,10 +6,9 @@ and their adapters. The orchestrator uses this registry to route
 tasks to the appropriate tool.
 """
 
-import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -191,12 +190,12 @@ DEFAULT_TOOLS = {
 class ToolRegistry:
     """Registry of all available security tools and their adapters."""
 
-    def __init__(self, registry_path: Optional[Path] = None):
+    def __init__(self, registry_path: Path | None = None):
         # Intentionally package-relative: tools.yaml is registry data that
         # ships next to this module — NOT a workspace resource (do not route
         # through cyberai.config.resolve_path).
         self.registry_path = registry_path or Path(__file__).parent / "tools.yaml"
-        self._tools: Dict[str, Dict[str, Any]] = {}
+        self._tools: dict[str, dict[str, Any]] = {}
         self._load()
 
     def _load(self) -> None:
@@ -205,7 +204,7 @@ class ToolRegistry:
             try:
                 import yaml
 
-                with open(self.registry_path, "r", encoding="utf-8") as f:
+                with open(self.registry_path, encoding="utf-8") as f:
                     data = yaml.safe_load(f)
                 self._tools = data.get("tools", {})
                 logger.info(f"Loaded {len(self._tools)} tools from {self.registry_path}")
@@ -215,15 +214,15 @@ class ToolRegistry:
         else:
             self._tools = DEFAULT_TOOLS
 
-    def list_tools(self) -> List[str]:
+    def list_tools(self) -> list[str]:
         """Return list of all registered tool names."""
         return sorted(self._tools.keys())
 
-    def get_tool(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_tool(self, name: str) -> dict[str, Any] | None:
         """Get tool info by name."""
         return self._tools.get(name)
 
-    def get_tools_by_type(self, tool_type: str) -> List[Dict[str, Any]]:
+    def get_tools_by_type(self, tool_type: str) -> list[dict[str, Any]]:
         """Get all tools of a given type."""
         return [
             {"name": name, **info}
@@ -231,7 +230,7 @@ class ToolRegistry:
             if info.get("type") == tool_type
         ]
 
-    def get_tools_by_capability(self, capability: str) -> List[Dict[str, Any]]:
+    def get_tools_by_capability(self, capability: str) -> list[dict[str, Any]]:
         """Get all tools that have a given capability."""
         return [
             {"name": name, **info}
@@ -239,14 +238,14 @@ class ToolRegistry:
             if capability in info.get("capabilities", [])
         ]
 
-    def get_adapter_path(self, tool_name: str) -> Optional[str]:
+    def get_adapter_path(self, tool_name: str) -> str | None:
         """Get the adapter module path for a tool."""
         tool = self._tools.get(tool_name)
         if tool:
             return tool.get("adapter")
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return the full registry as a dict."""
         return {"tools": self._tools}
 

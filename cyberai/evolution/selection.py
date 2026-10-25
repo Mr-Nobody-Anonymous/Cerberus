@@ -6,7 +6,6 @@ Selects strategies to propagate to the next generation based on fitness.
 
 import logging
 import random
-from typing import List, Optional
 
 from .strategy import Strategy, StrategyStatus
 
@@ -20,7 +19,7 @@ class SelectionEngine:
         self.elite_size = elite_size
         self.tournament_size = tournament_size
 
-    def select_elite(self, strategies: List[Strategy]) -> List[Strategy]:
+    def select_elite(self, strategies: list[Strategy]) -> list[Strategy]:
         """
         Select the highest-fitness strategies (elite preservation).
 
@@ -37,7 +36,7 @@ class SelectionEngine:
         )
         return sorted_strategies[:self.elite_size]
 
-    def select_by_fitness(self, strategies: List[Strategy], count: int) -> List[Strategy]:
+    def select_by_fitness(self, strategies: list[Strategy], count: int) -> list[Strategy]:
         """
         Select strategies using fitness-proportional selection.
 
@@ -71,7 +70,7 @@ class SelectionEngine:
             selected.append(chosen)
         return selected
 
-    def tournament_select(self, strategies: List[Strategy]) -> Optional[Strategy]:
+    def tournament_select(self, strategies: list[Strategy]) -> Strategy | None:
         """
         Select a strategy via tournament selection.
 
@@ -89,7 +88,7 @@ class SelectionEngine:
         )
         return max(tournament, key=lambda s: s.fitness)
 
-    def select_parents_for_recombination(self, strategies: List[Strategy]) -> Optional[List[Strategy]]:
+    def select_parents_for_recombination(self, strategies: list[Strategy]) -> list[Strategy] | None:
         """
         Select two parents for recombination.
 

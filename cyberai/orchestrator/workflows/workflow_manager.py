@@ -6,7 +6,7 @@ and tools in a specific sequence.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,24 +53,24 @@ class WorkflowManager:
     """Manages workflow definitions and execution."""
 
     def __init__(self):
-        self._workflows: Dict[str, Dict[str, Any]] = dict(PREDEFINED_WORKFLOWS)
+        self._workflows: dict[str, dict[str, Any]] = dict(PREDEFINED_WORKFLOWS)
 
-    def list_workflows(self) -> List[str]:
+    def list_workflows(self) -> list[str]:
         """Return names of all available workflows."""
         return sorted(self._workflows.keys())
 
-    def get_workflow(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_workflow(self, name: str) -> dict[str, Any] | None:
         """Get workflow definition by name."""
         return self._workflows.get(name)
 
-    def get_workflow_steps(self, name: str) -> List[Dict[str, Any]]:
+    def get_workflow_steps(self, name: str) -> list[dict[str, Any]]:
         """Get the steps for a named workflow."""
         wf = self._workflows.get(name)
         if wf:
             return wf["steps"]
         return []
 
-    def register_workflow(self, name: str, definition: Dict[str, Any]) -> None:
+    def register_workflow(self, name: str, definition: dict[str, Any]) -> None:
         """Register a custom workflow."""
         self._workflows[name] = definition
         logger.info(f"Registered workflow: {name}")

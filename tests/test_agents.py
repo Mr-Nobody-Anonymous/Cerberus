@@ -19,14 +19,13 @@ import types
 
 import pytest
 
-from cyberai.orchestrator.agents.base import BaseAgent
-from cyberai.orchestrator.agents.recon.recon import ReconAgent
-from cyberai.orchestrator.agents.verifier.verifier import VerifierAgent
 from cyberai.orchestrator.agents.analyst.analyst import AnalystAgent
+from cyberai.orchestrator.agents.base import BaseAgent
 from cyberai.orchestrator.agents.coder.coder import CoderAgent
+from cyberai.orchestrator.agents.recon.recon import ReconAgent
 from cyberai.orchestrator.agents.reporter.reporter import ReporterAgent
 from cyberai.orchestrator.agents.researcher.researcher import ResearcherAgent
-
+from cyberai.orchestrator.agents.verifier.verifier import VerifierAgent
 
 # ---------------------------------------------------------------------------
 # Fakes

@@ -6,7 +6,7 @@
 import { securityApi } from "@/lib/api";
 import { useFetch, useToast } from "@/hooks";
 import { useApp } from "@/stores/app";
-import { PageHeader, Spinner, ErrorBox } from "@/components/common/Basics";
+import { PageHeader, ErrorBox, Loading } from "@/components/common/Basics";
 import { Pill } from "@/components/common/Pill";
 
 export function SecurityPage() {
@@ -26,11 +26,7 @@ export function SecurityPage() {
   };
 
   if (error) return <ErrorBox error={error} />;
-  if (loading || !data) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-      <Spinner size={24} />
-    </div>
-  );
+  if (loading || !data) return <Loading label="security posture" />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -68,6 +64,7 @@ export function SecurityPage() {
               display: "flex", gap: 10, alignItems: "center",
             }}>
               <Pill tone="warn">PENDING</Pill>
+              {Boolean((a as any).demo) && <Pill tone="info">DEMO</Pill>}
               <span style={{ fontSize: 12, flex: 1, overflow: "hidden",
                              textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {a.action}

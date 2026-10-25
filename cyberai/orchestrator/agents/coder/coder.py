@@ -6,7 +6,7 @@ Routes sensitive code operations to local-only models by default.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import BaseAgent
 from .prompts import build_code_analysis_prompt, build_code_generation_prompt
@@ -25,7 +25,7 @@ class CoderAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(name="coder", **kwargs)
 
-    async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Analyze code or generate code/exploits.
 
@@ -70,7 +70,7 @@ class CoderAgent(BaseAgent):
             "action": action,
             "language": language,
             "sensitive": sensitive,
-            "model": "local-coder" if sensitive else "local-coder",
+            "model": "local-coder",
             "output": llm_response,
             "code_length": len(llm_response),
         }
@@ -90,7 +90,7 @@ class CoderAgent(BaseAgent):
             session_id=session_id,
             target_id=target_id,
             observation=f"{'Code analysis' if action == 'analyze' else 'Code generation'} for {language}",
-            hypothesis=f"Code review will find vulnerabilities" if action == "analyze" else f"Code will be generated correctly",
+            hypothesis="Code review will find vulnerabilities" if action == "analyze" else "Code will be generated correctly",
             action=action,
             tool="coder_agent",
             result="success",

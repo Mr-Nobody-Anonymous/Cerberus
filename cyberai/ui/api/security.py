@@ -6,7 +6,7 @@
     POST  /api/v1/security/approvals/{id}/deny
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -26,7 +26,7 @@ async def security_center():
     try:
         all_targets = pe.list_targets()
         authorized = [t for t in all_targets if t.get("allowed")]
-    except Exception:  # noqa: BLE001
+    except Exception:
         all_targets, authorized = [], []
     finally:
         pe.close()
@@ -57,7 +57,7 @@ async def list_approvals():
     return {"pending": pending, "decided": decided}
 
 
-def _decide(approval_id: str, decision: str) -> Dict[str, Any]:
+def _decide(approval_id: str, decision: str) -> dict[str, Any]:
     match = next((a for a in APPROVAL_QUEUE if a.get("id") == approval_id), None)
     if not match:
         raise HTTPException(status_code=404, detail=f"unknown approval: {approval_id}")

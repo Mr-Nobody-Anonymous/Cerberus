@@ -4,7 +4,7 @@
 
 import { modelsApi } from "@/lib/api";
 import { useFetch, useToast } from "@/hooks";
-import { PageHeader, Spinner, ErrorBox } from "@/components/common/Basics";
+import { PageHeader, ErrorBox, Loading } from "@/components/common/Basics";
 import { Pill } from "@/components/common/Pill";
 
 export function ModelsPage() {
@@ -23,11 +23,7 @@ export function ModelsPage() {
   };
 
   if (error) return <ErrorBox error={error} />;
-  if (loading) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-      <Spinner size={24} />
-    </div>
-  );
+  if (loading) return <Loading label="models" />;
 
   const models = data?.models ?? [];
   const routes = routing.data?.routes ?? {};

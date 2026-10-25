@@ -4,14 +4,14 @@ Uses prompt_toolkit when available (history, fuzzy completion, mouse-free
 navigation); the console degrades to plain input() otherwise.
 """
 
-from typing import Iterable, List, Optional
+from collections.abc import Iterable
 
 
-def command_names() -> List[str]:
+def command_names() -> list[str]:
     """All visible command names + aliases from the shared registry."""
     from cyberai.commands import load_builtin_commands
     reg = load_builtin_commands()
-    names: List[str] = []
+    names: list[str] = []
     for spec in reg.specs():
         if spec.hidden:
             continue
@@ -20,7 +20,7 @@ def command_names() -> List[str]:
     return sorted(set(names))
 
 
-def command_completions(fragment: str) -> List[str]:
+def command_completions(fragment: str) -> list[str]:
     """Simple prefix filter (used by the fallback completer)."""
     frag = fragment.lstrip("/").lower()
     return [n for n in command_names() if frag in n.lstrip("/").lower()]
@@ -34,7 +34,7 @@ def build_completer():
       - key=value kwargs from each command's usage string
     """
     try:
-        from prompt_toolkit.completion import Completer, CompleteEvent, Completion
+        from prompt_toolkit.completion import CompleteEvent, Completer, Completion
         from prompt_toolkit.document import Document
     except ImportError:
         return None
@@ -71,6 +71,7 @@ def build_history():
     """prompt_toolkit FileHistory backed by the user's state dir."""
     try:
         from pathlib import Path
+
         from prompt_toolkit.history import FileHistory
         hist_path = Path.home() / ".cerberus" / "cli_history"
         hist_path.parent.mkdir(parents=True, exist_ok=True)

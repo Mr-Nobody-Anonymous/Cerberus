@@ -27,7 +27,7 @@ blocked under PRIVACY_MODE=local_only, exactly like OpenAI/Anthropic.
 import ipaddress
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ def is_local_endpoint(endpoint: str) -> bool:
     return False
 
 
-def resolve_api_key(entry: Dict[str, Any]) -> str:
+def resolve_api_key(entry: dict[str, Any]) -> str:
     """
     Resolve the API key for a registry entry.
 
@@ -134,13 +134,13 @@ def resolve_api_key(entry: Dict[str, Any]) -> str:
     return str(entry.get("api_key", "") or "")
 
 
-def validate_entry(alias: str, entry: Dict[str, Any]) -> List[str]:
+def validate_entry(alias: str, entry: dict[str, Any]) -> list[str]:
     """
     Validate an openai_compatible registry entry.
 
     Returns a list of problems (empty list = valid).
     """
-    problems: List[str] = []
+    problems: list[str] = []
     endpoint = str(entry.get("endpoint", "") or "").strip()
     if not endpoint:
         problems.append(f"{alias}: openai_compatible requires 'endpoint'")
@@ -156,10 +156,10 @@ def validate_entry(alias: str, entry: Dict[str, Any]) -> List[str]:
 
 def build_chat_payload(
     model_name: str,
-    messages: List[Dict[str, str]],
+    messages: list[dict[str, str]],
     max_tokens: int,
     temperature: float,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build the OpenAI-dialect chat-completions request body."""
     return {
         "model": model_name,
@@ -169,7 +169,7 @@ def build_chat_payload(
     }
 
 
-def parse_chat_response(data: Dict[str, Any]) -> str:
+def parse_chat_response(data: dict[str, Any]) -> str:
     """Extract assistant content from an OpenAI-dialect response."""
     try:
         return data["choices"][0]["message"]["content"]
@@ -177,7 +177,7 @@ def parse_chat_response(data: Dict[str, Any]) -> str:
         raise ValueError(f"Malformed OpenAI-compatible response: {e}") from e
 
 
-def headers_for(entry: Dict[str, Any], api_key: str) -> Dict[str, str]:
+def headers_for(entry: dict[str, Any], api_key: str) -> dict[str, str]:
     """Build request headers (Authorization only when a key exists)."""
     h = {"Content-Type": "application/json"}
     if api_key:
@@ -185,7 +185,7 @@ def headers_for(entry: Dict[str, Any], api_key: str) -> Dict[str, str]:
     return h
 
 
-def describe(alias: str, entry: Dict[str, Any]) -> Dict[str, Any]:
+def describe(alias: str, entry: dict[str, Any]) -> dict[str, Any]:
     """Human/JSON-friendly summary of an openai_compatible entry."""
     endpoint = normalize_endpoint(str(entry.get("endpoint", "")))
     return {
@@ -199,14 +199,14 @@ def describe(alias: str, entry: Dict[str, Any]) -> Dict[str, Any]:
 
 
 __all__ = [
-    "normalize_endpoint",
+    "build_chat_payload",
     "chat_url",
-    "models_url",
+    "describe",
+    "headers_for",
     "is_local_endpoint",
+    "models_url",
+    "normalize_endpoint",
+    "parse_chat_response",
     "resolve_api_key",
     "validate_entry",
-    "build_chat_payload",
-    "parse_chat_response",
-    "headers_for",
-    "describe",
 ]

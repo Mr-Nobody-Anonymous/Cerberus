@@ -15,9 +15,9 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
-from cyberai.config import config, WORKSPACE_ROOT
+from cyberai.config import WORKSPACE_ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +25,12 @@ logger = logging.getLogger(__name__)
 class StructuredLogger:
     """Writes structured JSONL log entries to subject-specific directories."""
 
-    def __init__(self, logs_root: Optional[Path] = None):
+    def __init__(self, logs_root: Path | None = None):
         self.logs_root = logs_root or WORKSPACE_ROOT / "logs"
         for sub in ("tasks", "models", "agents", "evolution"):
             (self.logs_root / sub).mkdir(parents=True, exist_ok=True)
 
-    def _write(self, directory: str, entry: Dict[str, Any]) -> None:
+    def _write(self, directory: str, entry: dict[str, Any]) -> None:
         """Write a JSON line to a log file."""
         try:
             path = self.logs_root / directory / f"{datetime.now(timezone.utc).strftime('%Y%m%d')}.jsonl"

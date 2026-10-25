@@ -10,10 +10,7 @@ Provides endpoints for:
 - Model listing
 """
 
-import json
 import logging
-from pathlib import Path
-from typing import Any, Dict
 
 from ..memory.memory_manager import MemoryManager
 from ..policies.policy_engine import PolicyEngine
@@ -27,7 +24,6 @@ def create_app():
     """Create and configure the FastAPI application."""
     try:
         from fastapi import FastAPI, HTTPException
-        from fastapi.responses import JSONResponse
     except ImportError:
         logger.warning("FastAPI not installed - API server unavailable")
         return None
@@ -73,7 +69,7 @@ def create_app():
         return {"session": session}
 
     @app.get("/findings")
-    async def get_findings(status: str = None):
+    async def get_findings(status: str | None = None):
         findings = memory.get_findings(status=status)
         return {"findings": findings}
 

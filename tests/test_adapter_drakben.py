@@ -1,8 +1,11 @@
 import asyncio
 from unittest.mock import MagicMock
+
 import pytest
-from cyberai.orchestrator.adapters.base import SandboxedAdapter, AdapterResult
+
+from cyberai.orchestrator.adapters.base import AdapterResult, SandboxedAdapter
 from cyberai.security.policy_runner import PolicyDeniedError
+
 
 @pytest.fixture
 def drakben_adapter():

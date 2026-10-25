@@ -26,17 +26,23 @@ import asyncio
 import json
 import os
 import sys
-import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import click
 
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
 from cyberai.config import WORKSPACE_ROOT
-from cyberai.orchestrator import Orchestrator
-from cyberai.orchestrator import ToolRegistry
-from cyberai.orchestrator import MemoryManager
-from cyberai.orchestrator import PolicyEngine
+from cyberai.orchestrator import MemoryManager, PolicyEngine, ToolRegistry
 from cyberai.orchestrator.adapters.adapter_manager import AdapterManager
 
 
@@ -48,7 +54,7 @@ def _get_workspace_root() -> Path:
 # Output modes (spec §14) — --json / --yaml / --table / --quiet / --verbose
 #                   / --debug / --no-color
 # ---------------------------------------------------------------------------
-_OUTPUT_MODE: Dict[str, bool] = {
+_OUTPUT_MODE: dict[str, bool] = {
     "json": False, "yaml": False, "table": False, "quiet": False,
     "verbose": False, "debug": False, "no_color": False,
 }
@@ -59,8 +65,8 @@ def _emit_json(payload: Any) -> None:
     click.echo(json.dumps(payload, indent=2, default=str))
 
 
-def _emit_table(rows: List[Dict[str, Any]], columns: List[str],
-                 headers: Optional[List[str]] = None) -> None:
+def _emit_table(rows: list[dict[str, Any]], columns: list[str],
+                 headers: list[str] | None = None) -> None:
     """Print rows as a human table; suppressed entirely in --quiet mode."""
     if _OUTPUT_MODE["quiet"]:
         return
@@ -566,6 +572,7 @@ def ui(port, no_browser):
     """Launch the unified CERBERUS Command Deck web UI (one AI cockpit)."""
     try:
         import uvicorn
+
         from cyberai.ui.server import app
     except ImportError as e:
         click.echo(f"[ERROR] UI dependencies missing: {e}")
@@ -641,8 +648,8 @@ def watch(interval, max_events, source):
 
 async def _run_watch(interval, max_events, source):
     """Async implementation of the watch command."""
+
     from cyberai.orchestrator import MemoryManager
-    import datetime as dt
 
     mm = MemoryManager()
     seen = set()
@@ -861,13 +868,13 @@ def scorecard():
 
     Aggregates: sessions, findings (by status), memory, tools, models, performance.
     """
-    from cyberai.orchestrator import MemoryManager, PolicyEngine, ToolRegistry
     from cyberai.meta_learning.tracker import PerformanceTracker
+    from cyberai.orchestrator import MemoryManager, PolicyEngine, ToolRegistry
 
     mm = MemoryManager()
     sessions = mm.list_sessions()
     findings = mm.get_findings()
-    by_status: Dict[str, int] = {}
+    by_status: dict[str, int] = {}
     for f in findings:
         s = f.get("status", "UNKNOWN")
         by_status[s] = by_status.get(s, 0) + 1
@@ -1143,7 +1150,6 @@ def mcp_tools(server):
     Example:
       cyber-ai mcp tools hexstrike-mcp
     """
-    import json as _json
 
     from cyberai.orchestrator.cli._mcp import get_mcp_gateway
 
@@ -1274,7 +1280,8 @@ def killchain_fail(target, reason, category):
 def killchain_status(target):
     """Show chain status (all chains, or one TARGET)."""
     from cyberai.orchestrator.workflows.kill_chain import (
-        KillChainEngine, PHASE_ORDER,
+        PHASE_ORDER,
+        KillChainEngine,
     )
 
     engine = KillChainEngine()

@@ -4,7 +4,8 @@
     GET /api/v1/tools/{name}   tool detail with health
 """
 
-from typing import Any, Dict
+
+import contextlib
 
 from fastapi import APIRouter, HTTPException
 
@@ -48,10 +49,8 @@ async def get_tool(name: str):
             raise HTTPException(status_code=404, detail=f"unknown tool: {name}")
         discovered = am.discover()
         health = {"status": "NOT_TESTED"}
-        try:
+        with contextlib.suppress(Exception):
             health = await am.health_check(name)
-        except Exception:  # noqa: BLE001
-            pass
         return {
             "name": name,
             "registry": registry[name],

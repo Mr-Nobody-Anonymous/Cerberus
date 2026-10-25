@@ -4,7 +4,7 @@
 
 import { useFetch } from "@/hooks";
 import { findingsApi, missionsApi, targetsApi, agentsApi, modelsApi } from "@/lib/api";
-import { PageHeader, Spinner, ErrorBox } from "@/components/common/Basics";
+import { PageHeader, ErrorBox, Loading } from "@/components/common/Basics";
 import { Pill, stateTone } from "@/components/common/Pill";
 import { useApp } from "@/stores/app";
 
@@ -36,11 +36,7 @@ export function DashboardPage() {
   const models = useFetch(() => modelsApi.list(), []);
 
   if (findings.error) return <ErrorBox error={findings.error} />;
-  if (findings.loading) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-      <Spinner size={24} />
-    </div>
-  );
+  if (findings.loading) return <Loading label="dashboard" />;
 
   const byStatus = (findings.data?.findings ?? []).reduce<Record<string, number>>((acc, f) => {
     const s = (f.status as string) || "UNVERIFIED";
@@ -96,7 +92,7 @@ export function DashboardPage() {
                 background: "var(--cb-bg2)", border: "1px solid var(--cb-border)",
                 borderRadius: "var(--cb-radius-sm)", padding: "8px 12px",
               }}>
-                <Pill tone={stateTone(m.status)}>{m.status || "RUNNING"}</Pill>
+                <Pill tone={stateTone(m.status)} live>{m.status || "RUNNING"}</Pill>
                 <Pill tone="violet">{m.mode}</Pill>
                 <span style={{ fontSize: 12, flex: 1, overflow: "hidden",
                                textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

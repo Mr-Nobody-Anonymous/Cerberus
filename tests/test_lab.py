@@ -21,7 +21,6 @@ from cyberai.orchestrator.lab.lab_manager import (
 )
 from cyberai.orchestrator.policies.policy_engine import PolicyEngine
 
-
 TARGETS_YAML = """\
 targets:
 - id: juice-shop

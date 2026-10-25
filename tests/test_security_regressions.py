@@ -175,7 +175,6 @@ class TestBlockedNeverOk:
         def _deny(ctx, parsed):
             raise PermissionError("not authorized")
 
-        spec = type("Spec", (), {})()  # placeholder
         try:
             from cyberai.commands.models import CommandSpec
             probe = CommandSpec(name="probe-deny", category="test",

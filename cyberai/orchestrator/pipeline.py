@@ -20,11 +20,7 @@ import asyncio
 import json
 import logging
 import re
-import subprocess
-import shlex
-import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
 
@@ -43,7 +39,7 @@ MAX_EXECUTION_TIMEOUT = 60.0
 # Allowed command patterns per tool
 # Each entry maps a tool name to a list of (command_template, shell=False)
 # Command templates use {target} and {params} placeholders.
-ALLOWED_COMMANDS: Dict[str, List[Dict[str, Any]]] = {
+ALLOWED_COMMANDS: dict[str, list[dict[str, Any]]] = {
     "strix": [
         {
             "args": ["strix", "scan", "--target", "{target}"],
@@ -151,7 +147,7 @@ def sanitize_target(target: str) -> str:
     return target
 
 
-def sanitize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
     """
     Sanitize parameters for safe command injection.
 
@@ -163,7 +159,7 @@ def sanitize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Sanitized parameters dict
     """
-    sanitized: Dict[str, Any] = {}
+    sanitized: dict[str, Any] = {}
     for key, value in parameters.items():
         if isinstance(value, str):
             # Reject dangerous patterns
@@ -188,9 +184,9 @@ def sanitize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
 async def run_tool_command(
     tool_name: str,
     target: str,
-    parameters: Optional[Dict[str, Any]] = None,
+    parameters: dict[str, Any] | None = None,
     timeout: float = MAX_EXECUTION_TIMEOUT,
-) -> Tuple[bool, str, str]:
+) -> tuple[bool, str, str]:
     """
     Execute a tool command securely with subprocess.
 
@@ -271,7 +267,7 @@ async def run_tool_command(
 # ---------------------------------------------------------------------------
 # Output parsing
 # ---------------------------------------------------------------------------
-def parse_tool_output(raw: str) -> Dict[str, Any]:
+def parse_tool_output(raw: str) -> dict[str, Any]:
     """
     Parse and secure tool output into structured findings.
 
@@ -287,8 +283,8 @@ def parse_tool_output(raw: str) -> Dict[str, Any]:
     if not raw:
         return {"findings": [], "evidence": [], "summary": ""}
 
-    findings: List[Dict[str, Any]] = []
-    evidence: List[Dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
+    evidence: list[dict[str, Any]] = []
 
     # Try JSON parse
     try:
@@ -462,8 +458,8 @@ class MultiAgentPipeline:
         self,
         target_id: str,
         objective: str,
-        target_info: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        target_info: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Run the full piped multi-agent pipeline.
 
@@ -487,7 +483,7 @@ class MultiAgentPipeline:
         else:
             target_str = f"{target_host}:{target_port}"
 
-        results: Dict[str, Any] = {}
+        results: dict[str, Any] = {}
         previous_output = ""
 
         for step in PIPELINE_STEPS:
@@ -539,8 +535,8 @@ class MultiAgentPipeline:
                     self.memory.store_finding(finding_data)
 
         # Aggregate all findings
-        all_findings: List[Dict[str, Any]] = []
-        for step_name, result in results.items():
+        all_findings: list[dict[str, Any]] = []
+        for result in results.values():
             all_findings.extend(result.get("findings", []))
 
         return {
@@ -557,10 +553,10 @@ class MultiAgentPipeline:
     async def _run_agent(
         self,
         step_name: str,
-        step: Dict[str, Any],
+        step: dict[str, Any],
         prompt: str,
-        target_info: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
+        target_info: dict[str, Any],
+    ) -> dict[str, Any] | None:
         """Run the actual agent if available."""
         agent = self.agents.get(step_name)
         if not agent:
@@ -588,10 +584,10 @@ class MultiAgentPipeline:
     async def _run_tool_fallback(
         self,
         step_name: str,
-        step: Dict[str, Any],
+        step: dict[str, Any],
         target_str: str,
-        target_info: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
+        target_info: dict[str, Any],
+    ) -> dict[str, Any] | None:
         """Try executing via a registered security tool."""
         if not self.adapter_manager or self.simulate:
             return None
@@ -613,7 +609,7 @@ class MultiAgentPipeline:
         target_port = target_info.get("port", 8080)
 
         for tool_name in tool_names:
-            success, stdout, stderr = await run_tool_command(
+            success, stdout, _stderr = await run_tool_command(
                 tool_name=tool_name,
                 target=f"{target_host}:{target_port}",
                 parameters={"action": step["capability"]},
@@ -628,9 +624,9 @@ class MultiAgentPipeline:
     def _simulate_step(
         self,
         step_name: str,
-        step: Dict[str, Any],
+        step: dict[str, Any],
         target_str: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return deterministic mock output for a pipeline step."""
         simulated_findings = {
             "researcher": [
@@ -708,7 +704,7 @@ class MultiAgentPipeline:
         self,
         target_id: str,
         objective: str,
-        target_info: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        target_info: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Alias for run() to match naming."""
         return await self.run(target_id, objective, target_info)

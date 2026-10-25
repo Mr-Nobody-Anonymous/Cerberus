@@ -22,7 +22,7 @@ import copy
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +86,8 @@ def resolve_path(relative: "str | Path") -> Path:
 
 def load_required_yaml(
     rel_path: "str | Path",
-    section: Optional[str] = None,
-    required_fields: Optional[list] = None,
+    section: str | None = None,
+    required_fields: list | None = None,
     item_label: str = "entry",
 ) -> Any:
     """
@@ -116,9 +116,9 @@ def load_required_yaml(
             "Install the project's data files or fix the configured path."
         )
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
-    except Exception as e:  # noqa: BLE001 — re-raise as ConfigError
+    except Exception as e:
         raise ConfigError(f"Failed to parse YAML at {path}: {e}") from e
 
     if data is None:
@@ -178,7 +178,7 @@ def validate_targets_file(rel_path: "str | Path" = "lab/targets/targets.yaml") -
 class Config:
     """Central configuration with defaults, YAML-file and env merging."""
 
-    DEFAULTS: Dict[str, Any] = {
+    DEFAULTS: dict[str, Any] = {
         "privacy": {
             "mode": "local_only",  # local_only | hybrid
         },
@@ -226,9 +226,9 @@ class Config:
         },
     }
 
-    def __init__(self, config_path: Optional[Path] = None):
+    def __init__(self, config_path: Path | None = None):
         self.config_path = config_path or WORKSPACE_ROOT / "config.yaml"
-        self._data: Dict[str, Any] = copy.deepcopy(self.DEFAULTS)
+        self._data: dict[str, Any] = copy.deepcopy(self.DEFAULTS)
         self._load_file()
         self._load_env()
 
@@ -240,7 +240,7 @@ class Config:
         try:
             import yaml
 
-            with open(self.config_path, "r", encoding="utf-8") as f:
+            with open(self.config_path, encoding="utf-8") as f:
                 file_data = yaml.safe_load(f) or {}
             if not isinstance(file_data, dict):
                 raise ConfigError(f"config.yaml at {self.config_path} must be a mapping")
@@ -248,10 +248,10 @@ class Config:
             logger.info("Loaded config from %s", self.config_path)
         except ConfigError:
             raise
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise ConfigError(f"Failed to load config file {self.config_path}: {e}") from e
 
-    def _merge(self, base: Dict[str, Any], override: Dict[str, Any]) -> None:
+    def _merge(self, base: dict[str, Any], override: dict[str, Any]) -> None:
         """Recursively merge override into base."""
         for key, value in override.items():
             if isinstance(value, dict) and isinstance(base.get(key), dict):
@@ -262,7 +262,7 @@ class Config:
     def _load_env(self) -> None:
         """Load environment variables (with .env support)."""
         self._load_dotenv()
-        env_map: Dict[str, tuple] = {
+        env_map: dict[str, tuple] = {
             "OLLAMA_HOST": ("llm", "ollama_host"),
             "OLLAMA_MODEL": ("llm", "ollama_model"),
             "LITELLM_HOST": ("llm", "litellm_host"),
@@ -300,7 +300,7 @@ class Config:
         if not env_path.exists():
             return
         try:
-            with open(env_path, "r", encoding="utf-8") as f:
+            with open(env_path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith("#") or "=" not in line:
@@ -310,11 +310,11 @@ class Config:
                     value = value.strip().strip('"').strip("'")
                     if key and key not in os.environ:
                         os.environ[key] = value
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning("Failed to load .env: %s", e)
 
     # --- accessors ---------------------------------------------- #
-    def get(self, section: str, key: Optional[str] = None, default: Any = None) -> Any:
+    def get(self, section: str, key: str | None = None, default: Any = None) -> Any:
         """Get a config value by section and optional key."""
         if section not in self._data:
             return default
@@ -335,7 +335,7 @@ class Config:
         """Resolve a workspace-relative path (backwards-compatible helper)."""
         return resolve_path(relative)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return full config as dict."""
         return copy.deepcopy(self._data)
 

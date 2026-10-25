@@ -170,7 +170,7 @@ async def test_adapter_authorized_execution_records_evidence(
         async def fake_to_thread(func, *args, **kwargs):
             return fake
 
-        import adapters  # noqa: F401 — ensure package import works
+        import adapters
 
         mod = importlib.import_module(f"adapters.{module_name}")
         monkeypatch.setattr(mod, "run_subprocess", lambda *a, **k: fake)

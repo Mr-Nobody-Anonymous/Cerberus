@@ -19,8 +19,8 @@ httpx = pytest.importorskip("httpx", reason="httpx not installed for TestClient"
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from cyberai.ui.server import app  # noqa: E402
 from cyberai.ui.api.chat_store import ChatStore  # noqa: E402
+from cyberai.ui.server import app  # noqa: E402
 
 
 @pytest.fixture(scope="module")

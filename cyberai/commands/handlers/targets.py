@@ -45,7 +45,7 @@ def _targets(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "targets", data={"targets": out, "total": len(out)},
             rows=out, columns=["id", "host", "port", "type", "allowed", "state"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("targets", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(pe)
@@ -78,7 +78,7 @@ def _authorize(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
                                      message=f"target {target_id} authorized")
     except PermissionError as e:
         return CommandResult.blocked_result("targets", str(e))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("targets", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(pe)
@@ -111,7 +111,7 @@ def _revoke(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
                                      message=f"target {target_id} revoked")
     except PermissionError as e:
         return CommandResult.blocked_result("targets", str(e))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("targets", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(pe)

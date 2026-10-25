@@ -121,7 +121,7 @@ export function MissionsPage() {
                      borderRadius: "var(--cb-radius-sm)", padding: "9px 12px",
                      cursor: "pointer",
                    }}>
-                <Pill tone={stateTone(m.status)}>{m.status || "RUNNING"}</Pill>
+                <Pill tone={stateTone(m.status)} live>{m.status || "RUNNING"}</Pill>
                 <Pill tone="violet">{m.mode}</Pill>
                 <span style={{ fontSize: 12, flex: 1, overflow: "hidden",
                                textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

@@ -10,7 +10,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import config
 
@@ -45,7 +45,7 @@ class SessionLogger:
         evidence/          - Evidence files
     """
 
-    def __init__(self, base_dir: Optional[Path] = None):
+    def __init__(self, base_dir: Path | None = None):
         self.base_dir = base_dir or config.get_path(
             "logging", "sessions_dir", "logs/sessions"
         )
@@ -58,13 +58,13 @@ class SessionLogger:
         (session_dir / "evidence").mkdir(exist_ok=True)
         return session_dir
 
-    def write_session_meta(self, session_id: str, meta: Dict[str, Any]) -> None:
+    def write_session_meta(self, session_id: str, meta: dict[str, Any]) -> None:
         """Write session metadata."""
         session_dir = self.create_session_dir(session_id)
         with open(session_dir / "session.json", "w") as f:
             json.dump(meta, f, indent=2)
 
-    def log_event(self, session_id: str, event_type: str, data: Dict[str, Any]) -> None:
+    def log_event(self, session_id: str, event_type: str, data: dict[str, Any]) -> None:
         """
         Log an event to the appropriate JSONL file.
 
@@ -83,7 +83,7 @@ class SessionLogger:
         with open(session_dir / filename, "a") as f:
             f.write(json.dumps(clean_data) + "\n")
 
-    def write_findings(self, session_id: str, findings: List[Dict[str, Any]]) -> None:
+    def write_findings(self, session_id: str, findings: list[dict[str, Any]]) -> None:
         """Write findings to the session log."""
         session_dir = self.create_session_dir(session_id)
         with open(session_dir / "findings.json", "w") as f:
@@ -97,7 +97,7 @@ class SessionLogger:
             json.dump(content, f, indent=2)
         return evidence_path
 
-    def _redact_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _redact_dict(self, data: dict[str, Any]) -> dict[str, Any]:
         """Recursively redact secrets from dict values."""
         result = {}
         for key, value in data.items():

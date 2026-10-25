@@ -5,11 +5,9 @@ Generates final assessment reports from collected findings, evidence,
 and analysis results. Produces structured reports in multiple formats.
 """
 
-import json
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..base import BaseAgent
 from .prompts import build_report_prompt
@@ -27,7 +25,7 @@ class ReporterAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(name="reporter", **kwargs)
 
-    async def run(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, task: dict[str, Any]) -> dict[str, Any]:
         """
         Generate a final report for an assessment.
 

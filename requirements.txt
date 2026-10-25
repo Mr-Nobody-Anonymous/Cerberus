@@ -17,14 +17,23 @@ httpx==0.26.0
 python-dotenv==1.2.3
 rich==15.0.0
 typer==0.27.2
+prompt-toolkit==3.0.53
 
 # REST API server (cyberai.orchestrator.api / cyberai.ui) — lazy-imported
-fastapi==0.109.0
+# fastapi>=0.115 required: starlette<1.1 has PYSEC-2026-2280 (fixed 1.1.0)
+fastapi==0.141.1
 uvicorn==0.27.0
 
 # Test suite (pytest-asyncio activated via [tool.pytest.ini_options]
 # asyncio_mode=auto in pyproject.toml)
-pytest==7.4.4
-pytest-asyncio==0.23.3
+# pytest>=9.0.3 required: PYSEC-2026-1845 (fixed 9.0.3); pytest-asyncio>=1
+# required for pytest 9 collection compatibility
+pytest==9.1.1
+pytest-asyncio==1.4.0
 pytest-cov==6.2.1
+
+# Static analysis / security scanning (CI: lint + security jobs)
+ruff==0.16.7
+bandit[toml]==1.9.5
+pip-audit==2.9.2
 

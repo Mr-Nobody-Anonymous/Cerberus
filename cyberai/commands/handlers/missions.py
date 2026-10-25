@@ -54,7 +54,7 @@ def _run(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
                            mode=mode, **flags)
     except PermissionError as e:
         return CommandResult.blocked_result("run", str(e))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("run", f"{type(e).__name__}: {e}")
     ctx.publish("audit", {
         "actor": "OPERATOR", "agent": "-", "tool": "console",
@@ -81,7 +81,7 @@ def _stop(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "session": "-",
         })
         return CommandResult.success("stop", data={"status": "stop_requested"})
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("stop", f"{type(e).__name__}: {e}")
 
 
@@ -96,7 +96,7 @@ def _mission_status(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult
             "status": "running",
             "objective": getattr(orch, "current_objective", None),
         })
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("mission", f"{type(e).__name__}: {e}")
 
 

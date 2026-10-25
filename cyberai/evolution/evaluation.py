@@ -7,7 +7,7 @@ records results for fitness computation.
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .strategy import Strategy, StrategyStatus
 
@@ -24,9 +24,9 @@ class EvaluationEngine:
 
     def __init__(self, simulate: bool = True):
         self.simulate = simulate
-        self._evaluation_results: Dict[str, Dict[str, Any]] = {}
+        self._evaluation_results: dict[str, dict[str, Any]] = {}
 
-    async def evaluate(self, strategy: Strategy, task_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def evaluate(self, strategy: Strategy, task_context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Evaluate a strategy.
 
@@ -55,7 +55,7 @@ class EvaluationEngine:
         self._evaluation_results[strategy.strategy_id] = result
         return result
 
-    def _simulate_evaluation(self, strategy: Strategy, task_context: Dict[str, Any]) -> Dict[str, Any]:
+    def _simulate_evaluation(self, strategy: Strategy, task_context: dict[str, Any]) -> dict[str, Any]:
         """
         Simulate strategy evaluation with deterministic mock results.
 
@@ -112,7 +112,7 @@ class EvaluationEngine:
             "simulated": True,
         }
 
-    async def _real_evaluation(self, strategy: Strategy, task_context: Dict[str, Any]) -> Dict[str, Any]:
+    async def _real_evaluation(self, strategy: Strategy, task_context: dict[str, Any]) -> dict[str, Any]:
         """
         Real evaluation against authorized lab targets.
 
@@ -122,10 +122,10 @@ class EvaluationEngine:
         logger.warning("Real evaluation not yet implemented - falling back to simulation")
         return self._simulate_evaluation(strategy, task_context)
 
-    def get_result(self, strategy_id: str) -> Optional[Dict[str, Any]]:
+    def get_result(self, strategy_id: str) -> dict[str, Any] | None:
         """Get the evaluation result for a strategy."""
         return self._evaluation_results.get(strategy_id)
 
-    def get_all_results(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_results(self) -> dict[str, dict[str, Any]]:
         """Get all evaluation results."""
         return dict(self._evaluation_results)

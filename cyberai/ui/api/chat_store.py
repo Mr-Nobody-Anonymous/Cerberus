@@ -14,7 +14,7 @@ import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import config
 
@@ -24,7 +24,7 @@ _ROLES = ("user", "assistant", "system", "event")
 class ChatStore:
     """Message persistence for chat sessions, sharing memory/memory.db."""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or config.get_path("memory", "db_path", "memory/memory.db")
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.db_path))
@@ -51,8 +51,8 @@ class ChatStore:
 
     # ------------------------------------------------------------ messages
     def append_message(self, session_id: str, role: str, content: str,
-                       model: Optional[str] = None, mode: Optional[str] = None,
-                       metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                       model: str | None = None, mode: str | None = None,
+                       metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         if role not in _ROLES:
             raise ValueError(f"invalid role {role!r}; valid: {', '.join(_ROLES)}")
         msg_id = str(uuid.uuid4())
@@ -69,13 +69,13 @@ class ChatStore:
             )
         return self.get_message(msg_id)
 
-    def get_message(self, message_id: str) -> Optional[Dict[str, Any]]:
+    def get_message(self, message_id: str) -> dict[str, Any] | None:
         row = self._conn.execute(
             "SELECT * FROM chat_messages WHERE id = ?", (message_id,)).fetchone()
         return self._decode(row)
 
     def list_messages(self, session_id: str,
-                      limit: int = 200) -> List[Dict[str, Any]]:
+                      limit: int = 200) -> list[dict[str, Any]]:
         rows = self._conn.execute(
             "SELECT * FROM chat_messages WHERE session_id = ? "
             "ORDER BY created_at ASC LIMIT ?",
@@ -83,7 +83,7 @@ class ChatStore:
         return [self._decode(r) for r in rows]
 
     def search_messages(self, query: str, limit: int = 50
-                        ) -> List[Dict[str, Any]]:
+                        ) -> list[dict[str, Any]]:
         """Case-insensitive substring search across ALL chat messages.
 
         Returns the newest-matching messages first, each with the
@@ -117,7 +117,7 @@ class ChatStore:
 
     # -------------------------------------------------------------- helpers
     @staticmethod
-    def _decode(row: Optional[sqlite3.Row]) -> Optional[Dict[str, Any]]:
+    def _decode(row: sqlite3.Row | None) -> dict[str, Any] | None:
         if row is None:
             return None
         d = dict(row)

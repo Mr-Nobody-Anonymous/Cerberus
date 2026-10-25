@@ -20,6 +20,8 @@ The entire multi-agent platform is surfaced through ONE interface:
 CyberAIOrchestrator. The UI streams every agent/phase/finding live.
 """
 
+from __future__ import annotations
+
 import argparse
 import importlib.util
 import os
@@ -31,16 +33,45 @@ import time
 import webbrowser
 from pathlib import Path
 
+# Ensure UTF-8 output on Windows consoles to prevent UnicodeEncodeError
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 WORKSPACE_ROOT = Path(__file__).resolve().parent
+os.environ.setdefault("CERBERUS_HOME", str(WORKSPACE_ROOT))
+os.chdir(WORKSPACE_ROOT)
+if str(WORKSPACE_ROOT) not in sys.path:
+    sys.path.insert(0, str(WORKSPACE_ROOT))
+
 UI_PORT = 8710
 
 BANNER = r"""
   ╔══════════════════════════════════════════════════════════╗
-  ║                 ██████  ██████  ██████  ║
+  ║                 ██████  ██████  ██████                   ║
   ║               CERBERUS  —  ONE AI, SEVEN AGENTS          ║
   ║        self-evolving multi-agent cyber orchestrator      ║
   ╚══════════════════════════════════════════════════════════╝
 """
+
+PKG_MAP = {
+    "yaml": "PyYAML",
+    "prompt_toolkit": "prompt-toolkit",
+    "dotenv": "python-dotenv",
+}
+
+
+def _safe_print(text: str) -> None:
+    """Print text safely, replacing unencodable characters if needed."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(text.encode("ascii", errors="replace").decode("ascii"))
 
 
 def _port_free(port: int) -> bool:
@@ -54,9 +85,9 @@ def _port_free(port: int) -> bool:
             return False
 
 
-def check_core_modules() -> list:
+def check_core_modules() -> list[str]:
     """Check required Python modules are importable."""
-    required = ["fastapi", "uvicorn", "yaml", "httpx", "pydantic", "click"]
+    required = ["fastapi", "uvicorn", "yaml", "httpx", "click", "rich", "prompt_toolkit"]
     missing = []
     for mod in required:
         if importlib.util.find_spec(mod) is None:
@@ -64,45 +95,46 @@ def check_core_modules() -> list:
     return missing
 
 
-def install_missing(missing: list) -> None:
+def install_missing(missing: list[str]) -> None:
     """Install missing core dependencies with pip."""
-    print(f"[CERBERUS] Installing missing dependencies: {', '.join(missing)}")
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "-q"],
-        check=False,
-    )
-    # FastAPI/uvicorn may not be in requirements (extras only)
-    extra = [m for m in missing if m in ("fastapi", "uvicorn")]
-    if extra:
+    _safe_print(f"[CERBERUS] Installing missing dependencies: {', '.join(missing)}")
+    req_file = WORKSPACE_ROOT / "requirements.txt"
+    if req_file.exists():
         subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-q"] + extra,
+            [sys.executable, "-m", "pip", "install", "-r", str(req_file), "-q"],
             check=False,
+            cwd=str(WORKSPACE_ROOT),
+        )
+    pkgs = [PKG_MAP.get(m, m) for m in missing]
+    if pkgs:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-q"] + pkgs,
+            check=False,
+            cwd=str(WORKSPACE_ROOT),
         )
 
 
 def run_doctor() -> None:
     """Run the CLI health check."""
-    print("[CERBERUS] Running platform health check...")
+    _safe_print("[CERBERUS] Running platform health check...")
     try:
         from cyberai.orchestrator.cli.doctor import run_health_check
         ok = True
         for component, status, msg in run_health_check():
             icon = {"ok": "[OK]", "warn": "[WARN]", "error": "[ERROR]", "info": "[INFO]"}
-            print(f"  {icon.get(status, '[?]')} {component}: {msg}")
+            _safe_print(f"  {icon.get(status, '[?]')} {component}: {msg}")
             if status == "error":
                 ok = False
         if not ok:
-            print("[CERBERUS] Some components have ERRORS. The UI still runs in simulation mode.")
+            _safe_print("[CERBERUS] Some components have ERRORS. The UI still runs in simulation mode.")
     except Exception as e:
-        print(f"[CERBERUS] Doctor check failed: {e}")
+        _safe_print(f"[CERBERUS] Doctor check failed: {e}")
 
 
 def serve(port: int, open_browser: bool) -> None:
     """Start the web UI server and open the browser."""
-    sys.path.insert(0, str(WORKSPACE_ROOT))
-
     if not _port_free(port):
-        print(f"[CERBERUS] Port {port} is already in use — assuming the UI is already running.")
+        _safe_print(f"[CERBERUS] Port {port} is already in use — assuming the UI is already running.")
         if open_browser:
             webbrowser.open(f"http://127.0.0.1:{port}")
         return
@@ -112,7 +144,7 @@ def serve(port: int, open_browser: bool) -> None:
     import uvicorn
 
     url = f"http://127.0.0.1:{port}"
-    print(f"[CERBERUS] Command Deck listening on {url}")
+    _safe_print(f"[CERBERUS] Command Deck listening on {url}")
 
     if open_browser:
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()
@@ -128,9 +160,8 @@ def main() -> None:
     parser.add_argument("--cli", action="store_true", help="CLI only (no web UI)")
     args = parser.parse_args()
 
-    print(BANNER)
-    print(f"[CERBERUS] Workspace: {WORKSPACE_ROOT}")
-    sys.path.insert(0, str(WORKSPACE_ROOT))
+    _safe_print(BANNER)
+    _safe_print(f"[CERBERUS] Workspace: {WORKSPACE_ROOT}")
 
     # 1. Dependencies
     missing = check_core_modules()
@@ -138,9 +169,9 @@ def main() -> None:
         install_missing(missing)
         missing = check_core_modules()
         if missing:
-            print(f"[CERBERUS] Could not install: {missing}. Install manually:")
-            print(f"  pip install -r requirements.txt")
-            print(f"  pip install fastapi uvicorn")
+            _safe_print(f"[CERBERUS] Could not install: {missing}. Install manually:")
+            _safe_print("  pip install -r requirements.txt")
+            _safe_print("  pip install fastapi uvicorn prompt-toolkit")
             sys.exit(1)
 
     # 2. Health check (optional)
@@ -150,16 +181,16 @@ def main() -> None:
     # 3. CLI smoke test — verifies the orchestrator imports and runs
     try:
         from cyberai import CyberAIOrchestrator
-        print("[CERBERUS] Orchestrator import OK — one unified AI facade ready.")
+        _safe_print("[CERBERUS] Orchestrator import OK — one unified AI facade ready.")
     except Exception as e:
-        print(f"[CERBERUS] Orchestrator import FAILED: {e}")
+        _safe_print(f"[CERBERUS] Orchestrator import FAILED: {e}")
         sys.exit(1)
 
     # 4. Start
     if args.cli:
-        print("[CERBERUS] CLI mode. Try:")
-        print("  python -m cyberai.orchestrator.cli doctor")
-        print("  python -m cyberai.orchestrator.cli simulate \"Analyze the lab target\"")
+        _safe_print("[CERBERUS] CLI mode. Try:")
+        _safe_print("  python -m cyberai.orchestrator.cli doctor")
+        _safe_print("  python -m cyberai.orchestrator.cli simulate \"Analyze the lab target\"")
         return
 
     serve(args.port, not args.no_browser)

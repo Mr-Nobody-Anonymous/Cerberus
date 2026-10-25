@@ -13,9 +13,14 @@ const toneColor: Record<PillTone, string> = {
   violet: "var(--cb-violet)",
 };
 
-export function Pill({ tone = "neutral", children, title }: {
+export function Pill({ tone = "neutral", children, title, live }: {
   tone?: PillTone; children: React.ReactNode; title?: string;
+  live?: boolean;
 }) {
+  // Live states (running/online) get a slow breathing pulse — subtle, not urgent.
+  const dotClass = live
+    ? `cb-dot cb-dot--${tone === "error" ? "err" : tone === "ok" ? "ok" : tone === "warn" ? "warn" : tone === "info" ? "info" : "idle"} cb-dot--pulse`
+    : "";
   return (
     <span title={title}
           style={{
@@ -28,8 +33,12 @@ export function Pill({ tone = "neutral", children, title }: {
             fontSize: 10.5, fontWeight: 600, letterSpacing: "0.04em",
             whiteSpace: "nowrap",
           }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%",
-                     background: toneColor[tone], flexShrink: 0 }} />
+      {live ? (
+        <span className={dotClass} />
+      ) : (
+        <span style={{ width: 6, height: 6, borderRadius: "50%",
+                       background: toneColor[tone], flexShrink: 0 }} />
+      )}
       {children}
     </span>
   );

@@ -15,9 +15,7 @@ Adapters that do not inherit :class:`SandboxedAdapter` (in
 from __future__ import annotations
 
 import logging
-import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .exceptions import PolicyDeniedError
 
@@ -29,7 +27,7 @@ ACTOR_CERBERUS = "cerberus:orchestrator"
 
 def authorize(
     policy_engine: Any,
-    target: Dict[str, Any],
+    target: dict[str, Any],
     action: str,
 ) -> None:
     """
@@ -73,11 +71,11 @@ def record_action(
     *,
     session_id: str,
     tool: str,
-    target: Dict[str, Any],
+    target: dict[str, Any],
     action: str,
     success: bool,
     output: Any = None,
-    error: Optional[str] = None,
+    error: str | None = None,
 ) -> str:
     """
     Record an action to the evidence log. Called for EVERY adapter action,
@@ -86,7 +84,7 @@ def record_action(
     Returns the evidence id.
     """
     target_id = (target or {}).get("id", "") if isinstance(target, dict) else ""
-    content: Dict[str, Any] = {
+    content: dict[str, Any] = {
         "tool": tool,
         "target_id": target_id,
         "action": action,

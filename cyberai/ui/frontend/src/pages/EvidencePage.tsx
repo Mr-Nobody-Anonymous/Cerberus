@@ -4,18 +4,14 @@
 
 import { evidenceApi } from "@/lib/api";
 import { useFetch } from "@/hooks";
-import { PageHeader, Spinner, ErrorBox, EmptyState } from "@/components/common/Basics";
+import { PageHeader, ErrorBox, EmptyState, Loading } from "@/components/common/Basics";
 import { Pill } from "@/components/common/Pill";
 
 export function EvidencePage() {
   const { data, loading, error } = useFetch(() => evidenceApi.list(), []);
 
   if (error) return <ErrorBox error={error} />;
-  if (loading) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-      <Spinner size={24} />
-    </div>
-  );
+  if (loading) return <Loading label="evidence" />;
 
   const items = data?.evidence ?? [];
 

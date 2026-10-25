@@ -19,7 +19,7 @@ services:
   # Pinned to the exact version verified against this platform (the vendored
   # source copy was removed 2026-09-10; the proxy is consumed as a service).
   litellm:
-    image: litellm/litellm:1.97.0
+    image: ghcr.io/berriai/litellm:v1.97.0
     container_name: cyberai-litellm
     profiles: ["cloud", "local", "gpu", "server"]
     ports:
@@ -28,7 +28,7 @@ services:
       - ./cyberai/llm_gateway/config:/app/config
       - ./cyberai/llm_gateway/models:/app/models
     environment:
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-test}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set in environment}
       - LITELLM_PORT=4000
     command: --config /app/config/config.yaml
     restart: unless-stopped
@@ -37,7 +37,7 @@ services:
 
   # Open WebUI - Human-facing interface
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:0.3.32
     container_name: cyberai-open-webui
     profiles: ["cloud", "local", "gpu", "server"]
     ports:
@@ -55,7 +55,7 @@ services:
 
   # Ollama - Local model service (CPU-only profile)
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.3.14
     container_name: cyberai-ollama
     profiles: ["local"]
     ports:
@@ -68,7 +68,7 @@ services:
 
   # Ollama with GPU passthrough (NVIDIA container runtime required)
   ollama-gpu:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.3.14
     container_name: cyberai-ollama-gpu
     profiles: ["gpu", "server"]
     ports:
@@ -88,7 +88,7 @@ services:
 
   # vLLM - High-throughput local serving (GPU server profile)
   vllm:
-    image: vllm/vllm-openai:latest
+    image: vllm/vllm-openai:v0.6.3
     container_name: cyberai-vllm
     profiles: ["server"]
     ports:

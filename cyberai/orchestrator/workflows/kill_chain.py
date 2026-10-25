@@ -20,7 +20,7 @@ import time
 import uuid
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
 
@@ -71,21 +71,21 @@ class KillChainError(Exception):
 class TargetChain:
     """One target's progress through the F2T2EA phases."""
 
-    def __init__(self, target: str, chain_id: Optional[str] = None):
+    def __init__(self, target: str, chain_id: str | None = None):
         self.chain_id = chain_id or uuid.uuid4().hex[:8]
         self.target = target
         self.created_at = time.time()
         self.updated_at = self.created_at
         self.current_phase: Phase = Phase.FIND
-        self.phase_status: Dict[str, str] = {p: PhaseStatus.PENDING.value for p in PHASE_ORDER}
+        self.phase_status: dict[str, str] = {p: PhaseStatus.PENDING.value for p in PHASE_ORDER}
         self.phase_status[Phase.FIND.value] = PhaseStatus.ACTIVE.value
-        self.phase_started: Dict[str, float] = {Phase.FIND.value: self.created_at}
-        self.phase_ended: Dict[str, float] = {}
-        self.phase_notes: Dict[str, str] = {}
+        self.phase_started: dict[str, float] = {Phase.FIND.value: self.created_at}
+        self.phase_ended: dict[str, float] = {}
+        self.phase_notes: dict[str, str] = {}
         self.verification: str = Verification.UNVERIFIED.value
-        self.findings: List[Dict[str, Any]] = []
+        self.findings: list[dict[str, Any]] = []
         self.status: str = "ACTIVE"  # ACTIVE | COMPLETE | ABORTED
-        self.error: Optional[str] = None
+        self.error: str | None = None
 
     # -- transitions ------------------------------------------------------
 
@@ -98,7 +98,7 @@ class TargetChain:
         if self.phase_status.get(phase.value) != PhaseStatus.ACTIVE.value:
             raise KillChainError(f"phase {phase.value} is {self.phase_status.get(phase.value)}")
 
-    def advance(self, note: str = "", finding: Optional[Dict[str, Any]] = None) -> Phase:
+    def advance(self, note: str = "", finding: dict[str, Any] | None = None) -> Phase:
         """Mark the current phase COMPLETE and move to the next phase."""
         phase = self.current_phase
         self._require_active(phase)
@@ -134,7 +134,7 @@ class TargetChain:
             self.status = "ABORTED"
         self.updated_at = now
 
-    def timeout_phase(self, phase: Optional[Phase] = None) -> bool:
+    def timeout_phase(self, phase: Phase | None = None) -> bool:
         """Mark a phase TIMED_OUT if it exceeded its timeout. Returns True if timed out."""
         phase = phase or self.current_phase
         if self.phase_status.get(phase.value) != PhaseStatus.ACTIVE.value:
@@ -171,7 +171,7 @@ class TargetChain:
 
     # -- serialization ----------------------------------------------------
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "chain_id": self.chain_id,
             "target": self.target,
@@ -189,7 +189,7 @@ class TargetChain:
         }
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "TargetChain":
+    def from_dict(cls, d: dict[str, Any]) -> "TargetChain":
         c = cls.__new__(cls)
         c.chain_id = d["chain_id"]
         c.target = d["target"]
@@ -210,12 +210,12 @@ class TargetChain:
 class KillChainEngine:
     """Coordinates F2T2EA chains across multiple targets concurrently."""
 
-    def __init__(self, state_path: Optional[Path] = None,
-                 memory_store: Optional[Any] = None):
+    def __init__(self, state_path: Path | None = None,
+                 memory_store: Any | None = None):
         # lab/state/kill_chains.json — workspace resource
         self.state_path = state_path or WORKSPACE_ROOT / "lab" / "state" / "kill_chains.json"
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        self._chains: Dict[str, TargetChain] = {}  # keyed by target
+        self._chains: dict[str, TargetChain] = {}  # keyed by target
         self._load()
         # Optional MemoryStore for ghost-wargaming failure recording
         self._memory = memory_store
@@ -253,14 +253,14 @@ class KillChainEngine:
         logger.info(f"Kill chain {chain.chain_id} started for {target}")
         return chain
 
-    def get_chain(self, target: str) -> Optional[TargetChain]:
+    def get_chain(self, target: str) -> TargetChain | None:
         return self._chains.get(target)
 
-    def list_chains(self) -> List[Dict[str, Any]]:
+    def list_chains(self) -> list[dict[str, Any]]:
         return [c.to_dict() for c in self._chains.values()]
 
     def advance(self, target: str, note: str = "",
-                finding: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                finding: dict[str, Any] | None = None) -> dict[str, Any]:
         """Advance a target's chain to the next F2T2EA phase."""
         chain = self._chains.get(target)
         if chain is None:
@@ -273,7 +273,7 @@ class KillChainEngine:
         self._save()
         return chain.to_dict()
 
-    def fail(self, target: str, reason: str, category: str = "execution") -> Dict[str, Any]:
+    def fail(self, target: str, reason: str, category: str = "execution") -> dict[str, Any]:
         """Fail the current phase for a target and abort its chain."""
         chain = self._chains.get(target)
         if chain is None:
@@ -283,7 +283,7 @@ class KillChainEngine:
         self._save()
         return chain.to_dict()
 
-    def check_timeouts(self) -> List[Dict[str, Any]]:
+    def check_timeouts(self) -> list[dict[str, Any]]:
         """Check all ACTIVE chains for phase timeouts. Returns timed-out chains."""
         timed_out = []
         for chain in self._chains.values():
@@ -315,12 +315,12 @@ class KillChainEngine:
 
     # -- reporting -----------------------------------------------------------
 
-    def status(self) -> Dict[str, Any]:
+    def status(self) -> dict[str, Any]:
         """Aggregate status across all chains."""
         active = [c for c in self._chains.values() if c.status == "ACTIVE"]
         complete = [c for c in self._chains.values() if c.status == "COMPLETE"]
         aborted = [c for c in self._chains.values() if c.status == "ABORTED"]
-        by_phase: Dict[str, int] = {}
+        by_phase: dict[str, int] = {}
         for c in active:
             by_phase[c.current_phase.value] = by_phase.get(c.current_phase.value, 0) + 1
         return {

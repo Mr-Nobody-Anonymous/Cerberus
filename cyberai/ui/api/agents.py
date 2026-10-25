@@ -4,7 +4,6 @@
     GET /api/v1/agents/{name}  one agent detail
 """
 
-from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
 
@@ -27,7 +26,7 @@ async def list_agents():
     tracker = PerformanceTracker()
     try:
         stats = tracker.get_all_stats("agent")
-    except Exception:  # noqa: BLE001
+    except Exception:
         stats = {}
     finally:
         tracker.close()
@@ -53,7 +52,7 @@ async def get_agent(name: str):
     tracker = PerformanceTracker()
     try:
         stats = tracker.get_all_stats("agent").get(name, {})
-    except Exception:  # noqa: BLE001
+    except Exception:
         stats = {}
     finally:
         tracker.close()

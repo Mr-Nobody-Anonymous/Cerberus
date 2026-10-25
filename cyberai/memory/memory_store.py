@@ -14,6 +14,7 @@ retrieval based on similarity, success rate, verification status,
 recency, environment, tool, target type, and confidence.
 """
 
+import contextlib
 import json
 import logging
 import math
@@ -24,7 +25,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from cyberai.config import config
 
@@ -51,7 +52,7 @@ _STOPWORDS = {
 }
 
 
-def _tokenize(text: str) -> List[str]:
+def _tokenize(text: str) -> list[str]:
     """Tokenize text for TF-IDF (lowercase, strip stopwords)."""
     return [t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS]
 
@@ -62,7 +63,7 @@ class MemoryEntry:
 
     memory_type: str  # episodic, semantic, procedural, tool, failure, experiment
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.0
     success_rate: float = 0.0
     verification: str = "UNVERIFIED"  # UNVERIFIED, LIKELY, VERIFIED, REJECTED
@@ -71,7 +72,7 @@ class MemoryEntry:
     last_accessed: str = ""
     access_count: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "memory_id": self.memory_id,
             "memory_type": self.memory_type,
@@ -89,13 +90,15 @@ class MemoryEntry:
 class MemoryStore:
     """Typed, ranked memory store for experiences."""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or config.get_path(
             "memory", "experiences_db_path", "memory/experiences.db"
         )
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.db_path))
+        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
+        with contextlib.suppress(Exception):
+            self._conn.execute("PRAGMA journal_mode=WAL")
         self._init_db()
 
     def _init_db(self) -> None:
@@ -172,7 +175,7 @@ class MemoryStore:
             metadata=metadata,
         ))
 
-    def get(self, memory_id: str) -> Optional[Dict[str, Any]]:
+    def get(self, memory_id: str) -> dict[str, Any] | None:
         """Get a memory entry by ID."""
         with self._conn:
             row = self._conn.execute(
@@ -190,7 +193,7 @@ class MemoryStore:
             )
         return entry
 
-    def get_by_type(self, memory_type: str, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_by_type(self, memory_type: str, limit: int = 100) -> list[dict[str, Any]]:
         """Get memories of a specific type."""
         with self._conn:
             rows = self._conn.execute(
@@ -204,7 +207,7 @@ class MemoryStore:
             ).fetchall()
         return [self._parse_row(r) for r in rows]
 
-    def get_by_metadata(self, memory_type: str, key: str, value: Any, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_by_metadata(self, memory_type: str, key: str, value: Any, limit: int = 50) -> list[dict[str, Any]]:
         """Get memories filtered by a metadata key-value pair."""
         # Load all of the type and filter in Python (simple approach)
         all_memories = self.get_by_type(memory_type, limit=1000)
@@ -216,7 +219,7 @@ class MemoryStore:
                 break
         return result
 
-    def _parse_row(self, row: sqlite3.Row) -> Dict[str, Any]:
+    def _parse_row(self, row: sqlite3.Row) -> dict[str, Any]:
         """Parse a database row into a memory dict with parsed metadata."""
         entry = dict(row)
         entry["metadata"] = json.loads(entry.get("metadata", "{}"))
@@ -225,10 +228,10 @@ class MemoryStore:
     def search(
         self,
         query: str,
-        memory_type: Optional[str] = None,
+        memory_type: str | None = None,
         limit: int = 10,
         min_confidence: float = 0.0,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search memories by keyword with ranking.
 
@@ -248,7 +251,7 @@ class MemoryStore:
         Returns:
             Ranked list of memory entries
         """
-        params: List[Any] = []
+        params: list[Any] = []
         sql = "SELECT * FROM memories WHERE 1=1"
         if memory_type:
             sql += " AND memory_type = ?"
@@ -277,10 +280,10 @@ class MemoryStore:
     def semantic_search(
         self,
         query: str,
-        memory_type: Optional[str] = None,
+        memory_type: str | None = None,
         limit: int = 10,
         min_similarity: float = 0.05,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Semantic (TF-IDF cosine similarity) memory search.
 
         Unlike keyword `search()` (exact substring LIKE), this ranks
@@ -320,17 +323,17 @@ class MemoryStore:
             doc_freq.update(set(tokens))
         n_docs = len(docs)
 
-        def tfidf(tokens: List[str]) -> Dict[str, float]:
+        def tfidf(tokens: list[str]) -> dict[str, float]:
             counts = Counter(tokens)
             total = max(len(tokens), 1)
-            vec: Dict[str, float] = {}
+            vec: dict[str, float] = {}
             for term, cnt in counts.items():
                 if term in doc_freq and doc_freq[term] > 0:
                     idf = math.log(n_docs / doc_freq[term]) + 1.0
                     vec[term] = (cnt / total) * idf
             return vec
 
-        def cosine(a: Dict[str, float], b: Dict[str, float]) -> float:
+        def cosine(a: dict[str, float], b: dict[str, float]) -> float:
             if not a or not b:
                 return 0.0
             dot = sum(w * b.get(t, 0.0) for t, w in a.items())
@@ -341,7 +344,7 @@ class MemoryStore:
             return dot / (na * nb)
 
         query_vec = tfidf(query_tokens)
-        scored: List[Tuple[float, Dict[str, Any]]] = []
+        scored: list[tuple[float, dict[str, Any]]] = []
         for i, m in enumerate(pool):
             sim = cosine(query_vec, tfidf(docs[i + 1]))
             if sim >= min_similarity:
@@ -361,7 +364,7 @@ class MemoryStore:
         environment: str = "authorized_lab",
         target_type: str = "",
         limit: int = 5,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Retrieve relevant memories for planning.
 
@@ -491,20 +494,20 @@ class MemoryStore:
             **metadata,
         )
 
-    def get_failures_similar(self, strategy_description: str, limit: int = 5) -> List[Dict[str, Any]]:
+    def get_failures_similar(self, strategy_description: str, limit: int = 5) -> list[dict[str, Any]]:
         """Get failure memories similar to a strategy description."""
         return self.search(strategy_description, memory_type="failure", limit=limit)
 
     def update_feedback(
         self,
         memory_id: str,
-        success_rate: Optional[float] = None,
-        verification: Optional[str] = None,
-        confidence: Optional[float] = None,
+        success_rate: float | None = None,
+        verification: str | None = None,
+        confidence: float | None = None,
     ) -> None:
         """Update feedback metrics on a memory entry."""
         updates = []
-        params: List[Any] = []
+        params: list[Any] = []
         if success_rate is not None:
             updates.append("success_rate = ?")
             params.append(success_rate)
@@ -517,13 +520,12 @@ class MemoryStore:
         if not updates:
             return
         params.append(memory_id)
+        # SET fragments are hardcoded column names; all values are parameterized.
+        query = f"UPDATE memories SET {', '.join(updates)} WHERE memory_id = ?"  # nosec B608
         with self._conn:
-            self._conn.execute(
-                f"UPDATE memories SET {', '.join(updates)} WHERE memory_id = ?",
-                params,
-            )
+            self._conn.execute(query, params)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get memory system statistics."""
         with self._conn:
             total = self._conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0]

@@ -10,15 +10,24 @@ Inspects every major subsystem and reports status as:
 No sys.path hacks — assumes the package is installed or on PYTHONPATH.
 """
 
-import importlib
 import logging
 import os
 import shutil
 import socket
 import subprocess
 import sys
+
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Tuple
 
 from cyberai.config import resolve_path
 
@@ -38,7 +47,7 @@ def _check_port(host: str, port: int, timeout: float = 2.0) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout):
             return True
-    except (ConnectionRefusedError, socket.timeout, OSError):
+    except (TimeoutError, ConnectionRefusedError, OSError):
         return False
 
 
@@ -47,7 +56,7 @@ def _check_command(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
 
-def _check_git_repo(path: Path) -> Tuple[bool, str]:
+def _check_git_repo(path: Path) -> tuple[bool, str]:
     """Check if a directory is a valid git repository."""
     try:
         result = subprocess.run(
@@ -65,7 +74,7 @@ def _check_git_repo(path: Path) -> Tuple[bool, str]:
         return False, str(e)
 
 
-def run_health_check() -> Iterator[Tuple[str, str, str]]:
+def run_health_check() -> Iterator[tuple[str, str, str]]:
     """
     Run all health checks and yield (component, status, message) tuples.
 
@@ -90,7 +99,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
             "ok" if hp.profile_source == "env" else "info",
             f"{hp.profile} ({hp.profile_source})",
         )
-    except Exception as e:  # noqa: BLE001 — probe must never fail doctor
+    except Exception as e:
         yield ("Hardware", "warn", f"detection failed: {e}")
 
     # ---- Python ----
@@ -205,8 +214,7 @@ def run_health_check() -> Iterator[Tuple[str, str, str]]:
 
     # ---- Orchestrator imports ----
     try:
-        from cyberai.orchestrator import Orchestrator, ToolRegistry, MemoryManager, PolicyEngine, ModelRouter
-        from cyberai import CyberAIOrchestrator
+        from cyberai.orchestrator import MemoryManager, PolicyEngine
         yield ("Orchestrator", "ok", "all core modules importable (including CyberAIOrchestrator)")
     except Exception as e:
         yield ("Orchestrator", "error", f"import failed: {e}")

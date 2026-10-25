@@ -14,6 +14,23 @@ export function Spinner({ size = 16 }: { size?: number }) {
   );
 }
 
+/** Loading state with subtle scanline sweep — cyber-ops flavor, not cheese. */
+export function Loading({ label = "loading" }: { label?: string }) {
+  return (
+    <div className="cb-scanline"
+         style={{
+           display: "flex", flexDirection: "column", alignItems: "center",
+           justifyContent: "center", gap: 10, padding: 60,
+           color: "var(--cb-text-faint)",
+         }}>
+      <Spinner size={24} />
+      <span className="mono" style={{ fontSize: 11, letterSpacing: "0.08em" }}>
+        {label}…
+      </span>
+    </div>
+  );
+}
+
 export function EmptyState({ icon = "◇", title, hint }: {
   icon?: string; title: string; hint?: string;
 }) {

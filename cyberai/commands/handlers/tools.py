@@ -25,7 +25,7 @@ def _tools(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "tools", data={"tools": out, "total": len(out)},
             rows=out, columns=["name", "present", "category"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("tools", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(tr)

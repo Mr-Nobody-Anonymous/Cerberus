@@ -7,7 +7,7 @@ import { useState } from "react";
 import { memoryApi } from "@/lib/api";
 import type { MemorySearchResult } from "@/lib/api";
 import { useFetch } from "@/hooks";
-import { PageHeader, Spinner, ErrorBox, EmptyState } from "@/components/common/Basics";
+import { PageHeader, ErrorBox, EmptyState, Loading } from "@/components/common/Basics";
 import { Pill } from "@/components/common/Pill";
 
 const TYPE_TONE: Record<string, "ok" | "warn" | "error" | "info" | "violet" | "neutral"> = {
@@ -45,11 +45,7 @@ export function MemoryPage() {
   };
 
   if (stats.error) return <ErrorBox error={stats.error} />;
-  if (stats.loading) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-      <Spinner size={24} />
-    </div>
-  );
+  if (stats.loading) return <Loading label="memory" />;
 
   const total = stats.data?.stats.total ?? 0;
   const byType = stats.data?.stats.by_type ?? {};

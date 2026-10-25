@@ -9,7 +9,7 @@ authorization (PermissionError → blocked) is enforced identically
 everywhere.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -46,7 +46,7 @@ async def get_command(name: str):
 
 
 @router.post("/execute")
-async def execute_command(body: Dict[str, Any]):
+async def execute_command(body: dict[str, Any]):
     """Execute a command line, e.g. {"input": "/status"} or {"input": "/findings status=LIKELY"}."""
     if not str(body.get("input") or "").strip():
         raise HTTPException(status_code=400, detail="input is required")

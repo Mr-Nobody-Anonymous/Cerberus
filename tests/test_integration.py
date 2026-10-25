@@ -17,13 +17,12 @@ import json
 import os
 from pathlib import Path
 
-from cyberai import CyberAIOrchestrator
-from cyberai import __version__
-from cyberai.task import Task, TaskStatus, VerificationState
-from cyberai.memory.memory_store import MemoryStore
+from cyberai import CyberAIOrchestrator, __version__
 from cyberai.capabilities.registry import CapabilityRegistry
 from cyberai.evolution.engine import EvolutionEngine
+from cyberai.memory.memory_store import MemoryStore
 from cyberai.orchestrator.adapters.adapter_manager import AdapterManager
+from cyberai.task import Task, TaskStatus, VerificationState
 
 
 def test_imports():
@@ -102,7 +101,7 @@ def test_adapter_health():
 
     results = asyncio.run(_run())
     assert isinstance(results, dict)
-    for name, health in results.items():
+    for health in results.values():
         assert "status" in health
         # Status vocabulary as documented in adapter_manager's module
         # docstring: AVAILABLE / WARN / ERROR / NOT_IMPLEMENTED / STOPPED.
@@ -155,7 +154,7 @@ def test_cli_doctor():
     from cyberai.orchestrator.cli.doctor import run_health_check
     checks = list(run_health_check())
     assert len(checks) > 0
-    for component, status, msg in checks:
+    for _component, status, _msg in checks:
         assert status in ("ok", "warn", "error", "info")
 
 

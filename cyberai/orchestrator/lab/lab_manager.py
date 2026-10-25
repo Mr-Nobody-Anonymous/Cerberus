@@ -19,8 +19,7 @@ import shutil
 import socket
 import subprocess
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
 from cyberai.orchestrator import PolicyEngine
@@ -43,9 +42,9 @@ def _port_open(host: str, port: int, timeout: float = 1.0) -> bool:
 class LabManager:
     """Start/stop/status for authorized lab targets."""
 
-    def __init__(self, policy_engine: Optional[PolicyEngine] = None):
+    def __init__(self, policy_engine: PolicyEngine | None = None):
         self.policy_engine = policy_engine or PolicyEngine()
-        self._docker_checked: Optional[bool] = None
+        self._docker_checked: bool | None = None
 
     # ------------------------------------------------------------------
     # Docker availability
@@ -70,7 +69,7 @@ class LabManager:
     # ------------------------------------------------------------------
     # State persistence
     # ------------------------------------------------------------------
-    def _load_state(self) -> Dict[str, Dict[str, Any]]:
+    def _load_state(self) -> dict[str, dict[str, Any]]:
         if STATE_FILE.exists():
             try:
                 return json.loads(STATE_FILE.read_text(encoding="utf-8"))
@@ -78,7 +77,7 @@ class LabManager:
                 return {}
         return {}
 
-    def _save_state(self, state: Dict[str, Dict[str, Any]]) -> None:
+    def _save_state(self, state: dict[str, dict[str, Any]]) -> None:
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
         STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
@@ -88,7 +87,7 @@ class LabManager:
     # ------------------------------------------------------------------
     # start
     # ------------------------------------------------------------------
-    async def start_target(self, target_id: str, force: bool = False) -> Dict[str, Any]:
+    async def start_target(self, target_id: str, force: bool = False) -> dict[str, Any]:
         """Start an authorized lab target.
 
         Strategy:
@@ -142,8 +141,8 @@ class LabManager:
             self._save_state(state)
         return result
 
-    async def _start_docker(self, target_id: str, target: Dict[str, Any],
-                            image: str) -> Dict[str, Any]:
+    async def _start_docker(self, target_id: str, target: dict[str, Any],
+                            image: str) -> dict[str, Any]:
         name = self._container_name(target_id)
         host = target.get("host", "127.0.0.1")
         port = int(target.get("port") or 0)
@@ -179,7 +178,7 @@ class LabManager:
                 "container": container,
                 "message": f"Container {name} launched; port not yet open (image may still be pulling)"}
 
-    async def _start_mock(self, target_id: str, target: Dict[str, Any]) -> Dict[str, Any]:
+    async def _start_mock(self, target_id: str, target: dict[str, Any]) -> dict[str, Any]:
         """Start a lightweight mock HTTP service imitating the target."""
         host = target.get("host", "127.0.0.1")
         port = int(target.get("port") or 0)
@@ -214,7 +213,7 @@ class LabManager:
     # ------------------------------------------------------------------
     # stop
     # ------------------------------------------------------------------
-    async def stop_target(self, target_id: str) -> Dict[str, Any]:
+    async def stop_target(self, target_id: str) -> dict[str, Any]:
         state = self._load_state()
         info = state.get(target_id)
         target = self.policy_engine.get_target(target_id)
@@ -249,7 +248,7 @@ class LabManager:
     # ------------------------------------------------------------------
     # status
     # ------------------------------------------------------------------
-    def status_all(self) -> List[Dict[str, Any]]:
+    def status_all(self) -> list[dict[str, Any]]:
         state = self._load_state()
         out = []
         for t in self.policy_engine.list_targets():
@@ -287,8 +286,8 @@ def _kill_pid(pid: int) -> bool:
             subprocess.run(["taskkill", "/F", "/PID", str(pid)],
                            capture_output=True, timeout=15)
         else:
-            import signal
             import os
+            import signal
             os.kill(pid, signal.SIGTERM)
         return True
     except Exception:

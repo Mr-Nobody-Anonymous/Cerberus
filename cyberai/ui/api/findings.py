@@ -4,7 +4,7 @@
     PATCH /api/v1/findings/{id}   update verification status
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -35,7 +35,7 @@ async def list_findings(status: str = "", q: str = "", session_id: str = "",
 
 
 @router.patch("/{finding_id}")
-async def update_finding(finding_id: str, body: Dict[str, Any]):
+async def update_finding(finding_id: str, body: dict[str, Any]):
     require_fields(body, "status")
     status = str(body["status"]).strip().upper()
     if status not in _VALID_STATES:

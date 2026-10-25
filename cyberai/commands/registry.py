@@ -1,9 +1,8 @@
 """Command registry — the catalog every host (CLI/Web/API) shares."""
 
 import logging
-from typing import Dict, List, Optional
 
-from cyberai.commands.models import CommandSpec, CommandResult
+from cyberai.commands.models import CommandResult, CommandSpec
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +11,8 @@ class CommandRegistry:
     """Registry of CommandSpec objects keyed by canonical name + aliases."""
 
     def __init__(self) -> None:
-        self._commands: Dict[str, CommandSpec] = {}
-        self._aliases: Dict[str, str] = {}
+        self._commands: dict[str, CommandSpec] = {}
+        self._aliases: dict[str, str] = {}
 
     # ------------------------------------------------------------- register
     def register(self, spec: CommandSpec) -> None:
@@ -28,7 +27,7 @@ class CommandRegistry:
                 continue
             self._aliases[alias] = spec.name
 
-    def command(self, name: str) -> Optional[CommandSpec]:
+    def command(self, name: str) -> CommandSpec | None:
         """Look up by canonical name or alias (case-insensitive)."""
         key = name.lower().lstrip("/")
         if key in self._commands:
@@ -40,19 +39,19 @@ class CommandRegistry:
         return self.command(name) is not None
 
     # -------------------------------------------------------------- listing
-    def names(self, include_hidden: bool = False) -> List[str]:
+    def names(self, include_hidden: bool = False) -> list[str]:
         out = [c.name for c in self._commands.values()
                if include_hidden or not c.hidden]
         return sorted(out)
 
-    def specs(self, category: Optional[str] = None,
-              include_hidden: bool = False) -> List[CommandSpec]:
+    def specs(self, category: str | None = None,
+              include_hidden: bool = False) -> list[CommandSpec]:
         out = [c for c in self._commands.values()
                if (include_hidden or not c.hidden)
                and (category is None or c.category == category)]
         return sorted(out, key=lambda c: c.name)
 
-    def categories(self) -> List[str]:
+    def categories(self) -> list[str]:
         return sorted({c.category for c in self._commands.values()})
 
     def help_all(self) -> str:
@@ -74,7 +73,7 @@ class CommandRegistry:
             result = spec.handler(ctx, parsed)
         except PermissionError as e:
             return CommandResult.blocked_result(name, str(e))
-        except Exception as e:  # noqa: BLE001 — uniform envelope
+        except Exception as e:
             logger.exception("command /%s failed", name)
             return CommandResult.failure(name, f"{type(e).__name__}: {e}")
         if isinstance(result, CommandResult):

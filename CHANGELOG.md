@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Removed
-- **Vendored LiteLLM source tree** (`cyberai/llm_gateway/litellm/`, 8,184 files / 152 MB) — it was never imported: the gateway talks HTTP to the LiteLLM proxy, which now runs as the pinned Docker image `litellm/litellm:1.97.0` (exact version previously vendored).
+- **Vendored LiteLLM source tree** (`cyberai/llm_gateway/litellm/`, 8,184 files / 152 MB) — it was never imported: the gateway talks HTTP to the LiteLLM proxy, which now runs as the pinned Docker image `ghcr.io/berriai/litellm:v1.97.0` (exact version previously vendored).
 - **Vendored A-Evolve source tree** (`cyberai/evolution/a-evolve/`, 417 files / 6.4 MB) — never imported by the native evolution engine; retained upstream as design reference (see REPOSITORY_MAP.yaml).
 
 ### Fixed

@@ -15,6 +15,7 @@ The public entry point is :func:`run_subprocess`.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import platform
@@ -22,7 +23,6 @@ import subprocess
 import threading
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 from .exceptions import CommandInjectionError
 
@@ -45,13 +45,13 @@ DEFAULT_MEMORY_LIMIT_MB = 512
 class SandboxResult:
     """Outcome of a sandboxed subprocess run."""
 
-    command: List[str]
-    returncode: Optional[int] = None
+    command: list[str]
+    returncode: int | None = None
     stdout: str = ""
     stderr: str = ""
     timed_out: bool = False
     memory_limited: bool = False
-    error: Optional[str] = None
+    error: str | None = None
     duration_seconds: float = 0.0
 
     @property
@@ -67,7 +67,7 @@ class SandboxResult:
 # ---------------------------------------------------------------------------
 # Input validation — the command-injection defence
 # ---------------------------------------------------------------------------
-def validate_args(args: List[str]) -> None:
+def validate_args(args: list[str]) -> None:
     """
     Validate that every element of an argument list is a safe single token.
 
@@ -93,7 +93,7 @@ def validate_args(args: List[str]) -> None:
             )
 
 
-def build_command(base: str, *args: str) -> List[str]:
+def build_command(base: str, *args: str) -> list[str]:
     """
     Safely construct a command list from a base program and positional args.
 
@@ -114,10 +114,8 @@ def _limit_func_unix(memory_limit_mb: int):
             import resource
 
             mem_bytes = int(memory_limit_mb) * 1024 * 1024
-            try:
+            with contextlib.suppress(ValueError, OSError):
                 resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
-            except (ValueError, OSError):
-                pass
             try:
                 cpu_limit = max(int(DEFAULT_TIMEOUT_SECONDS) * 10, 600)
                 resource.setrlimit(
@@ -143,11 +141,11 @@ def _try_disable_network() -> None:
         if libc.unshare(CLONE_NEWNET) != 0:
             errno = ctypes.get_errno()
             logger.debug("unshare(CLONE_NEWNET) not applied (errno=%s)", errno)
-    except Exception as exc:  # noqa: BLE001 — best-effort only
+    except Exception as exc:
         logger.debug("Network sandbox not available: %s", exc)
 
 
-def _minimal_env(env: Optional[Dict[str, str]]) -> Dict[str, str]:
+def _minimal_env(env: dict[str, str] | None) -> dict[str, str]:
     """Return a cleaned environment with dangerous variables removed."""
     if env is not None:
         return {k: v for k, v in env.items() if k.isalnum() or k == "_"}
@@ -157,14 +155,14 @@ def _minimal_env(env: Optional[Dict[str, str]]) -> Dict[str, str]:
 
 
 def run_subprocess(
-    command: List[str],
+    command: list[str],
     *,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
     memory_limit_mb: int = DEFAULT_MEMORY_LIMIT_MB,
     network_allowed: bool = False,
-    cwd: Optional[str] = None,
-    env: Optional[Dict[str, str]] = None,
-    stdin_input: Optional[str] = None,
+    cwd: str | None = None,
+    env: dict[str, str] | None = None,
+    stdin_input: str | None = None,
 ) -> SandboxResult:
     """
     Run a command inside the sandbox.
@@ -199,7 +197,7 @@ def run_subprocess(
 
     run_env = _minimal_env(env)
 
-    proc: Optional[subprocess.Popen] = None
+    proc: subprocess.Popen | None = None
     result = SandboxResult(command=list(command))
     timed_out = threading.Event()
 
@@ -214,10 +212,8 @@ def run_subprocess(
             logger.warning(
                 "Sandbox timeout (%.1fs) reached for %r -- killing",
                 timeout, command)
-            try:
+            with contextlib.suppress(OSError):
                 proc.kill()
-            except OSError:
-                pass
 
     watchdog = threading.Thread(target=_watchdog, daemon=True)
     watchdog.start()
@@ -251,7 +247,7 @@ def run_subprocess(
         result.stdout = stdout_b.decode("utf-8", errors="replace")
         result.stderr = stderr_b.decode("utf-8", errors="replace")
         result.returncode = proc.returncode
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         if proc.poll() is None:
             proc.kill()
         timed_out.set()

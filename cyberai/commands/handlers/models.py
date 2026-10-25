@@ -13,7 +13,7 @@ def _models(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "models", data={"models": models},
             rows=models, columns=["alias", "provider", "default_model"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("models", f"{type(e).__name__}: {e}")
     finally:
         ctx.close_resource(gw)
@@ -31,7 +31,7 @@ def _routing(ctx: CommandContext, parsed: ParsedCommand) -> CommandResult:
             "models-routing", data={"routes": routes},
             rows=rows, columns=["task_type", "model_alias"],
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return CommandResult.failure("models-routing", f"{type(e).__name__}: {e}")
 
 

@@ -17,7 +17,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ProposalStatus(Enum):
@@ -34,8 +34,8 @@ class ImprovementProposal:
     """A proposed code change to the orchestrator."""
 
     reason: str
-    files_changed: List[str] = field(default_factory=list)
-    tests: List[str] = field(default_factory=list)
+    files_changed: list[str] = field(default_factory=list)
+    tests: list[str] = field(default_factory=list)
     benchmark: str = ""
     before_score: float = 0.0
     after_score: float = 0.0
@@ -46,9 +46,9 @@ class ImprovementProposal:
     rollback_commit: str = ""
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     reviewed_at: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dict."""
         return {
             "proposal_id": self.proposal_id,
@@ -68,7 +68,7 @@ class ImprovementProposal:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ImprovementProposal":
+    def from_dict(cls, data: dict[str, Any]) -> "ImprovementProposal":
         """Deserialize from dict."""
         return cls(
             proposal_id=data.get("proposal_id", str(uuid.uuid4())),

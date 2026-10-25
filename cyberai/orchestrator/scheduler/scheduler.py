@@ -8,7 +8,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +17,14 @@ class TaskScheduler:
     """Schedules and manages asynchronous tasks for the orchestrator."""
 
     def __init__(self):
-        self._tasks: Dict[str, asyncio.Task] = {}
+        self._tasks: dict[str, asyncio.Task] = {}
         self._queue: asyncio.Queue = asyncio.Queue()
-        self._results: Dict[str, Dict[str, Any]] = {}
+        self._results: dict[str, dict[str, Any]] = {}
 
     async def submit(
         self,
         agent_name: str,
-        task: Dict[str, Any],
+        task: dict[str, Any],
         priority: int = 5,
     ) -> str:
         """Submit a task for execution.
@@ -42,7 +42,7 @@ class TaskScheduler:
         logger.info(f"Submitted task {task_id} to agent '{agent_name}' (priority {priority})")
         return task_id
 
-    async def get_result(self, task_id: str, timeout: float = 300) -> Optional[Dict[str, Any]]:
+    async def get_result(self, task_id: str, timeout: float = 300) -> dict[str, Any] | None:
         """Wait for and retrieve a task result.
 
         Args:
@@ -59,7 +59,7 @@ class TaskScheduler:
             await asyncio.sleep(0.5)
         return None
 
-    def store_result(self, task_id: str, result: Dict[str, Any]) -> None:
+    def store_result(self, task_id: str, result: dict[str, Any]) -> None:
         """Store a task result."""
         self._results[task_id] = result
 

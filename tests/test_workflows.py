@@ -18,16 +18,15 @@ from unittest.mock import MagicMock
 import pytest
 
 from cyberai.orchestrator.workflows import (
+    PHASE_ORDER,
     KillChainEngine,
     Phase,
     PhaseStatus,
-    PHASE_ORDER,
     TargetChain,
     Verification,
     WorkflowManager,
 )
 from cyberai.orchestrator.workflows.kill_chain import KillChainError
-
 
 # ---------------------------------------------------------------------------
 # WorkflowManager
@@ -169,7 +168,7 @@ class TestTargetChain:
 
     def test_verification_promotion_verified(self):
         chain = TargetChain("t")
-        for phase in PHASE_ORDER[:-1]:
+        for _phase in PHASE_ORDER[:-1]:
             chain.advance(finding={"verification": "VERIFIED"})
         chain.advance()  # ASSESS completes the chain
         assert chain.verification == Verification.VERIFIED.value

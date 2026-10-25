@@ -18,12 +18,11 @@ Physical Database Schema (performance.db):
 import json
 import logging
 import sqlite3
-import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import config
 
@@ -115,9 +114,9 @@ class PerformanceRecord:
     target_type: str = ""
     record_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "record_id": self.record_id,
             "entity_type": self.entity_type,
@@ -145,7 +144,7 @@ class PerformanceTracker:
     tool performs best for which task.
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Path | None = None):
         self.db_path = db_path or config.get_path(
             "memory", "performance_db_path", "memory/performance.db"
         )
@@ -239,7 +238,7 @@ class PerformanceTracker:
         entity_name: str,
         task_type: str,
         limit: int = 100,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get aggregated statistics for an entity on a task type.
 
@@ -334,7 +333,7 @@ class PerformanceTracker:
         entity_type: str,
         task_type: str,
         min_calls: int = 3,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Find the best-performing entity for a task type.
 
@@ -353,7 +352,7 @@ class PerformanceTracker:
         """
         with self._conn:
             rows = self._conn.execute(
-                f"""
+                """
                 SELECT * FROM (
                     SELECT
                         p.entity_name,
@@ -389,7 +388,7 @@ class PerformanceTracker:
         entity_type: str,
         task_type: str,
         min_calls: int = 1,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get a ranked list of entities for a task type.
 
@@ -406,7 +405,7 @@ class PerformanceTracker:
         """
         with self._conn:
             rows = self._conn.execute(
-                f"""
+                """
                 SELECT * FROM (
                     SELECT
                         p.entity_name,
@@ -438,7 +437,7 @@ class PerformanceTracker:
             result.append(d)
         return result
 
-    def get_all_stats(self, entity_type: str) -> Dict[str, Any]:
+    def get_all_stats(self, entity_type: str) -> dict[str, Any]:
         """
         Get aggregated stats grouped by entity and task type.
 
@@ -465,7 +464,7 @@ class PerformanceTracker:
                 """,
                 (entity_type,),
             ).fetchall()
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         for r in rows:
             d = dict(r)
             d["success_rate"] = float(d["success_rate"])

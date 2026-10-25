@@ -4,7 +4,6 @@ Feeds a fixed sequence of commands to run_console by monkeypatching the
 plain-input fallback, then prints what the console rendered.
 """
 import builtins
-import sys
 
 import cyberai.orchestrator.cli.shell.interactive as mod
 
@@ -18,7 +17,7 @@ def main():
         try:
             line = next(it)
         except StopIteration:
-            raise EOFError
+            raise EOFError from None
         print(f"cerberus > {line}")
         return line
 

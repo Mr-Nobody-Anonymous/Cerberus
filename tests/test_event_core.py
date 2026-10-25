@@ -31,8 +31,8 @@ def store(tmp_path):
 # EventStore basics
 # ---------------------------------------------------------------------------
 def test_append_and_history(store):
-    ev = store.append(make_event("agent.started", session_id="s1",
-                                 agent="recon", metadata={"capability": "recon"}))
+    store.append(make_event("agent.started", session_id="s1",
+                             agent="recon", metadata={"capability": "recon"}))
     hist = store.history()
     assert len(hist) == 1
     assert hist[0].type == "agent.started"
@@ -140,6 +140,7 @@ def test_memory_degradation(tmp_path, monkeypatch):
 def test_live_event_bus_facade(tmp_path, monkeypatch):
     monkeypatch.setattr("cyberai.orchestrator.event_store._STORE", None)
     import importlib
+
     import cyberai.orchestrator.event_store as es_mod
     # Point the shared store at a temp DB
     monkeypatch.setattr(es_mod, "_DEFAULT_DB", tmp_path / "events.db")

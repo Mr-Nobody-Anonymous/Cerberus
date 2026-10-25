@@ -8,10 +8,10 @@ The archive becomes part of future planning and retrieval.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+
+from cyberai.config import config
 
 from .strategy import Strategy, StrategyStatus
-from cyberai.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +19,13 @@ logger = logging.getLogger(__name__)
 class EliteArchive:
     """Maintains the elite archive of best verified strategies."""
 
-    def __init__(self, archive_dir: Optional[Path] = None, max_elite: int = 20):
+    def __init__(self, archive_dir: Path | None = None, max_elite: int = 20):
         self.archive_dir = archive_dir or config.get_path(
             "memory", "evolution_dir", "memory/evolution"
         ) / "elite"
         self.archive_dir.mkdir(parents=True, exist_ok=True)
         self.max_elite = max_elite
-        self._elite: Dict[str, Strategy] = {}
+        self._elite: dict[str, Strategy] = {}
         self._load()
 
     def _load(self) -> None:
@@ -87,11 +87,11 @@ class EliteArchive:
             if path.exists():
                 path.unlink()
 
-    def get(self, strategy_id: str) -> Optional[Strategy]:
+    def get(self, strategy_id: str) -> Strategy | None:
         """Get an elite strategy by ID."""
         return self._elite.get(strategy_id)
 
-    def get_best(self, limit: int = 5) -> List[Strategy]:
+    def get_best(self, limit: int = 5) -> list[Strategy]:
         """Get the highest-fitness elite strategies."""
         sorted_strategies = sorted(
             self._elite.values(),
@@ -100,7 +100,7 @@ class EliteArchive:
         )
         return sorted_strategies[:limit]
 
-    def get_by_task_type(self, task_type: str, limit: int = 5) -> List[Strategy]:
+    def get_by_task_type(self, task_type: str, limit: int = 5) -> list[Strategy]:
         """Get elite strategies for a specific task type."""
         matching = [
             s for s in self._elite.values()
@@ -109,7 +109,7 @@ class EliteArchive:
         matching.sort(key=lambda s: s.fitness, reverse=True)
         return matching[:limit]
 
-    def get_by_target_type(self, target_type: str, limit: int = 5) -> List[Strategy]:
+    def get_by_target_type(self, target_type: str, limit: int = 5) -> list[Strategy]:
         """Get elite strategies for a specific target type."""
         matching = [
             s for s in self._elite.values()
@@ -118,7 +118,7 @@ class EliteArchive:
         matching.sort(key=lambda s: s.fitness, reverse=True)
         return matching[:limit]
 
-    def get_all(self) -> List[Strategy]:
+    def get_all(self) -> list[Strategy]:
         """Get all elite strategies."""
         return list(self._elite.values())
 

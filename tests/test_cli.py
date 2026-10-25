@@ -34,7 +34,6 @@ from click.testing import CliRunner
 from cyberai.config import WORKSPACE_ROOT, config
 from cyberai.orchestrator.cli.cli import cli
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

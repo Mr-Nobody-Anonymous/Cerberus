@@ -14,16 +14,17 @@ Ties together:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from .strategy import Strategy, StrategyStatus
-from .population import Population
-from .mutation import MutationEngine
-from .selection import SelectionEngine
+from cyberai.config import config
+
+from .archive import EliteArchive
 from .evaluation import EvaluationEngine
 from .fitness import FitnessFunction
-from .archive import EliteArchive
-from cyberai.config import config
+from .mutation import MutationEngine
+from .population import Population
+from .selection import SelectionEngine
+from .strategy import Strategy, StrategyStatus
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class EvolutionEngine:
 
     def __init__(
         self,
-        evolution_dir: Optional[Path] = None,
+        evolution_dir: Path | None = None,
         simulate: bool = True,
         population_size: int = 10,
         elite_size: int = 3,
@@ -58,7 +59,7 @@ class EvolutionEngine:
         self.fitness = FitnessFunction()
         self.elite_archive = EliteArchive(self.evolution_dir / "elite")
 
-        self._failure_memory: List[Dict[str, Any]] = []
+        self._failure_memory: list[dict[str, Any]] = []
         self._load_failures()
 
     def _load_failures(self) -> None:
@@ -72,7 +73,7 @@ class EvolutionEngine:
             except Exception as e:
                 logger.warning(f"Failed to load failure record {f}: {e}")
 
-    def _save_failure(self, failure: Dict[str, Any]) -> None:
+    def _save_failure(self, failure: dict[str, Any]) -> None:
         """Save a failure record to disk."""
         failures_dir = self.evolution_dir / "failures"
         failures_dir.mkdir(parents=True, exist_ok=True)
@@ -114,18 +115,18 @@ class EvolutionEngine:
         self._save_failure(failure)
         logger.info(f"Recorded failure for strategy {strategy.strategy_id}: {failure_category}")
 
-    def get_recent_failures(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_recent_failures(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get recent failure records."""
         return self._failure_memory[-limit:]
 
-    def get_failures_by_tool(self, tool: str) -> List[Dict[str, Any]]:
+    def get_failures_by_tool(self, tool: str) -> list[dict[str, Any]]:
         """Get failures associated with a specific tool."""
         return [
             f for f in self._failure_memory
             if tool in f.get("tools", [])
         ]
 
-    def get_failures_by_category(self, category: str) -> List[Dict[str, Any]]:
+    def get_failures_by_category(self, category: str) -> list[dict[str, Any]]:
         """Get failures by category."""
         return [
             f for f in self._failure_memory
@@ -149,9 +150,9 @@ class EvolutionEngine:
     async def evolve_generation(
         self,
         task_type: str,
-        task_context: Optional[Dict[str, Any]] = None,
+        task_context: dict[str, Any] | None = None,
         num_strategies: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run one complete evolutionary generation.
 
@@ -182,7 +183,7 @@ class EvolutionEngine:
         parents = successful[:2] if successful else []
 
         # Generate new strategies
-        new_strategies: List[Strategy] = []
+        new_strategies: list[Strategy] = []
 
         # Mutations of successful strategies
         for parent in parents:
@@ -264,7 +265,7 @@ class EvolutionEngine:
         logger.info(f"Evolution generation complete: {generation_result}")
         return generation_result
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get evolution engine status."""
         return {
             "population_size": self.population.size(),

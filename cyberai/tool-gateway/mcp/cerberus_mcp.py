@@ -17,7 +17,7 @@ Run:
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 # Ensure the workspace root is importable when launched as a script
 _WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
@@ -35,7 +35,7 @@ mcp = FastMCP("cerberus-orchestrator")
 @mcp.tool()
 def status() -> str:
     """Get Cerberus platform status: adapters, models, and MCP servers."""
-    out: Dict[str, Any] = {"platform": "Cerberus"}
+    out: dict[str, Any] = {"platform": "Cerberus"}
 
     try:
         from cyberai.orchestrator.cli._mcp import get_mcp_gateway
@@ -120,7 +120,8 @@ def killchain(target: str = "", action: str = "status") -> str:
         action: 'status' (default), 'start', or 'advance'
     """
     from cyberai.orchestrator.workflows.kill_chain import (
-        KillChainEngine, KillChainError,
+        KillChainEngine,
+        KillChainError,
     )
 
     engine = KillChainEngine()

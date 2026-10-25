@@ -4,7 +4,6 @@
     GET /api/v1/evidence/{id}     evidence detail
 """
 
-from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
 
@@ -27,7 +26,7 @@ async def list_evidence(session_id: str = "", limit: int = 100):
                 for s in mm.list_sessions():
                     try:
                         rows.extend(em.list_evidence(s.get("id")))
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         continue
             finally:
                 mm.close()
@@ -53,7 +52,7 @@ async def get_evidence(evidence_id: str):
                         if e.get("id") == evidence_id:
                             match = e
                             break
-                except Exception:  # noqa: BLE001
+                except Exception:
                     continue
                 if match:
                     break

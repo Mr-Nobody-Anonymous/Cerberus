@@ -70,7 +70,7 @@ export function TopBar() {
       <Pill tone="violet" title="Active testing restricted to authorized lab targets">
         LAB-ONLY
       </Pill>
-      <Pill tone={sseTone as "ok" | "warn" | "error"} title="Live event stream (SSE)">
+      <Pill tone={sseTone as "ok" | "warn" | "error"} title="Live event stream (SSE)" live>
         SSE {sse}
       </Pill>
     </header>

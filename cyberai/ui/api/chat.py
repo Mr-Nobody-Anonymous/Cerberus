@@ -14,15 +14,18 @@ local models first). Slash-commands dispatch through the shared command
 bus so chat and CLI behave identically.
 """
 
-import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
 
-from cyberai.ui.api._helpers import (get_session_or_404, now_iso,
-                                     parse_session_meta, require_fields,
-                                     session_title, write_session_meta)
+from cyberai.ui.api._helpers import (
+    get_session_or_404,
+    now_iso,
+    parse_session_meta,
+    require_fields,
+    session_title,
+    write_session_meta,
+)
 from cyberai.ui.api.chat_store import ChatStore
 
 router = APIRouter(prefix="/api/v1/chats", tags=["chats"])
@@ -32,7 +35,7 @@ def _chat_store() -> ChatStore:
     return ChatStore()
 
 
-def _chat_summary(session: Dict[str, Any]) -> Dict[str, Any]:
+def _chat_summary(session: dict[str, Any]) -> dict[str, Any]:
     meta = parse_session_meta(session)
     return {
         "id": session.get("id"),
@@ -49,8 +52,8 @@ def _chat_summary(session: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _touch(mm, session_id: str, meta: Dict[str, Any],
-           message_count: Optional[int] = None) -> None:
+def _touch(mm, session_id: str, meta: dict[str, Any],
+           message_count: int | None = None) -> None:
     meta["updated_at"] = now_iso()
     if message_count is not None:
         meta["message_count"] = message_count
@@ -76,7 +79,7 @@ async def list_chats(q: str = "", limit: int = 100):
         mm.close()
 
     # Message-content matches: session_id -> newest matching message.
-    content_matches: Dict[str, Dict[str, Any]] = {}
+    content_matches: dict[str, dict[str, Any]] = {}
     if q:
         for msg in store.search_messages(q, limit=200):
             sid = msg.get("session_id")
@@ -108,7 +111,7 @@ async def list_chats(q: str = "", limit: int = 100):
 
 # ------------------------------------------------------------------- create
 @router.post("", status_code=201)
-async def create_chat(body: Dict[str, Any]):
+async def create_chat(body: dict[str, Any]):
     """Create a new chat. Body: {title?, objective?, mode?, model?}"""
     from cyberai.orchestrator import MemoryManager
     require_fields(body, )  # no required fields — title optional
@@ -155,7 +158,7 @@ async def get_chat(chat_id: str):
 
 # -------------------------------------------------------------------- patch
 @router.patch("/{chat_id}")
-async def update_chat(chat_id: str, body: Dict[str, Any]):
+async def update_chat(chat_id: str, body: dict[str, Any]):
     """Rename (title) or archive (status=archived) a chat."""
     from cyberai.orchestrator import MemoryManager
     mm = MemoryManager()
@@ -214,7 +217,7 @@ async def list_messages(chat_id: str, limit: int = 200):
 
 
 @router.post("/{chat_id}/messages", status_code=201)
-async def send_message(chat_id: str, body: Dict[str, Any]):
+async def send_message(chat_id: str, body: dict[str, Any]):
     """Send a message. Body: {content, mode?, model?}
 
     - Slash-command content dispatches through the shared command bus.
@@ -286,7 +289,7 @@ def json_dump(data: Any) -> str:
 
 
 async def _generate_reply(store: ChatStore, chat_id: str, content: str,
-                          meta: Dict[str, Any]):
+                          meta: dict[str, Any]):
     """Generate an assistant reply via the LLMGateway fallback chain."""
     from cyberai.llm_gateway import LLMGateway
     history = store.list_messages(chat_id, limit=20)
@@ -335,7 +338,7 @@ async def _generate_reply(store: ChatStore, chat_id: str, content: str,
 
 # --------------------------------------------------------------------- fork
 @router.post("/{chat_id}/fork", status_code=201)
-async def fork_chat(chat_id: str, body: Dict[str, Any] = None):
+async def fork_chat(chat_id: str, body: dict[str, Any] | None = None):
     """Fork a chat: new session copying metadata + full message history."""
     body = body or {}
     from cyberai.orchestrator import MemoryManager

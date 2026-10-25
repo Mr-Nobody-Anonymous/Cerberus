@@ -9,7 +9,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class StrategyStatus(Enum):
@@ -27,9 +27,9 @@ class Strategy:
     """A candidate strategy for solving a task."""
 
     description: str
-    preconditions: List[str] = field(default_factory=list)
-    actions: List[Dict[str, Any]] = field(default_factory=list)
-    tools: List[str] = field(default_factory=list)
+    preconditions: list[str] = field(default_factory=list)
+    actions: list[dict[str, Any]] = field(default_factory=list)
+    tools: list[str] = field(default_factory=list)
     agent: str = ""
     model: str = ""
     expected_result: str = ""
@@ -44,11 +44,11 @@ class Strategy:
     task_type: str = ""
     environment: str = "authorized_lab"
     target_type: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     evaluated_at: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to dict."""
         return {
             "strategy_id": self.strategy_id,
@@ -75,7 +75,7 @@ class Strategy:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Strategy":
+    def from_dict(cls, data: dict[str, Any]) -> "Strategy":
         """Deserialize from dict."""
         return cls(
             strategy_id=data.get("strategy_id", str(uuid.uuid4())),

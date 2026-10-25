@@ -22,7 +22,7 @@ import logging
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
 
@@ -39,10 +39,10 @@ class SelfImprovementPipeline:
     applied. The AI cannot directly modify production code.
     """
 
-    def __init__(self, proposals_dir: Optional[Path] = None):
+    def __init__(self, proposals_dir: Path | None = None):
         self.proposals_dir = proposals_dir or WORKSPACE_ROOT / "memory" / "self_improvement" / "proposals"
         self.proposals_dir.mkdir(parents=True, exist_ok=True)
-        self._proposals: Dict[str, ImprovementProposal] = {}
+        self._proposals: dict[str, ImprovementProposal] = {}
         self._load()
 
     def _load(self) -> None:
@@ -65,9 +65,9 @@ class SelfImprovementPipeline:
     def create_proposal(
         self,
         reason: str,
-        files_changed: List[str],
+        files_changed: list[str],
         patch: str = "",
-        tests: Optional[List[str]] = None,
+        tests: list[str] | None = None,
         benchmark: str = "",
         before_score: float = 0.0,
         risk: str = "low",
@@ -101,7 +101,7 @@ class SelfImprovementPipeline:
         logger.info(f"Created improvement proposal {proposal.proposal_id}")
         return proposal
 
-    def run_validation(self, proposal: ImprovementProposal) -> Dict[str, Any]:
+    def run_validation(self, proposal: ImprovementProposal) -> dict[str, Any]:
         """
         Run validation checks on a proposal.
 
@@ -120,9 +120,12 @@ class SelfImprovementPipeline:
         }
         all_passed = all(r.get("passed", False) for r in results.values())
         results["all_passed"] = all_passed
+        proposal.metadata["validation"] = results
+        proposal.metadata["validation_passed"] = all_passed
+        self._save(proposal)
         return results
 
-    def _run_static_checks(self, proposal: ImprovementProposal) -> Dict[str, Any]:
+    def _run_static_checks(self, proposal: ImprovementProposal) -> dict[str, Any]:
         """Run static checks (Python syntax validation)."""
         passed = True
         errors = []
@@ -140,7 +143,7 @@ class SelfImprovementPipeline:
                     passed = False
         return {"passed": passed, "errors": errors}
 
-    def _run_unit_tests(self, proposal: ImprovementProposal) -> Dict[str, Any]:
+    def _run_unit_tests(self, proposal: ImprovementProposal) -> dict[str, Any]:
         """Run unit tests for the proposal."""
         if not proposal.tests:
             return {"passed": True, "message": "No tests specified", "skipped": True}
@@ -163,7 +166,7 @@ class SelfImprovementPipeline:
                 errors.append(f"Test error: {test}: {e}")
         return {"passed": passed, "errors": errors}
 
-    def _run_security_checks(self, proposal: ImprovementProposal) -> Dict[str, Any]:
+    def _run_security_checks(self, proposal: ImprovementProposal) -> dict[str, Any]:
         """Run basic security checks on the proposal."""
         passed = True
         errors = []
@@ -201,7 +204,16 @@ class SelfImprovementPipeline:
         return after_score >= proposal.before_score
 
     def approve(self, proposal: ImprovementProposal) -> None:
-        """Approve a proposal for application."""
+        """Approve a proposal for application. Requires validation to pass."""
+        if not proposal.metadata.get("validation_passed", False):
+            val = self.run_validation(proposal)
+            if not val.get("all_passed", False):
+                proposal.status = ProposalStatus.REJECTED.value
+                proposal.metadata["rejection_reason"] = "Validation failed: static/unit/security checks did not pass"
+                self._save(proposal)
+                raise PermissionError(
+                    f"Cannot approve proposal {proposal.proposal_id}: validation checks failed."
+                )
         proposal.status = ProposalStatus.APPROVED.value
         proposal.reviewed_at = datetime.now(timezone.utc).isoformat()
         self._save(proposal)
@@ -230,6 +242,10 @@ class SelfImprovementPipeline:
         """
         if proposal.status != ProposalStatus.APPROVED.value:
             logger.warning(f"Cannot apply proposal {proposal.proposal_id} - not approved")
+            return False
+
+        if not proposal.metadata.get("validation_passed", False):
+            logger.warning(f"Cannot apply proposal {proposal.proposal_id} - validation has not passed")
             return False
 
         try:
@@ -304,18 +320,18 @@ class SelfImprovementPipeline:
             logger.error(f"Failed to rollback proposal {proposal.proposal_id}: {e}")
             return False
 
-    def get_proposal(self, proposal_id: str) -> Optional[ImprovementProposal]:
+    def get_proposal(self, proposal_id: str) -> ImprovementProposal | None:
         """Get a proposal by ID."""
         return self._proposals.get(proposal_id)
 
-    def list_proposals(self, status: Optional[str] = None) -> List[ImprovementProposal]:
+    def list_proposals(self, status: str | None = None) -> list[ImprovementProposal]:
         """List proposals, optionally filtered by status."""
         proposals = list(self._proposals.values())
         if status:
             proposals = [p for p in proposals if p.status == status]
         return sorted(proposals, key=lambda p: p.created_at, reverse=True)
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get pipeline status."""
         return {
             "total_proposals": len(self._proposals),

@@ -5,7 +5,7 @@
 import { sessionsApi } from "@/lib/api";
 import { useFetch } from "@/hooks";
 import { useApp } from "@/stores/app";
-import { PageHeader, Spinner, ErrorBox, EmptyState } from "@/components/common/Basics";
+import { PageHeader, ErrorBox, EmptyState, Loading } from "@/components/common/Basics";
 import { Pill, stateTone } from "@/components/common/Pill";
 
 export function SessionsPage() {
@@ -13,11 +13,7 @@ export function SessionsPage() {
   const { data, loading, error } = useFetch(() => sessionsApi.list(), []);
 
   if (error) return <ErrorBox error={error} />;
-  if (loading) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
-      <Spinner size={24} />
-    </div>
-  );
+  if (loading) return <Loading label="sessions" />;
 
   const sessions = data?.sessions ?? [];
 
@@ -39,7 +35,7 @@ export function SessionsPage() {
                    borderRadius: "var(--cb-radius-sm)", padding: "9px 14px",
                    cursor: "pointer",
                  }}>
-              <Pill tone={stateTone(s.status)}>{s.status || "—"}</Pill>
+              <Pill tone={stateTone(s.status)} live>{s.status || "—"}</Pill>
               {s.kind && <Pill tone="violet">{s.kind}</Pill>}
               <span style={{ fontSize: 12, flex: 1, overflow: "hidden",
                              textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

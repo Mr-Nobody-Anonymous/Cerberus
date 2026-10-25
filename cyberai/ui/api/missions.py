@@ -13,13 +13,18 @@ handling. Modes: SIMULATE (default, safest), PLAN (dry-run), LAB, AUTHORIZED.
 """
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 
-from cyberai.ui.api._helpers import (get_session_or_404, now_iso,
-                                     parse_session_meta, require_fields,
-                                     session_title, write_session_meta)
+from cyberai.ui.api._helpers import (
+    get_session_or_404,
+    now_iso,
+    parse_session_meta,
+    require_fields,
+    session_title,
+    write_session_meta,
+)
 from cyberai.ui.server import EVENT_BUS
 
 router = APIRouter(prefix="/api/v1/missions", tags=["missions"])
@@ -32,11 +37,11 @@ _MODES = {
 }
 
 # Shared live-mission holder (same pattern as server.py's holder).
-MISSION_HOLDER: Dict[str, Any] = {"orchestrator": None, "mission": None}
+MISSION_HOLDER: dict[str, Any] = {"orchestrator": None, "mission": None}
 
 
-def _launch_runner(objective: str, target_id: Optional[str], mode: str,
-                   flags: Dict[str, Any], session_id: Optional[str] = None):
+def _launch_runner(objective: str, target_id: str | None, mode: str,
+                   flags: dict[str, Any], session_id: str | None = None):
     """Create the async runner — identical semantics to /api/tasks."""
 
     async def runner():
@@ -72,7 +77,7 @@ def _launch_runner(objective: str, target_id: Optional[str], mode: str,
                     "for active testing. Register it in lab/targets/targets.yaml "
                     "with allowed: true, or run in SIMULATE mode."),
             })
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             EVENT_BUS.publish("task_error", {"error": str(e)})
         finally:
             orch.close()
@@ -115,7 +120,7 @@ async def list_missions(q: str = "", status: str = "", limit: int = 100):
 
 
 @router.post("", status_code=202)
-async def launch_mission(body: Dict[str, Any]):
+async def launch_mission(body: dict[str, Any]):
     """Launch a mission. Body: {objective, target_id?, mode?}"""
     require_fields(body, "objective")
     objective = str(body["objective"]).strip()
@@ -175,7 +180,7 @@ async def stop_mission(mission_id: str):
             "session": mission_id,
         })
         return {"status": "stop_requested"}
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {"status": "error", "detail": str(e)}
 
 
@@ -187,7 +192,7 @@ async def pause_mission(mission_id: str):
 
 
 @router.post("/{mission_id}/resume")
-async def resume_mission(mission_id: str, body: Dict[str, Any] = None):
+async def resume_mission(mission_id: str, body: dict[str, Any] | None = None):
     """Resume relaunches the stored objective in the same mode."""
     from cyberai.orchestrator import MemoryManager
     mm = MemoryManager()

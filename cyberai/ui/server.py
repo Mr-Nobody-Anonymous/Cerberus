@@ -35,17 +35,17 @@ Frontend never bypasses PolicyEngine/Orchestrator/ToolRegistry/LLMGateway.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import socket
-import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List
-
-logger = logging.getLogger(__name__)
+from typing import Any
 
 from cyberai.config import WORKSPACE_ROOT
+
+logger = logging.getLogger(__name__)
 
 # Intentionally package-relative: the static frontend ships next to this
 # module as package data — NOT a workspace resource (do not route through
@@ -69,7 +69,7 @@ class LiveEventBus:
         from cyberai.orchestrator.event_store import get_event_store
         self._store = get_event_store()
         self._max_history = max_history
-        self._subscribers: Dict[str, asyncio.Queue] = {}
+        self._subscribers: dict[str, asyncio.Queue] = {}
 
     def subscribe(self) -> str:
         subscriber_id = f"sub-{time.time_ns()}"
@@ -84,7 +84,7 @@ class LiveEventBus:
     def unsubscribe(self, subscriber_id: str) -> None:
         self._subscribers.pop(subscriber_id, None)
 
-    def publish(self, event_type: str, data: Dict[str, Any]) -> None:
+    def publish(self, event_type: str, data: dict[str, Any]) -> None:
         """Publish a (possibly legacy-shaped) event; canonicalized on ingest."""
         from cyberai.orchestrator.events import normalize
         ev = normalize({"type": event_type, "data": data, "ts": time.time()})
@@ -103,13 +103,13 @@ class LiveEventBus:
                 except Exception:
                     pass
 
-    def history(self, limit: int = 200) -> List[Dict[str, Any]]:
+    def history(self, limit: int = 200) -> list[dict[str, Any]]:
         """Legacy-shape history (SSE envelope) for older consumers."""
         return [e.sse_payload() for e in self._store.history(limit=limit)]
 
 
 EVENT_BUS = LiveEventBus()
-APPROVAL_QUEUE: List[Dict[str, Any]] = []  # in-memory approval requests
+APPROVAL_QUEUE: list[dict[str, Any]] = []  # in-memory approval requests
 _SERVER_START = time.time()  # for /api/scorecard uptime KPI
 
 
@@ -120,30 +120,33 @@ def _seed_approvals() -> None:
     APPROVAL_QUEUE.extend([
         {
             "id": "appr-001",
-            "action": "Isolate endpoint WORKSTATION-042",
-            "reason": "Potential credential compromise (37 failed logins, same source)",
+            "action": "[DEMO] Isolate endpoint WORKSTATION-042",
+            "reason": "Simulated request for demo purposes (credential compromise pattern)",
             "risk": "HIGH",
             "status": "PENDING",
             "timestamp": _now_iso(),
             "demo": True,
+            "source": "demo_seed",
         },
         {
             "id": "appr-002",
-            "action": "Update firewall rule for suspicious source 10.0.0.7",
-            "reason": "Unexpected outbound connection to unknown external host",
+            "action": "[DEMO] Update firewall rule for suspicious source 10.0.0.7",
+            "reason": "Simulated request for demo purposes (unexpected outbound connection)",
             "risk": "MEDIUM",
             "status": "PENDING",
             "timestamp": _now_iso(),
             "demo": True,
+            "source": "demo_seed",
         },
         {
             "id": "appr-003",
-            "action": "Add threat-intel indicator to blocklist",
-            "reason": "C2 domain observed in authorized lab telemetry",
+            "action": "[DEMO] Add threat-intel indicator to blocklist",
+            "reason": "Simulated request for demo purposes (C2 domain observed in lab)",
             "risk": "LOW",
             "status": "PENDING",
             "timestamp": _now_iso(),
             "demo": True,
+            "source": "demo_seed",
         },
     ])
 
@@ -224,7 +227,7 @@ def _docker_available() -> bool:
     return shutil.which("docker") is not None
 
 
-def _read_session_logs() -> List[Dict[str, Any]]:
+def _read_session_logs() -> list[dict[str, Any]]:
     """Read audit entries from session logs (if any), returning [] otherwise."""
     entries = []
     logs_dir = WORKSPACE_ROOT / "logs" / "sessions"
@@ -243,7 +246,7 @@ def _read_session_logs() -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Controlled operator console — routes through orchestrator policy, never shell
 # ---------------------------------------------------------------------------
-def _command_response(message: str, holder: Dict[str, Any]) -> Dict[str, Any]:
+def _command_response(message: str, holder: dict[str, Any]) -> dict[str, Any]:
     """Interpret console commands. All actions stay within CERBERUS subsystems."""
     m = message.strip()
     ml = m.lower()
@@ -391,14 +394,14 @@ def create_app():
     """Create the CERBERUS Command Center application."""
     try:
         from fastapi import FastAPI, HTTPException, Request
-        from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Response
+        from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
         from fastapi.staticfiles import StaticFiles
     except ImportError:
         logger.warning("fastapi/uvicorn not installed - install with: pip install -e '.[api]'")
         return None
 
     app = FastAPI(title="CERBERUS Command Center", version="2.0.0")
-    holder: Dict[str, Any] = {"orchestrator": None, "active_engagement": None}
+    holder: dict[str, Any] = {"orchestrator": None, "active_engagement": None}
     _seed_approvals()
 
     @app.get("/", response_class=HTMLResponse)
@@ -452,7 +455,7 @@ def create_app():
     # ------------------------------------------------------------- bootstrap
     @app.get("/api/bootstrap")
     async def bootstrap():
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "platform": "CERBERUS",
             "version": "2.0.0",
             "agents": [
@@ -572,7 +575,7 @@ def create_app():
                 orch.close()
                 holder["orchestrator"] = None
 
-        asyncio.create_task(runner())
+        asyncio.create_task(runner())  # noqa: RUF006 — fire-and-forget task runner
         return {"status": "accepted", "objective": objective, "simulate": simulate}
 
     # ---------------------------------------------------------- tasks/stop
@@ -629,7 +632,7 @@ def create_app():
                 finally:
                     orch.close()
                     holder["orchestrator"] = None
-            asyncio.create_task(sim_runner())
+            asyncio.create_task(sim_runner())  # noqa: RUF006 — fire-and-forget sim runner
         return result
 
     # --------------------------------------------------------------- status
@@ -648,7 +651,7 @@ def create_app():
     # -------------------------------------------------------------- context
     @app.get("/api/context")
     async def ai_context():
-        ctx: Dict[str, Any] = {"generated_at": time.time()}
+        ctx: dict[str, Any] = {"generated_at": time.time()}
         try:
             from cyberai.evolution.engine import EvolutionEngine
             ctx["evolution"] = EvolutionEngine(simulate=True).get_status()
@@ -822,10 +825,8 @@ def create_app():
     # --------------------------------------------------------------- models
     @app.get("/api/models")
     async def models():
-        try:
+        with contextlib.suppress(Exception):
             await _gateway()  # ensure importable
-        except Exception:
-            pass
         try:
             models_list = _gateway().list_registry()
             return {"models": models_list}
@@ -859,10 +860,8 @@ def create_app():
             out = []
             for name, info in registry.items():
                 health = {"status": "NOT_TESTED"}
-                try:
+                with contextlib.suppress(Exception):
                     health = await am.health_check(name)
-                except Exception:
-                    pass
                 out.append({
                     "name": name,
                     "registry": info,
@@ -954,11 +953,11 @@ def create_app():
             now = _now_hm()
             entries = [
                 {"timestamp": f"{now}", "actor": "CERBERUS", "agent": "recon", "tool": "strix",
-                 "target": "lab-web-01", "action": "service discovery", "result": "SUCCESS", "session": "-", "demo": True},
+                 "target": "lab-web-01", "action": "[DEMO] service discovery (sample entry)", "result": "SUCCESS", "session": "-", "demo": True, "source": "demo_seed"},
                 {"timestamp": f"{now}", "actor": "CERBERUS", "agent": "analyst", "tool": "cai",
-                 "target": "lab-web-01", "action": "correlate findings", "result": "SUCCESS", "session": "-", "demo": True},
+                 "target": "lab-web-01", "action": "[DEMO] correlate findings (sample entry)", "result": "SUCCESS", "session": "-", "demo": True, "source": "demo_seed"},
                 {"timestamp": f"{now}", "actor": "OPERATOR", "agent": "-", "tool": "console",
-                 "target": "-", "action": "viewed audit log", "result": "SUCCESS", "session": "-", "demo": True},
+                 "target": "-", "action": "[DEMO] viewed audit log (sample entry)", "result": "SUCCESS", "session": "-", "demo": True, "source": "demo_seed"},
             ]
         if q:
             ql = q.lower()
@@ -998,7 +997,7 @@ def create_app():
         return {
             "score": score,
             "severity": severity,
-            "alerts": {"critical": findings and 1 or 0, "high": 1, "medium": 1, "low": 2},
+            "alerts": {"critical": (findings and 1) or 0, "high": 1, "medium": 1, "low": 2},
             "history": history,
             "events": events,
         }
@@ -1074,13 +1073,13 @@ def create_app():
     @app.get("/api/scorecard")
     async def scorecard():
         """Platform-wide scorecard: sessions, findings, targets, tools, perf."""
-        out: Dict[str, Any] = {"generated_at": _now_iso()}
+        out: dict[str, Any] = {"generated_at": _now_iso()}
         try:
             mm = _memory_manager()
             sessions = mm.list_sessions()
             findings = mm.get_findings()
             mm.close()
-            by_status: Dict[str, int] = {}
+            by_status: dict[str, int] = {}
             for f in findings:
                 st = f.get("status", "UNKNOWN")
                 by_status[st] = by_status.get(st, 0) + 1
@@ -1199,7 +1198,7 @@ def create_app():
     @app.get("/api/timeline")
     async def timeline(limit: int = 100):
         """Unified timeline: sessions + findings + audit events, newest first."""
-        events: List[Dict[str, Any]] = []
+        events: list[dict[str, Any]] = []
         try:
             mm = _memory_manager()
             for s in mm.list_sessions()[:limit]:
@@ -1264,7 +1263,7 @@ def create_app():
         try:
             target = _policy().get_target(target_id)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
         if not target:
             raise HTTPException(status_code=404, detail=f"unknown target: {target_id}")
         if not target.get("allowed"):
@@ -1293,7 +1292,7 @@ def create_app():
                 orch.close()
                 holder["orchestrator"] = None
 
-        asyncio.create_task(runner())
+        asyncio.create_task(runner())  # noqa: RUF006 — fire-and-forget hunt runner
         return {"status": "accepted", "target_id": target_id, "objective": objective, "simulate": simulate}
 
     # ------------------------------------------------------ kill-chain panel
@@ -1324,7 +1323,7 @@ def create_app():
             chain = engine.start_chain(target)
             return {"chain": chain.to_dict()}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @app.post("/api/killchain/advance")
     async def killchain_advance(request: Request):
@@ -1340,7 +1339,7 @@ def create_app():
             result = engine.advance(target, note=note, finding=finding)
             return {"chain": result}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @app.post("/api/killchain/fail")
     async def killchain_fail(request: Request):
@@ -1356,7 +1355,7 @@ def create_app():
             result = engine.fail(target, reason=reason, category=category)
             return {"chain": result}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     # ------------------------------------------------------ wargame panel
     @app.get("/api/wargame")
@@ -1383,7 +1382,7 @@ def create_app():
             result = await gw.fast_forward(task_type, num_strategies=num_strategies)
             return {"result": result}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     # ------------------------------------------- semantic memory search
     @app.get("/api/memory/semantic")
@@ -1443,7 +1442,7 @@ def create_app():
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
         timeline = _session_timeline(session_id, s, findings)
         return {"session": s, "findings": findings, "timeline": timeline}
 
@@ -1560,7 +1559,7 @@ def create_app():
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     # ------------------------------------------- events feed (spec §25)
     @app.get("/api/events")
@@ -1582,16 +1581,16 @@ def create_app():
         for _router in ALL_ROUTERS:
             app.include_router(_router)
         logger.info("mounted %d /api/v1 routers", len(ALL_ROUTERS))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning("could not mount /api/v1 routers: %s", e)
 
     return app
 
 
-def _session_timeline(session_id: str, session: Dict[str, Any],
-                      findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _session_timeline(session_id: str, session: dict[str, Any],
+                      findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Build a replay timeline (spec §9) from session + findings + logs."""
-    timeline: List[Dict[str, Any]] = []
+    timeline: list[dict[str, Any]] = []
     started = session.get("started_at")
     if started:
         timeline.append({"t": started, "kind": "session.started",
@@ -1615,7 +1614,7 @@ def _session_timeline(session_id: str, session: Dict[str, Any],
     return timeline
 
 
-def _summarize_task(task: Dict[str, Any]) -> str:
+def _summarize_task(task: dict[str, Any]) -> str:
     """Produce a short human-readable summary of a finished task."""
     lines = [
         f"OBJECTIVE: {task.get('objective', '')[:120]}",
