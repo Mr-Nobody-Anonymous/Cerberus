@@ -45,10 +45,10 @@ api = [
 dev = [
     "pytest>=9.0.3,<10",
     "pytest-asyncio>=0.23.0,<2",
-    "pytest-cov>=4.1.0,<8",
-    "ruff>=0.8.0",
+    "pytest-cov>=7.1.0,<8",
+    "ruff>=0.17.1",
     "bandit[toml]>=1.7.0",
-    "pip-audit>=2.7.0",
+    "pip-audit>=2.10.1",
 ]
 cloud = [
     # NOTE: The LLM gateway talks to OpenAI/Anthropic over raw httpx — these
@@ -60,10 +60,10 @@ all = [
     "uvicorn>=0.24.0,<1",
     "pytest>=9.0.3,<10",
     "pytest-asyncio>=0.23.0,<2",
-    "pytest-cov>=4.1.0,<8",
-    "ruff>=0.8.0",
+    "pytest-cov>=7.1.0,<8",
+    "ruff>=0.17.1",
     "bandit[toml]>=1.7.0",
-    "pip-audit>=2.7.0",
+    "pip-audit>=2.10.1",
 ]
 
 [project.scripts]

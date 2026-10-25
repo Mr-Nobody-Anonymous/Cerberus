@@ -30,10 +30,10 @@ uvicorn==0.27.0
 # required for pytest 9 collection compatibility
 pytest==9.1.1
 pytest-asyncio==1.4.0
-pytest-cov==6.2.1
+pytest-cov==7.1.0
 
 # Static analysis / security scanning (CI: lint + security jobs)
-ruff==0.16.7
+ruff==0.17.1
 bandit[toml]==1.9.5
-pip-audit==2.9.2
+pip-audit==2.10.1
 
