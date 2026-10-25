@@ -5,7 +5,7 @@
 # (2026-09-03). Upgrade deliberately, not accidentally.
 
 # CLI entry point (cyber-ai console script)
-click==8.4.2
+click==8.5.0
 
 # YAML config/model-registry loading (cyberai.config, registry files)
 PyYAML==6.0.1
