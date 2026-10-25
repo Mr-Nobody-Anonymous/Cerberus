@@ -14,7 +14,7 @@ PyYAML==6.0.1
 httpx==0.26.0
 
 # Adapter runtime deps (drakben.py, guardian-cli cli/) — module-level imports
-python-dotenv==1.2.3
+python-dotenv==1.2.4
 rich==15.0.0
 typer==0.27.2
 prompt-toolkit==3.0.53
