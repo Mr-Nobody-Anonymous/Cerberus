@@ -1,824 +1,340 @@
 <div align="center">
-  <img src="ult.jpg" alt="ULTRONE Battlefield AI" width="600"/>
+  <img src="ult.jpg" alt="CERBERUS Battlefield AI" width="700"/>
+
+  # CERBERUS
+  ### Autonomous, Self-Evolving Cyber AI Orchestrator
+
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+  [![CI](https://github.com/Mr-Nobody-Anonymous/Cerberus/actions/workflows/ci.yml/badge.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus/actions/workflows/ci.yml)
+  [![Tests](https://img.shields.io/badge/Tests-624%20passed-success.svg)](tests/)
+  [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+  [![Architecture](https://img.shields.io/badge/Architecture-7%20Agents%20%7C%2017%20Adapters-8A2BE2.svg)](#-master-architecture)
+  [![Safety](https://img.shields.io/badge/Safety-Policy%20Gated-critical.svg)](#-safety--ethical-boundaries)
+
+  <p align="center">
+    <b>An intelligent security research platform coordinating specialized AI agent swarms, evolutionary tactical strategy mutations, and multi-model routing across isolated laboratory targets.</b>
+  </p>
+
+  <p align="center">
+    <a href="#-quick-start">Quick Start</a> •
+    <a href="#-master-architecture">Architecture</a> •
+    <a href="#-specialized-ai-agents">Agents</a> •
+    <a href="#-operational-interfaces">Interfaces</a> •
+    <a href="#-safety--ethical-boundaries">Safety Policy</a> •
+    <a href="#-documentation-index">Docs</a>
+  </p>
 </div>
 
-# ⚡ CERBERUS - Self-Evolving Multi-Agent Cyber AI Orchestrator
-
-> **An autonomous, self-improving security research platform coordinating specialized AI agents across local labs**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/Mr-Nobody-Anonymous/Cerberus/actions/workflows/ci.yml/badge.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus/actions/workflows/ci.yml)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
-[![AI Powered](https://img.shields.io/badge/AI-Powered-purple.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-green.svg)](https://fastapi.tiangolo.com/)
-[![Evolution](https://img.shields.io/badge/Self--Evolution-Genetic%20Algorithms-orange.svg)](https://github.com/Mr-Nobody-Anonymous/Cerberus)
-[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-red.svg)](https://modelcontextprotocol.io/)
-[![Ollama](https://img.shields.io/badge/LLM-Ollama%20%7C%20LiteLLM-8A2BE2.svg)](https://ollama.com/)
-
 ---
 
-## 🌟 What Makes CERBERUS Different?
+## 🌟 Overview
 
-Unlike traditional security platforms, **CERBERUS thinks and evolves**. Every engagement feeds back into a collective intelligence mesh—strategies mutate, fitness scores update, elite tactics are archived, and failures teach the system what to avoid. The platform coordinates specialized AI agents through a master orchestrator, routing tasks to appropriate tools and models while maintaining strict lab isolation.
+**CERBERUS** bridges the divide between static security tooling and autonomous decision-making. Traditional security frameworks operate sequentially through rigid scripts; CERBERUS coordinates an adaptive swarm of specialized AI agents that formulate hypotheses, select and execute tools, challenge each finding through independent verification, and retain knowledge across engagements.
 
-```
-🧬 INTELLIGENCE BECOMES STRENGTH 🧬
-```
-
----
-
-## 🚀 Core Capabilities
-
-### 🧬 **Evolutionary Combat Engine**
-- Tactical strategies mutate in real-time based on assessment performance
-- Combinatorial strategy generation: `RECON + ANALYSIS → VERIFIED FINDING`
-- Automatic adaptation when threat patterns change
-- **Population Management**: Successful strategies breed; failures are recorded and avoided
-- **Elite Archive**: Best-of-generation strategies persist across sessions
-- **Coevolution**: Red Force counter-evolves alongside Blue, creating an adversarial arms race
-- **Native Evolution Engine**: Self-contained evolution loop (design informed by [A-Evolve](https://github.com/A-EVO-Lab/a-evolve))
-
-### 🤖 **Specialized AI Agents**
-Each capability has its own AI specialist coordinated by the Master Orchestrator:
-
-| Agent | Role | Capability | Specialty |
-|-------|------|-----------|-----------|
-| 🧠 **Planner** | Decomposes objectives into actionable steps | `planning` | Mission planning, strategy selection |
-| 🔍 **Researcher** | Gathers intelligence on targets | `research` | Threat intelligence, CVE analysis |
-| 🛰️ **Recon** | Network and host discovery | `reconnaissance` | Port scanning, service enumeration |
-| 📊 **Analyst** | Correlates findings, identifies patterns | `analysis` | Vulnerability pattern recognition |
-| 💻 **Coder** | Generates exploits and PoC code | `code_generation` | Exploit development, code analysis |
-| ✅ **Verifier** | Challenges findings, requires evidence | `verification` | Independent verification, evidence validation |
-| 📋 **Reporter** | Generates structured reports | `reporting` | Assessment reporting, documentation |
-
-### ⚡ **Capability-Based Routing**
-Instead of hard-coding which tool to use, CERBERUS reasons in **capabilities**:
-
-| Capability | Top Providers |
-|-----------|---------------|
-| **Reconnaissance** | Strix → PentAGI → Recon Agent |
-| **Source Analysis** | CAI → local-coder → Analyst Agent |
-| **Web Testing** | Dark-Moon → PentAGI |
-| **Tool Execution** | HexStrike → MCPStrike |
-| **Research** | PentestGPT → Researcher Agent |
-| **Planning** | Planner Agent → local-reasoner model |
-| **Verification** | Verifier Agent → local-reasoner model |
-| **Exploitation** | PentAGI → Dark-Moon |
-| **Static Analysis** | PenClaw → CAI |
-| **Secret Detection** | PenClaw |
-| **Dynamic Scanning** | PenClaw → Strix |
-
-The orchestrator asks *"I need reconnaissance"* and the registry returns the best available providers.
-
-### 🧠 **Meta-Learning Performance Tracker**
-- **SQLite-backed** performance database tracking every model, agent, tool, and strategy call
-- **Adaptive Routing**: The system learns which entity performs best for each task type
-- **Success Rate Tracking**: `best_for_task()` finds the optimum provider per capability
-- **Ranking Engine**: `ranking_for_task()` provides ranked provider lists
-- **Quality Scoring**: Latency, verification status, and quality metrics per entity
-
-### 🔄 **Self-Improvement Pipeline**
-AI-proposed code improvements flow through a controlled gatekeeper:
-
-```
-AI Proposes → Patch Generated → Static Checks → Unit Tests →
-Security Checks → Benchmark Compare → Human Approval → Git Branch → Apply
-```
-
-- **10-stage validation**: The AI *cannot* directly modify production code
-- **Static checks**: Python syntax validation on all changed files
-- **Security checks**: Blocks dangerous patterns (`os.system`, `eval`, `exec`, etc.)
-- **Benchmark gating**: Accepted only if it beats or preserves the baseline score
-- **Git-based rollback**: Every applied proposal records its rollback commit
-- **Proposal lifecycle**: `PENDING → VALIDATED → APPROVED → APPLIED → ROLLED_BACK`
-
-### 🤝 **Agent Collaboration Pipeline**
-- **Sequential orchestration**: Researcher → Recon → Analyst → Verifier → Reporter
-- **Context filtering**: Each agent receives only relevant context, not every previous output
-- **Bloat prevention**: Prevents context window overflow in long assessments
-- **Failure isolation**: One agent's failure doesn't kill the pipeline
-
-### 🎛️ **Human-in-the-Loop API**
-- FastAPI REST server for live operational command
-- `GET /status` — Platform health and metrics
-- `GET /targets` — List registered targets
-- `GET /targets/authorized` — List authorized targets
-- `GET /sessions` — Session management
-- `GET /findings` — Retrieve findings by verification status
-- `GET /memory/search` — Semantic memory search
-- `GET /tools` — Tool registry listing
-- `GET /models` — Model routing table
-
-### 🛡️ **Policy & Safety Engine**
-- **Target Authorization**: All active testing requires explicit target registration in `lab/targets/targets.yaml` with `allowed: true`
-- **Environment Enforcement**: The policy engine blocks execution on unregistered targets
-- **Action Whitelisting**: Per-target `allowed_actions` control what operations are permitted
-- **Lab-Only Default**: No tools execute against the host system or external networks by default
-- **Evidence Retention**: All actions logged with timestamps, tool outputs, and verification status
-
-### 🔫 **F2T2EA Kill Chain Management**
-- Full **Find → Fix → Track → Target → Engage → Assess** state machine
-- Phase timeout and success/failure tracking per target
-- Concurrent multi-target engagement coordination
-- **Verification states**: `UNVERIFIED → LIKELY → VERIFIED` or `REJECTED`
-
-### 📡 **Multi-Model LLM Gateway**
-- **Local Models**: Ollama serves quantized models (Llama 3.1, CodeLlama, Qwen, etc.) for offline operation
-- **Cloud Models**: LiteLLM gateway routes to OpenAI, Anthropic, Google, AWS Bedrock, and 100+ providers
-- **Model Aliases**: Agents use abstract aliases (`local-reasoner`, `local-coder`, `research-model`) decoupled from specific model names
-- **Fallback Chain**: LiteLLM proxy → Direct Ollama → Direct provider API
-- **Privacy Enforcement**: `local_only` mode blocks all cloud calls
-
-### 👻 **Ghost Wargaming & Failure Learning**
-- **Failure Memory**: Every failed strategy is recorded with its reason and category
-- **Avoidance Logic**: Similar-to-failed strategies are skipped automatically
-- **Failure Analytics**: Query failures by tool or category
-- **Fast-forward simulation**: Test evolved strategies in `simulate` mode
+### Core Distinctions
+- **Adaptive Evolutionary Intelligence**: Employs genetic algorithms to mutate assessment strategies based on empirical outcomes. High-performing strategies are archived into an elite gene pool, while unsuccessful paths are cataloged into failure memory to prevent recurring mistakes.
+- **Capability-Based Provider Mesh**: Agents request abstract capabilities (such as `reconnaissance`, `source_analysis`, or `dynamic_scanning`) rather than specific tools. The platform dynamically routes tasks to the highest-performing provider among 17 integrated tool adapters.
+- **Defense-in-Depth Guardrails**: Real execution is restricted by hardcoded policy controls. Active actions require explicit target authorization, whitelisted actions, and isolated sandboxing. Simulation mode allows complete risk-free task execution without emitting network traffic.
+- **Multi-Model LLM Gateway**: Decouples agent reasoning from specific model providers using semantic aliases (`local-reasoner`, `local-coder`, `research-model`) with automatic fallbacks across local Ollama instances, LiteLLM proxies, and cloud APIs.
 
 ---
 
 ## 🏗️ Master Architecture
 
 ```
-                         ┌─────────────────┐
-                         │   USER / CLI    │
-                         │  Open WebUI     │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │  MASTER         │
-                         │  ORCHESTRATOR   │
-                         │  (CyberAI)      │
-                         │                 │
-                         │  ┌────────────┐ │
-                         │  │  Planner   │ │
-                         │  └────────────┘ │
-                         │  ┌────────────┐ │
-                         │  │ Researcher │ │
-                         │  └────────────┘ │
-                         │  ┌────────────┐ │
-                         │  │  Recon     │ │
-                         │  └────────────┘ │
-                         │  ┌────────────┐ │
-                         │  │  Analyst   │ │
-                         │  └────────────┘ │
-                         │  ┌────────────┐ │
-                         │  │   Coder    │ │
-                         │  └────────────┘ │
-                         │  ┌────────────┐ │
-                         │  │  Verifier  │ │
-                         │  └────────────┘ │
-                         │  ┌────────────┐ │
-                         │  │  Reporter  │ │
-                         │  └────────────┘ │
-                         └────────┬────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         │                        │                        │
-┌────────▼─────────┐   ┌──────────▼─────────┐   ┌──────────▼─────────┐
-│  CAPABILITY      │   │  LLM GATEWAY       │   │  TOOL GATEWAY      │
-│  REGISTRY        │   │  (Ollama/LiteLLM)  │   │  (MCP / Adapters)  │
-│                  │   │                    │   │                    │
-│  reconnaissance  │   │  Model Aliases:    │   │  Adapters:          │
-│  source_analysis │   │  - local-reasoner  │   │  - PentAGI          │
-│  web_testing     │   │  - local-coder     │   │  - Strix            │
-│  tool_execution  │   │  - local-fast      │   │  - HexStrike        │
-│  research        │   │  - research-model  │   │  - MCPStrike        │
-│  planning        │   │  - cloud-reasoner  │   │  - Dark-Moon        │
-│  verification    │   │  - embeddings      │   │  - CAI              │
-│  code_generation │   │                    │   │  - PentestGPT       │
-│  analysis        │   │  Providers:        │   │  - PentestAgent     │
-│  reporting       │   │  - Ollama (local)  │   │  - CyberStrikeAI    │
-│  exploitation    │   │  - OpenAI (cloud)  │   │  - AutoPentest      │
-│  static_analysis │   │  - Anthropic       │   │  - PenClaw          │
-│  secret_detection│   │  - Custom          │   │  - LuaN1aoAgent     │
-│  dynamic_scanning│   │                    │   │  - ARACNE           │
-└──────────────────┘   └────────────────────┘   │  - Guardian-CLI     │
-         │                        │             │  - DRAKBEN          │
-         │                        │             │  - h4cker (KB)      │
-         │                        │             │  - kali-pentest     │
-         │                        │             └──────────┬─────────┘
-         │                        │                        │
-┌────────▼─────────┐   ┌──────────▼─────────┐   ┌──────────▼─────────┐
-│  EVOLUTION       │   │  META-LEARNING     │   │  SELF-IMPROVEMENT  │
-│  ENGINE          │   │  TRACKER           │   │  PIPELINE          │
-│                  │   │                    │   │                    │
-│  Population      │   │  SQLite-backed     │   │  Proposals         │
-│  Mutation        │   │  performance.db    │   │  Static Checks     │
-│  Selection       │   │  best_for_task()   │   │  Unit Tests        │
-│  Evaluation      │   │  ranking_for_task()│   │  Security Checks   │
-│  Fitness         │   │  success_rate      │   │  Benchmark Gate    │
-│  Elite Archive   │   │  avg_latency       │   │  Human Approval    │
-│  Failure Memory  │   │  quality_score     │   │  Git Branch/Rollback│
-└──────────────────┘   └────────────────────┘   └────────────────────┘
-         │                        │                        │
-         └────────────────────────┼────────────────────────┘
-                                  │
-                    ┌──────────────▼──────────────┐
-                    │      AUTHORIZED LAB         │
-                    │   ┌─────────────────────┐   │
-                    │   │  Docker Targets     │   │
-                    │   └─────────────────────┘   │
-                    │   ┌─────────────────────┐   │
-                    │   │  VM Targets         │   │
-                    │   └─────────────────────┘   │
-                    │   ┌─────────────────────┐   │
-                    │   │  CTF Challenges     │   │
-                    │   └─────────────────────┘   │
-                    └──────────────┬──────────────┘
-                                   │
-                    ┌──────────────▼──────────────┐
-                    │   EVIDENCE & MEMORY         │
-                    │   ┌─────────────────────┐   │
-                    │   │  SQLite DB          │   │
-                    │   │  (experiences,      │   │
-                    │   │   findings,         │   │
-                    │   │   sessions,         │   │
-                    │   │   performance)      │   │
-                    │   └─────────────────────┘   │
-                    │   ┌─────────────────────┐   │
-                    │   │  Evolution Archive  │   │
-                    │   │  (elite, failures,  │   │
-                    │   │   population)       │   │
-                    │   └─────────────────────┘   │
-                    │   ┌─────────────────────┐   │
-                    │   │  Knowledge Base     │   │
-                    │   │  (CVE, CWE,         │   │
-                    │   │   techniques)       │   │
-                    │   └─────────────────────┘   │
-                    └─────────────────────────────┘
+                          ┌───────────────────────────┐
+                          │   HUMAN OPERATOR / CLI    │
+                          │   Command Deck Web UI     │
+                          │   FastAPI REST & Bus      │
+                          └─────────────┬─────────────┘
+                                        │
+                                        ▼
+    ┌───────────────────────────────────────────────────────────────────────┐
+    │                       MASTER ORCHESTRATOR                             │
+    │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐  │
+    │  │   Planner    │  │  Researcher  │  │    Recon     │  │  Analyst   │  │
+    │  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘  │
+    │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
+    │  │    Coder     │  │   Verifier   │  │   Reporter   │                  │
+    │  └──────────────┘  └──────────────┘  └──────────────┘                  │
+    └───────┬───────────────────────────┬───────────────────────────┬───────┘
+            │                           │                           │
+            ▼                           ▼                           ▼
+ ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
+ │ CAPABILITY REGISTRY  │    │  LLM ROUTING GATEWAY │    │  POLICY & SAFETY     │
+ │                      │    │                      │    │                      │
+ │ • reconnaissance     │    │ • local-reasoner     │    │ • targets.yaml check │
+ │ • source_analysis    │    │ • local-coder        │    │ • action whitelist  │
+ │ • web_testing        │    │ • research-model     │    │ • sandbox isolation  │
+ │ • tool_execution     │    │ • Ollama / LiteLLM   │    │ • simulation default │
+ └──────────┬───────────┘    └──────────┬───────────┘    └──────────┬───────────┘
+            │                           │                           │
+            └───────────────────────────┼───────────────────────────┘
+                                        │
+         ┌──────────────────────────────┼──────────────────────────────┐
+         ▼                              ▼                              ▼
+┌──────────────────┐           ┌──────────────────┐           ┌──────────────────┐
+│ EVOLUTION ENGINE │           │  META-LEARNING   │           │ 17 TOOL ADAPTERS │
+│                  │           │                  │           │                  │
+│ • Population     │           │ • SQLite metrics │           │ • PentAGI        │
+│ • Strategy Gene  │           │ • Task ranking   │           │ • Strix          │
+│ • Elite Archive  │           │ • Success rate   │           │ • HexStrike      │
+│ • Ghost Wargame  │           │ • Latency logs   │           │ • PenClaw (etc.) │
+└────────┬─────────┘           └────────┬─────────┘           └────────┬─────────┘
+         │                              │                              │
+         └──────────────────────────────┼──────────────────────────────┘
+                                        │
+                         ┌──────────────▼──────────────┐
+                         │   PERSISTENT MEMORY & LAB   │
+                         │                             │
+                         │ • SQLite DB (experiences)   │
+                         │ • Evidence Chain & Logs     │
+                         │ • Authorized Lab Containers │
+                         └─────────────────────────────┘
 ```
 
 ---
 
-## 🔄 The Evolution Loop
+## 🤖 Specialized AI Agents
 
-Every engagement feeds back into the evolutionary engine:
+CERBERUS coordinates seven specialized agents, each constrained to a focused domain within the F2T2EA (Find, Fix, Track, Target, Engage, Assess) kill chain:
 
-```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────┐    ┌────────┐
-│  Solve  │───▶│ Observe │───▶│ Evolve  │───▶│ Gate │───▶│ Reload │
-└─────────┘    └─────────┘    └─────────┘    └──────┘    └────────┘
-```
-
-1. **Solve** — Agents process tasks (black-box execution in the lab)
-2. **Observe** — Trajectories + benchmark feedback collected into structured logs
-3. **Evolve** — Evolution engine mutates strategies (prompts, skills, memory)
-4. **Gate** — Validate mutations; regressed strategies are rolled back
-5. **Reload** — The system reloads with the (possibly rolled-back) workspace
-
-Every accepted mutation is git-tagged (`evo-1`, `evo-2`, …) providing a full audit trail.
-
-### Fitness Function
-```
-Success:            +1.0
-Verification:       +0.8
-Evidence Quality:   +0.6
-Repeatability:      +0.5
-Unnecessary Actions: -0.3
-Failures:           -0.5
-```
+| Agent | Capability | Responsibility | Primary Specialist Tools |
+| :--- | :--- | :--- | :--- |
+| 🧠 **Planner** | `planning` | Decomposes high-level mission goals into structured, phased task graphs. | Reasoning Models, Task Memory |
+| 🔍 **Researcher** | `research` | Mines CVE databases, advisory feeds, and security documentation for target intelligence. | PentestGPT, Knowledge Base, Web Search |
+| 🛰️ **Recon** | `reconnaissance` | Discovers target infrastructure, active services, ports, and software versions. | Strix, Nmap, PentAGI |
+| 📊 **Analyst** | `analysis` | Correlates recon signals with vulnerability signatures to isolate genuine attack surfaces. | CAI, PenClaw, CVE Correlation |
+| 💻 **Coder** | `code_generation` | Constructs targeted test scripts, payloads, and proof-of-concept validators. | Local Coder LLM, AST Validators |
+| ✅ **Verifier** | `verification` | Strictly challenges findings; validates evidence and rejects false positives. | Independent Reasoner, Sandbox Execution |
+| 📋 **Reporter** | `reporting` | Compiles structured executive and technical markdown/JSON audit reports. | Report Generator, Evidence Store |
 
 ---
 
-## 🧩 Non-Weight Learning Loop
+## ⚡ Dynamic Capability Routing
 
-```
-Hypothesis → Execution → Sandbox Verification → Memory Storage
-     │              │                │                  │
-     │              │                │                  ▼
-     │              │                │          Score: +1 (success)
-     │              │                │          Score: -1 (failure)
-     │              │                │                  │
-     └──────────────┴────────────────┴──────────────────┘
-                    Future Planning Retrieves Relevant Experiences
-```
+Instead of hard-coding tool executions, agents request abstract operational capabilities. The Capability Registry routes demands to the optimal available adapter:
 
-- **No model weight retraining**: Underlying LLM weights remain stable
-- **Scored experiences**: Successful strategies gain positive scores; failures lose points
-- **Semantic retrieval**: Vector embeddings enable similarity search for relevant past experiences
-- **Pattern recognition**: The planner retrieves top-K similar past scenarios before generating new plans
+| Capability | Provider Routing Order | Primary Focus |
+| :--- | :--- | :--- |
+| **Reconnaissance** | `Strix` → `PentAGI` → `Recon Agent` | Port scanning, host discovery, service enumeration |
+| **Source Analysis** | `CAI` → `local-coder` → `Analyst Agent` | Static code analysis, semantic vulnerability audits |
+| **Web Testing** | `Dark-Moon` → `PentAGI` | Web application surface and API assessment |
+| **Tool Execution** | `HexStrike` → `MCPStrike` | Modular execution of 150+ standard security tools |
+| **Research** | `PentestGPT` → `Researcher Agent` | Threat intelligence, exploit research, CVE lookup |
+| **Static Analysis** | `PenClaw` → `CAI` | SAST scans, secret detection, code smell identification |
+| **Verification** | `Verifier Agent` → `local-reasoner` | Independent proof-of-exploit validation |
 
 ---
 
-## 🗂️ Project Structure
+## 🧬 Evolutionary Strategy Engine
 
-```
-CERBERUS/
-├── README.md                    # This file
-├── ARCHITECTURE.md              # Deep-dive technical reference
-├── REPOSITORY_MAP.yaml          # Repository-to-role mapping
-├── .env.example                 # Environment configuration template
-├── .gitignore                   # Git ignore rules
-├── docker-compose.yml           # Infrastructure services
-├── ult.jpg                      # Platform banner image
-│
-├── cyberai/                     # Core platform package
-│   ├── __init__.py
-│   ├── config.py                # Central configuration loader
-│   ├── task.py                  # Canonical Task state (shared across components)
-│   │
-│   ├── capabilities/            # Capability-based routing
-│   │   ├── __init__.py
-│   │   └── registry.py          # Maps capabilities → providers (agents/tools/models)
-│   │
-│   ├── collaboration/           # Multi-agent collaboration
-│   │   ├── __init__.py
-│   │   └── pipeline.py          # AgentPipeline: sequential agent execution
-│   │
-│   ├── evolution/               # 🧬 Evolutionary strategy engine
-│   │   ├── __init__.py
-│   │   ├── engine.py            # EvolutionEngine: coordinates the evolution loop
-│   │   ├── strategy.py          # Strategy dataclass (genome)
-│   │   ├── population.py        # Population management
-│   │   ├── mutation.py          # Mutation & crossover operations
-│   │   ├── selection.py         # Fitness-based selection
-│   │   ├── evaluation.py        # Strategy evaluation (lab/simulation)
-│   │   ├── fitness.py           # Fitness function scoring
-│   │   └── archive.py           # Elite strategy archive
-│   │
-│   ├── llm_gateway/             # 🔌 LLM Gateway
-│   │   ├── __init__.py          # LLMGateway: routing, fallback, health checks
-│   │   ├── config/              # LiteLLM proxy configuration (mounted into the container)
-│   │   └── models/              # models.yaml model registry
-│   │
-│   ├── memory/                  # 🧠 Memory system
-│   │   ├── __init__.py
-│   │   └── memory_store.py      # Typed memory (episodic, semantic, procedural)
-│   │
-│   ├── meta_learning/           # 📊 Meta-learning
-│   │   ├── __init__.py
-│   │   └── tracker.py           # PerformanceTracker: SQLite performance DB
-│   │
-│   ├── observability/           # 👁️ Observability
-│   │   ├── __init__.py
-│   │   └── logger.py            # Structured logging
-│   │
-│   ├── orchestrator/            # 🎛️ Master Orchestrator
-│   │   ├── __init__.py
-│   │   ├── master.py            # CyberAIOrchestrator: unified AI interface
-│   │   ├── orchestrator.py      # Core orchestrator
-│   │   ├── tool_registry.py     # Security tool registry
-│   │   ├── tools.yaml           # Tool registry YAML
-│   │   ├── adapters/            # Adapter management
-│   │   │   ├── __init__.py
-│   │   │   ├── adapter_manager.py  # AdapterManager
-│   │   │   └── base.py          # Base adapter interface
-│   │   ├── agents/              # 🤖 AI agents
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py          # Base agent interface
-│   │   │   ├── planner/         # 🧠 Planner agent
-│   │   │   ├── researcher/      # 🔍 Researcher agent
-│   │   │   ├── recon/           # 🛰️ Recon agent
-│   │   │   ├── analyst/         # 📊 Analyst agent
-│   │   │   ├── coder/           # 💻 Coder agent
-│   │   │   ├── verifier/        # ✅ Verifier agent
-│   │   │   └── reporter/        # 📋 Reporter agent
-│   │   ├── api/                 # 🔌 REST API
-│   │   │   └── api_server.py    # FastAPI server
-│   │   ├── cli/                 # ⌨️ Command-line interface
-│   │   │   ├── __init__.py
-│   │   │   ├── __main__.py
-│   │   │   ├── cli.py           # CLI entry point
-│   │   │   └── doctor.py        # Health check
-│   │   ├── evidence/            # 📎 Evidence collection
-│   │   │   └── evidence.py      # Evidence chain management
-│   │   ├── knowledge/           # 📚 Knowledge base
-│   │   │   └── knowledge_loader.py
-│   │   ├── logging/             # 📝 Session logging
-│   │   │   └── session_logger.py
-│   │   ├── memory/              # 🧠 Orchestrator memory
-│   │   │   └── memory_manager.py
-│   │   ├── policies/            # 🛡️ Safety policies
-│   │   │   └── policy_engine.py # Target authorization & action whitelisting
-│   │   ├── routing/             # 🔀 Model routing
-│   │   │   ├── model_router.py  # ModelRouter
-│   │   │   └── routing.yaml     # Routing fallback chains
-│   │   ├── scheduler/           # 📅 Task scheduling
-│   │   │   └── scheduler.py
-│   │   └── workflows/           # 🔄 Workflow management
-│   │       └── workflow_manager.py
-│   │
-│   ├── self_improvement/        # 🧬 Self-improvement
-│   │   ├── __init__.py
-│   │   ├── pipeline.py          # SelfImprovementPipeline: 10-stage gatekeeper
-│   │   └── proposal.py          # ImprovementProposal model
-│   │
-│   ├── tool-gateway/            # 🔧 MCP Tool Gateway
-│   │   └── mcp/                 # MCP server management
-│   │
-│   └── ui/                      # 🖥️ UI package
-│       └── __init__.py
-│
-├── adapters/                    # 🔌 Security tool adapters (17 tracked)
-│   ├── pentagi/                 # Primary pentesting agent
-│   ├── strix/                   # Assessment agent
-│   ├── darkmoon/                # MCP pentesting agent
-│   ├── hexstrike/               # MCP tool gateway (150+ tools)
-│   ├── cai/                     # Agent framework
-│   ├── pentestgpt/              # Research/planning
-│   ├── cyberstrikeai/           # Gin REST + MCP
-│   ├── autopentest/             # LangChain research
-│   ├── penclaw/                 # Static/dynamic analysis
-│   ├── luan1aoagent/            # Cognitive agent
-│   ├── aracne/                  # SSH-driven pentesting
-│   ├── guardian-cli/            # CLI pentesting
-│   ├── drakben/                 # Autonomous pentesting
-│   ├── h4cker/                  # Knowledge base (reference)
-│   └── kali-pentest/            # Skill definitions (reference)
-│
-├── infrastructure/              # ⚙️ Infrastructure services
-│   ├── ollama/                  # Ollama models and config
-│   ├── open-webui/              # Open WebUI data
-│   ├── airllm/                  # AirLLM inference
-│   └── other-inference/         # Additional inference engines
-│
-├── lab/                         # 🔬 Isolated lab environment
-│   ├── targets/                 # Authorized target registry
-│   │   └── targets.yaml         # Target definitions
-│   ├── docker/                  # Docker Compose stacks
-│   ├── networks/                # Network definitions
-│   ├── snapshots/               # VM/target snapshots
-│   ├── scenarios/               # Pre-built assessment scenarios
-│   └── evidence/                # Collected evidence files
-│
-├── knowledge/                   # 📚 Security knowledge base
-│   ├── cve/                     # CVE database
-│   ├── cwe/                     # CWE weakness taxonomy
-│   ├── advisories/              # Security advisories
-│   ├── techniques/              # ATT&CK techniques
-│   ├── research/                # Security research papers
-│   └── documentation/           # Tool documentation
-│
-├── memory/                      # 🧠 Persistent memory
-│   ├── memory.db                # SQLite database
-│   ├── performance.db           # Performance tracking DB
-│   ├── evolution/               # Evolution engine state
-│   │   ├── population/          # Strategy population
-│   │   ├── elite/               # Elite strategy archive
-│   │   └── failures/            # Failure records
-│   ├── embeddings/              # Vector embeddings
-│   ├── findings/                # Individual findings
-│   ├── failures/                # Failed strategies
-│   ├── successful-strategies/   # Successful tactics
-│   ├── observations/            # Agent observations
-│   └── sessions/                # Session logs
-│
-├── logs/                        # 📝 Platform logs
-│   └── sessions/                # Per-session logs
-│
-├── projects/                    # 📦 Additional projects
-│   ├── security-agents/         # Custom security agents
-│   ├── research-tools/          # Research utilities
-│   ├── analysis-tools/          # Analysis scripts
-│   └── legacy/                  # Legacy integrations
-│
-├── scripts/                     # ⚡ Utility scripts
-├── backups/                     # 💾 Backup storage
-└── tests/                       # 🧪 Test suite
-```
+CERBERUS features a native strategy evolution engine (`cyberai/evolution/`) designed to iteratively discover optimal assessment workflows:
+
+1. **Genome Formulation**: Tactics, prompts, and execution chains are serialized into discrete `Strategy` genomes.
+2. **Evaluation & Fitness**: Each strategy is evaluated in simulation or against authorized lab targets. Fitness is scored on verification accuracy (+0.8), evidence quality (+0.6), efficiency, and penalty for non-essential actions (-0.3).
+3. **Genetic Mutation & Crossover**: High-scoring strategies are crossed and mutated with new tactical combinations.
+4. **Elite Archival & Ghost Wargaming**: Elite tactics are stored in persistent memory (`memory/evolution/elite/`). Failed attempts are preserved in failure memory (`memory/evolution/failures/`) so future planning runs avoid dead-end strategies.
 
 ---
 
-## 🛠️ Quick Start & Setup Guide
+## 🚀 Quick Start
 
-> [!NOTE]
-> **Current Integration Status (Phase A & B Verified):**
-> Platform health checks pass with exit code 0 (`python -m cyberai.orchestrator.cli doctor`). The system coordinates **17 tracked adapters** (all 17 with `SecurityToolAdapter` wrappers), **7 specialized AI agents**, **4 persistent SQLite memory tables** (230+ experiences, 135+ findings), and **40+ CLI commands**. All paths resolve cleanly via `cyberai/config.py` without stdlib conflicts.
+### 1. Prerequisites
+- **Operating System**: Windows 10/11, Ubuntu 20.04+, or macOS 12+
+- **Python**: Version 3.10 or 3.11
+- **Node.js**: Version 18+ (only if modifying frontend UI source)
+- **Optional**: [Ollama](https://ollama.com/) (for offline local models) and Docker (for containerized lab targets)
 
-### Prerequisites
-- Windows 11 / Linux / macOS
-- Docker Desktop (for containerized services)
-- Python 3.10+ (for orchestrator core)
-- Ollama (for local models)
-- Git (for repository management)
-
-### Installation
+### 2. Installation
 
 ```bash
-# 1. Set up Python environment
+# Clone repository
+git clone https://github.com/Mr-Nobody-Anonymous/Cerberus.git
+cd Cerberus
+
+# Create and activate virtual environment
 python -m venv .venv
-.\.venv\Scripts\activate        # Windows (or: source .venv/bin/activate on Linux)
+# On Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+# On Linux/macOS:
+source .venv/bin/activate
 
-# 2. Install core dependencies
+# Install in editable mode with all dependencies
 pip install -r requirements.txt
-# OR install as editable package:
 pip install -e .
-
-# 3. Configure environment
-copy .env.example .env          # Windows (or: cp .env.example .env on Linux)
-# Edit .env with your API keys and preferences
-
-# 4. Install Ollama and pull models
-# Download from https://ollama.com
-ollama pull llama3.1:8b
-ollama pull codellama:7b
-ollama pull llama3.2:3b
-ollama pull qwen2.5:7b
-ollama pull nomic-embed-text
-
-# 5. Start infrastructure services (optional / when Docker is running)
-docker compose up -d
-
-# 6. Run health check (exits 0)
-python -m cyberai.orchestrator.cli doctor
 ```
 
-### Configuration
-
-#### Workspace Path Resolution (`CERBERUS_HOME`)
-CERBERUS centralizes all file resolution through `cyberai.config.resolve_path()` to avoid hardcoded paths. By default, the workspace root is auto-detected as the repository root. If running outside the repo directory or within custom container mount paths, set:
-```env
-# Workspace Root Override (defaults to auto-detected repository root)
-CERBERUS_HOME=C:\Users\hp\Desktop\Cerberus
+### 3. Preflight Health Check
+Verify your environment, configuration, and dependencies:
+```bash
+cyber-ai doctor
+# Or using the unified launcher:
+python start_cerberus.py --doctor
 ```
 
-#### Gateway Configuration (`.env`)
-```env
-# Workspace root override
-# CERBERUS_HOME=C:\Users\hp\Desktop\Cerberus
+> [!TIP]
+> `start_cerberus.py` works portably from any working directory and automatically configures UTF-8 console encoding and project path overrides (`CERBERUS_HOME`).
 
-# Ollama Local Models
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
+---
 
-# LiteLLM Gateway
-LITELLM_MASTER_KEY=sk-your-master-key-here
-LITELLM_PORT=4000
-LITELLM_CONFIG_PATH=cyberai/llm_gateway/config/config.yaml
+## 💻 Operational Interfaces
 
-# Cloud Providers (Optional)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GEMINI_API_KEY=...
+CERBERUS provides multiple interfaces tailored to different operational requirements:
 
-# Privacy Mode (local_only | hybrid)
-PRIVACY_MODE=local_only
-
-# Lab Configuration
-LAB_TARGETS_PATH=lab/targets/targets.yaml
-REQUIRE_TARGET_AUTHORIZATION=true
+### 1. Safe End-to-End Simulation
+Run an autonomous multi-agent mission in safe simulation mode with zero external network traffic:
+```bash
+cyber-ai simulate "Audit laboratory web application for authentication flaws"
 ```
 
-#### Lab Targets (`lab/targets/targets.yaml`)
-```yaml
-targets:
-  - id: lab-web-01
-    environment: authorized_lab
-    allowed: true
-    host: 127.0.0.1
-    port: 8080
-    description: OWASP Juice Shop
-    allowed_actions:
-      - recon
-      - scan
-      - analysis
-      - exploitation
+### 2. Command Deck Web UI
+Launch the unified FastAPI server and modern React Command Deck:
+```bash
+cyber-ai ui --port 8000
+# Or:
+python start_cerberus.py --ui --port 8000
+```
+Open **`http://127.0.0.1:8000`** in your browser. The Command Deck features real-time agent telemetry, session history, memory search, an interactive security approval queue, and mission analytics.
+
+### 3. Interactive CLI Shell
+Start the terminal shell with tab-completion, persistent command history, and shared slash commands:
+```bash
+cyber-ai interactive
+```
+Available slash commands inside the interactive shell include:
+- `/status` — System telemetry and subsystem diagnostics
+- `/targets` — List authorized lab targets
+- `/findings` — Inspect collected vulnerability findings
+- `/models` — Display model routing table and health
+- `/tools` — Inspect active tool adapters
+- `/help` — Command assistance
+
+### 4. CLI Batch Commands
+```bash
+# Inspect platform status and model routes
+cyber-ai status
+cyber-ai models
+
+# Review registered tools and specialist agents
+cyber-ai tools
+cyber-ai agents
+
+# Query findings and persistent memory
+cyber-ai findings
+cyber-ai memory "SQL injection"
+
+# Execute a mission against an authorized lab target
+cyber-ai task lab-web-01 --objective "Audit authentication endpoints"
 ```
 
-### Using the Master Orchestrator
-
+### 5. Python Orchestrator SDK
 ```python
 import asyncio
 from cyberai.orchestrator.master import CyberAIOrchestrator
 
 async def main():
-    ai = CyberAIOrchestrator(simulate=True)  # Simulation mode
-    result = await ai.run("Find SQL injection vulnerabilities", target_id="lab-web-01")
-    print(result["status"])
-    ai.close()
+    # Initialize orchestrator in safe simulation mode
+    orchestrator = CyberAIOrchestrator(simulate=True)
 
-asyncio.run(main())
+    result = await orchestrator.run(
+        objective="Inspect laboratory API for IDOR vulnerabilities",
+        target_id="lab-web-01"
+    )
+
+    print(f"Mission Status: {result['status']}")
+    print(f"Findings Verified: {len(result.get('findings', []))}")
+    orchestrator.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-### Using the CLI
+---
 
-The CLI provides 40+ operational commands via `python -m cyberai.orchestrator.cli <command>` (run with no arguments for the full list). Global output flags — `--json`, `--yaml`, `--table`, `--quiet`, `--verbose`, `--debug`, `--no-color` — go before the subcommand (spec §14).
+## 🔒 Safety & Ethical Boundaries
 
-The redesigned **interactive shell** (`python -m cyberai.orchestrator.cli interactive`) is a themed REPL with tab completion, persistent history (`~/.cerberus/cli_history`), background tasks, and the full shared slash-command catalog (`/targets`, `/findings`, `/status`, …) — the same command bus as the web UI chat and the REST API. See `docs/CLI_GUIDE.md` and `docs/COMMANDS.md`.
+> [!IMPORTANT]
+> **Authorized Testing Only**: CERBERUS is strictly engineered for authorized penetration testing, academic security research, CTF practice, and defensive validation in controlled laboratory environments.
+
+### Hardcoded Guardrails
+1. **Target Authorization Engine**: All active engagements require targets to be explicitly declared in [lab/targets/targets.yaml](lab/targets/targets.yaml) with `allowed: true`.
+2. **Action Whitelisting**: Active operations are restricted to per-target `allowed_actions` (e.g., `recon`, `scan`, `analysis`). Unregistered operations are rejected by the policy engine.
+3. **Simulation Default**: By default, the orchestrator operates in `simulate=True` mode, preventing any unapproved network interaction.
+4. **Self-Improvement Validation Gate**: AI-generated code proposals must pass strict static syntax analysis, security checks (preventing arbitrary code execution primitives like `eval` or untracked subprocesses), and baseline regression benchmarks before being eligible for human approval.
+5. **Privacy Enforcement**: A configurable `local_only` mode ensures that no sensitive target data, tokens, or outputs are transmitted to external cloud providers.
+
+---
+
+## 🧪 Testing & Verification
+
+The repository maintains an automated test suite verifying orchestration pipelines, security policies, adapter integrations, and regression prevention:
 
 ```bash
-# 1. Health check — full diagnostic suite (exits 0)
-python -m cyberai.orchestrator.cli doctor
+# Run the complete test suite (624 tests)
+pytest
 
-# 2. Platform status — subsystem availability & metrics
-python -m cyberai.orchestrator.cli status
+# Run dedicated submission regression tests
+pytest tests/test_submission_regressions.py -v
 
-# 3. End-to-end simulation — complete autonomous multi-agent run (zero external deps)
-python -m cyberai.orchestrator.cli simulate "Analyze authorized lab target"
-
-# 4. Capability, agent, model, and adapter catalogs
-python -m cyberai.orchestrator.cli tools        # 17 registered tools
-python -m cyberai.orchestrator.cli agents       # 7 AI specialist agents
-python -m cyberai.orchestrator.cli models       # LLM aliases & transport status
-python -m cyberai.orchestrator.cli adapters     # 17 tracked security tool adapters
-
-# 5. Persistent memory & findings
-python -m cyberai.orchestrator.cli findings
-python -m cyberai.orchestrator.cli memory "SQL injection"
-
-# 6. Evolutionary strategy engine
-python -m cyberai.orchestrator.cli evolve
-
-# 7. Lab targets & session management
-python -m cyberai.orchestrator.cli lab list
-python -m cyberai.orchestrator.cli session list
-
-# 8. Target assessment (requires authorized target in lab/targets/targets.yaml)
-python -m cyberai.orchestrator.cli task lab-web-01 --objective "Find SQL injection"
-# (or legacy alias: python -m cyberai.orchestrator.cli assess lab-web-01)
-
-# 9. CERBERUS Command Deck Web UI
-python -m cyberai.orchestrator.cli ui
-```
-
-The Command Deck is a three-pane AI Security IDE (chat sidebar, 14 views, live agent/security rail, Ctrl+K palette) served by the same FastAPI app at `/api/v1/*`. Guide: `docs/UI_GUIDE.md`; architecture: `docs/FRONTEND_ARCHITECTURE.md`.
-
-### Using the REST API
-
-```bash
-# Start the API server
-uvicorn cyberai.orchestrator.api.api_server:create_app --factory --host 0.0.0.0 --port 8000
-
-# Check platform status
-curl http://localhost:8000/status
-
-# List authorized targets
-curl http://localhost:8000/targets/authorized
-
-# Search memory
-curl "http://localhost:8000/memory/search?query=SQL%20injection"
-
-# List tools
-curl http://localhost:8000/tools
-
-# List model routes
-curl http://localhost:8000/models
+# Run specific functional suites
+pytest tests/test_agents.py tests/test_security_regressions.py -v
 ```
 
 ---
 
-## 🔬 Evolution Engine: Self-Improving Strategies
-
-CERBERUS ships a **native evolution engine** (`cyberai/evolution/`) — a self-contained evolutionary loop for strategy self-improvement. The design is informed by [A-Evolve](https://github.com/A-EVO-Lab/a-evolve) (upstream reference, not vendored).
-
-### The Evolution Loop
+## 📁 Repository Structure
 
 ```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────┐    ┌────────┐
-│  Solve  │───▶│ Observe │───▶│ Evolve  │───▶│ Gate │───▶│ Reload │
-└─────────┘    └─────────┘    └─────────┘    └──────┘    └────────┘
-```
-
-1. **Solve** — Agents process tasks (black-box execution)
-2. **Observe** — Outcomes feed the fitness function and failure memory
-3. **Evolve** — Mutation engine breeds new strategies from elites
-4. **Gate** — Selection engine scores variants; regressions die out
-5. **Reload** — Elite archive persists winners across sessions
-
-### Native Components
-
-| Component | File | Purpose |
-| :--- | :--- | :--- |
-| `EvolutionEngine` | `engine.py` | Coordinates the evolution loop |
-| `Strategy` | `strategy.py` | Genome dataclass |
-| `Population` | `population.py` | Population management |
-| `MutationEngine` | `mutation.py` | Mutation & crossover |
-| `SelectionEngine` | `selection.py` | Fitness-based selection |
-| `EvaluationEngine` | `evaluation.py` | Strategy evaluation (lab/simulation) |
-| `FitnessFunction` | `fitness.py` | Fitness scoring |
-| `EliteArchive` | `archive.py` | Elite strategy archive |
-| `GhostWargame` | `wargame.py` | Failure-memory wargame analytics |
-
----
-
-## 🧩 Tool Registry — 17 Integrated Adapters
-
-| Tool | Type | API | Capabilities |
-|------|------|-----|--------------|
-| **PentAGI** | Security Agent | REST/GraphQL + MCP | Research, Analysis, Exploitation, Reporting |
-| **Strix** | Security Agent | Server API | Assessment, Vulnerability Scanning |
-| **HexStrike** | Tool Gateway | Flask REST + MCP | Tool Execution, MCP Servers, Web Scraping |
-| **MCPStrike** | Tool Gateway | FastAPI + MCP | Tool Execution, MCP Servers |
-| **Dark-Moon** | Security Agent | MCP Server | Research, Analysis, Exploitation |
-| **CAI** | Security Agent | Python Library + MCP | Research, Analysis, Agent Framework |
-| **PentestGPT** | Security Agent | CLI | Research, Planning |
-| **PentestAgent** | Security Agent | CLI + MCP | Research, Analysis, Exploitation |
-| **CyberStrikeAI** | Security Agent | Gin REST + MCP | Tool Execution, MCP Servers, Analysis |
-| **AutoPentest** | Security Agent | CLI | Research, Planning |
-| **PenClaw** | Analysis Tool | CLI | Static Analysis, Dynamic Scanning, Secret Detection |
-| **LuaN1aoAgent** | Security Agent | CLI/Web | Research, Analysis, Planning |
-| **ARACNE** | Security Agent | CLI (SSH) | Research, Exploitation, SSH-Driven |
-| **Guardian-CLI** | Security Agent | CLI | Research, Analysis, Reporting |
-| **DRAKBEN** | Security Agent | CLI (async) | Research, Analysis, Exploitation |
-| **Kali-Pentest** | Skill Definitions | Documentation | Tool Guidance, Methodology |
-| **h4cker** | Knowledge Base | Documentation | Reference, Training, Labs |
-
----
-
-## 🔒 Ethical & Safety Boundaries
-
-### Authorized Use Only
-
-This platform is designed for:
-- **Authorized penetration tests** on systems you own or have explicit written permission to test
-- **CTF competitions** and practice environments
-- **Security research** in isolated lab environments
-- **Educational purposes** in controlled settings
-
-### Hard-Coded Restrictions
-
-1. **Target Authorization**: All active testing requires explicit target registration in `lab/targets/targets.yaml` with `allowed: true`
-2. **Environment Enforcement**: The policy engine blocks execution on unregistered targets
-3. **Lab-Only Default**: No tools execute against the host system or external networks by default
-4. **Evidence Retention**: All actions are logged with timestamps, tool outputs, and verification status
-5. **Privacy Mode**: `local_only` mode blocks all cloud model calls
-
-### Prohibited Uses
-
-- Unauthorized access to computer systems
-- Data exfiltration from systems you don't own
-- Denial of service attacks against third parties
-- Malware development or distribution
-- Any activity violating local, state, or international laws
-
-### Responsible Disclosure
-
-If you discover vulnerabilities during authorized testing:
-1. Document findings with evidence
-2. Report to the system owner
-3. Allow time for remediation before disclosure
-4. Follow coordinated disclosure principles
-
----
-
-## 📚 Documentation
-
-| Document | Purpose |
-|----------|---------|
-| `README.md` | This file - platform overview and quick start |
-| `ARCHITECTURE.md` | Deep-dive technical reference |
-| `REPOSITORY_MAP.yaml` | Repository-to-role mapping |
-| `.env.example` | Environment configuration template |
-
----
-
-## 🧪 Running Tests
-
-```bash
-# Run the full test suite
-python -m pytest tests/ -v
-
-# Run a single test module
-python -m pytest tests/test_evolution.py -v
+CERBERUS/
+├── start_cerberus.py            # Universal multi-platform launcher
+├── pyproject.toml               # Package definition and dependencies
+├── requirements.txt             # Pinned dependency specifications
+├── docker-compose.yml           # Local inference & database infrastructure
+├── REPOSITORY_MAP.yaml          # Mapping of adapters and architectural roles
+├── ult.jpg                      # Platform banner asset
+│
+├── cyberai/                     # Core Python platform package
+│   ├── capabilities/            # Dynamic capability router
+│   ├── collaboration/           # Multi-agent collaboration pipelines
+│   ├── evolution/               # Genetic strategy evolution engine
+│   ├── llm_gateway/             # Model routing, aliases & fallbacks
+│   ├── memory/                  # SQLite episodic and semantic store
+│   ├── meta_learning/           # Performance tracking & ranking
+│   ├── orchestrator/            # Master Orchestrator, CLI & agents
+│   │   ├── agents/              # 7 AI specialist agents
+│   │   ├── api/                 # FastAPI REST application
+│   │   ├── cli/                 # CLI entry point, doctor & REPL shell
+│   │   └── policies/            # Authorization & safety policies
+│   ├── security/                # Policy enforcement & sandbox execution
+│   ├── self_improvement/        # 10-stage gated self-improvement pipeline
+│   └── ui/                      # Web server & compiled Command Deck UI
+│
+├── adapters/                    # 17 security tool adapters
+├── lab/                         # Isolated laboratory configurations
+│   └── targets/targets.yaml     # Authorized target registry
+├── docs/                        # Technical guides, architecture & ADRs
+└── tests/                       # Unit, integration & regression test suites
 ```
 
 ---
 
-## 🤝 Support & Contributing
+## 📚 Documentation Index
 
-- **Issues**: Report bugs and request features via GitHub Issues
-- **Discussions**: Join community discussions for use cases and integrations
-- **Contributing**: See `CONTRIBUTING.md` in individual repositories
-
----
-
-## 📜 License
-
-This platform structure is provided as-is. Individual components retain their original licenses. See `REPOSITORY_MAP.yaml` for details.
-
-**Primary Licenses:**
-- MIT: hexstrike-ai, mcpstrike, pentestgpt, pentestagent, strix, drakben
-- Apache 2.0: ollama, open-webui
-- GPL v3: Dark-Moon
-- Dual MIT + Proprietary: CAI
-- AGPL v3: LuaN1aoAgent
-
-**Runtime services (not vendored):** LiteLLM (MIT) — pinned Docker image `litellm/litellm:1.97.0`
+| Resource | Scope and Purpose |
+| :--- | :--- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | In-depth technical specification of orchestrator subsystems and data flows |
+| [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md) | Exhaustive CLI guide covering all 40+ commands and interactive shell |
+| [docs/COMMANDS.md](docs/COMMANDS.md) | Reference documentation for shared slash commands and dispatch bus |
+| [docs/UI_GUIDE.md](docs/UI_GUIDE.md) | Walkthrough of the Command Deck Web UI features and views |
+| [docs/FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md) | Architecture and state model of the React frontend application |
+| [REPOSITORY_MAP.yaml](REPOSITORY_MAP.yaml) | Structural map and provenance of external adapters and components |
+| [CHANGELOG.md](CHANGELOG.md) | History of release modifications, fixes, and feature additions |
+| [LICENSE](LICENSE) | MIT open source licensing terms |
 
 ---
-
-## 🙏 Acknowledgments
-
-This platform integrates the following open-source security research projects:
-- **A-Evolve** by A-EVO-Lab — Evolution design reference (native engine in `cyberai/evolution/`)
-- **PentAGI** by vxcontrol — Autonomous penetration testing
-- **Strix** by usestrix — Security assessment agent
-- **HexStrike AI** by 0x4m4 — MCP tool gateway
-- **MCPStrike** by ente0 — Ollama-driven MCP
-- **Dark-Moon** by ASCIT31 — Autonomous pentesting
-- **CAI** by aliasrobotics — Cybersecurity AI framework
-- **LiteLLM** by BerriAI — LLM gateway
-- **Ollama** by ollama — Local model serving
-- **Open WebUI** by open-webui — Web interface
-
-And many more. See `REPOSITORY_MAP.yaml` for the complete list.
-
----
-
-> **Status**: Platform structure complete and ready for deployment. Awaiting Docker, Ollama, and API key configuration for full operational capability.
 
 <div align="center">
-  <sub>Built with 🧬 evolutionary intelligence · CERBERUS</sub>
+  <sub>Engineered for autonomous security research · CERBERUS</sub>
 </div>
