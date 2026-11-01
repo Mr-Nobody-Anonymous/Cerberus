@@ -8,7 +8,7 @@
 click==8.5.0
 
 # YAML config/model-registry loading (cyberai.config, registry files)
-PyYAML==6.0.1
+PyYAML==6.0.3
 
 # Async HTTP client (LLM gateway transports: LiteLLM proxy / Ollama / provider)
 httpx==0.28.1
