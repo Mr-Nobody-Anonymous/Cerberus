@@ -16,7 +16,7 @@ httpx==0.28.1
 # Adapter runtime deps (drakben.py, guardian-cli cli/) — module-level imports
 python-dotenv==1.2.4
 rich==15.0.0
-typer==0.27.2
+typer==0.27.3
 prompt-toolkit==3.0.53
 
 # REST API server (cyberai.orchestrator.api / cyberai.ui) — lazy-imported
