@@ -39,7 +39,7 @@ dependencies = [
 
 [project.optional-dependencies]
 api = [
-    "fastapi>=0.160.0,<1",
+    "fastapi>=0.162.0,<1",
     "uvicorn>=0.54.0,<1",
 ]
 dev = [
@@ -56,7 +56,7 @@ cloud = [
     # Re-add only if an SDK-based provider transport is introduced.
 ]
 all = [
-    "fastapi>=0.160.0,<1",
+    "fastapi>=0.162.0,<1",
     "uvicorn>=0.54.0,<1",
     "pytest>=9.0.3,<10",
     "pytest-asyncio>=0.23.0,<2",
